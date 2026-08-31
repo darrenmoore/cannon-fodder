@@ -19,6 +19,18 @@
     <title>Cannon Fodder</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/style.css" />
+    <!--
+      Visitor counting. Cookieless and personal-data-free, so there is nothing
+      to put behind a consent banner, and it counts nothing at all on localhost
+      so development does not pollute the numbers. `async`, and everything that
+      calls it (src/analytics.ts) no-ops when it is blocked -- the game must not
+      depend on it having loaded.
+    -->
+    <script
+      data-goatcounter="https://cannonfodder.goatcounter.com/count"
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
   </head>
   <body>
     <div id="stage">

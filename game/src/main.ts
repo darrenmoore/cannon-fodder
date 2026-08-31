@@ -1,4 +1,5 @@
 import { Camera } from './camera.js';
+import { missionResolved, missionStarted, startSession } from './analytics.js';
 import { unlockAudio } from './audio.js';
 import { Controls } from './controls.js';
 import { Game } from './game.js';
@@ -39,6 +40,10 @@ async function boot(): Promise<void> {
   // Before anything reads a preference. Nothing branches on whether settings
   // were ever saved, only on their values, so this is safe to do first.
   loadSettings();
+
+  // Starts the clock on how long this visit lasts. Registers two listeners and
+  // nothing else -- no request is made until the page goes away.
+  startSession();
 
   // Ask for the music here, not when the menu is drawn. Everything below this
   // line -- the layout, the level list, the campaign -- is work the player waits
@@ -190,6 +195,7 @@ async function boot(): Promise<void> {
     const roster = (): ReturnType<typeof deploy> => deploy(campaign, map.playerSpawns.length);
 
     game = new Game(map, camera, renderer, input, difficulty, roster);
+    missionStarted(info.id, difficulty);
     // The end-of-mission panel drives the shell rather than the other way
     // round, so "next mission" is one click from where you finished.
     const index = levels.findIndex((l) => l.id === info.id);
@@ -245,6 +251,7 @@ async function boot(): Promise<void> {
       });
       hud.record = campaign.records[info.id] ?? null;
       hud.buried = campaign.fallen.length;
+      missionResolved(info.id, difficulty, world.phase === Phase.Won);
     };
     // Debug handle: lets the console (and the headless driver) inspect and poke
     // live game state without threading test hooks through the modules.

@@ -42,6 +42,30 @@ spins down after 15 minutes idle and takes ~30s to wake.
 The server binds `127.0.0.1` by default and reads `HOST` to override it, which is
 the one thing a platform health-checking the port from outside needs.
 
+## Counting who plays
+
+[GoatCounter](https://cannonfodder.goatcounter.com), because the alternative was
+a database. Render's free plan wipes the filesystem on restart and spins the
+instance down when idle, so anything the server counted for itself would reset
+several times a day.
+
+It is cookieless and stores no personal data, so there is nothing to put behind
+a consent banner. Four things are counted, and they are shapes rather than
+people — a mission id, a difficulty, a bucket:
+
+| | |
+|---|---|
+| a visit | how many played at all |
+| `start/<mission>/<difficulty>` | which missions get chosen, and at what setting |
+| `win/…` and `loss/…` | how far anybody actually gets |
+| `session/<bucket>` | how long a visit lasted, in coarse bands |
+
+[`src/analytics.ts`](game/src/analytics.ts) sends them, and the whole module
+no-ops when the script is absent — an ad blocker, or localhost, where GoatCounter
+deliberately counts nothing so development does not pollute the numbers. The
+numbers therefore undercount, which is the accepted price of a counter that can
+never throw inside a firefight.
+
 ## Working on it with Claude Code
 
 Two project skills live in [.claude/skills/](.claude/skills/), so they are
