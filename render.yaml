@@ -3,17 +3,20 @@
 # Deploy: Render dashboard -> New -> Blueprint -> pick darrenmoore/cannon-fodder.
 # Render reads this file and creates the service. Nothing here needs secrets.
 #
-# Two choices worth making BEFORE the first deploy, because neither can be
-# changed afterwards without recreating the service:
+# `region` is the one choice that must be right BEFORE the first deploy: it
+# cannot be changed afterwards without recreating the service.
 #   region  frankfurt | oregon | ohio | virginia | singapore
-#   plan    free (spins down after 15 min idle, ~30s cold start) | starter ($7/mo, always on)
+#
+# `plan` can be changed later, here or in the dashboard under Instance Type:
+#   free     spins down after 15 minutes idle, ~30s cold start on the next hit
+#   starter  $7/mo, always on -- which is the point of it
 
 services:
   - type: web
     name: cannon-fodder
     runtime: node
     region: frankfurt
-    plan: free
+    plan: starter
     branch: main
 
     # The repo root is the working directory. `data/` sits beside `game/`, and

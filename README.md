@@ -35,9 +35,12 @@ PORT=5200 npm run dev   # if 5199 is taken
 **New -> Blueprint**, point it at this repo, and it creates the web service —
 no secrets, no database, nothing to fill in.
 
-Pick the `region` and `plan` in `render.yaml` *before* the first deploy; neither
-can be changed later without recreating the service. It ships on `free`, which
-spins down after 15 minutes idle and takes ~30s to wake.
+Pick the `region` *before* the first deploy; it cannot be changed later without
+recreating the service. The `plan` can be changed whenever you like, here or in
+the dashboard. It ships on `starter` ($7/mo) rather than `free` for one reason:
+a free instance stops after fifteen minutes idle, and the next person to open
+the link waits about thirty seconds staring at nothing. That is a bad first
+impression of a game, and it is worth seven dollars not to make it.
 
 The server binds `127.0.0.1` by default and reads `HOST` to override it, which is
 the one thing a platform health-checking the port from outside needs.
