@@ -540,6 +540,33 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
+  /**
+   * A circle made of pixels, never of an arc.
+   *
+   * `ctx.arc` produces an anti-aliased curve, which is the one thing this
+   * renderer cannot contain: every edge elsewhere is hard, so a soft one reads
+   * instantly as belonging to a different game. Dots are stepped by arc length
+   * rather than by angle, so spacing stays constant as the radius grows, and
+   * each is nudged a pixel by a hash of its own angle so the front is ragged
+   * instead of drawn with a compass.
+   */
+  private shockRing(at: Vec2, radius: number, ink: string): void {
+    if (radius < 1) return;
+    const ctx = this.ctx;
+    ctx.fillStyle = ink;
+    // Wider means thinner: a shock front spreads its debris, it does not
+    // manufacture more of it.
+    const step = Math.max(0.1, 2.6 / radius);
+    let i = 0;
+    for (let a = 0; a < Math.PI * 2; a += step, i++) {
+      // Deterministic scatter: the same dot stays put between frames.
+      const h = Math.sin(i * 12.9898) * 43758.5453;
+      const jitter = ((h - Math.floor(h)) * 3 - 1) | 0;
+      const r = radius + jitter;
+      ctx.fillRect(Math.round(at.x + Math.cos(a) * r), Math.round(at.y + Math.sin(a) * r), 1, 1);
+    }
+  }
+
   private crosshair(at: Vec2, arm: number, px: number, ink: string): void {
     const ctx = this.ctx;
     const w = Math.max(1, px);
@@ -988,15 +1015,29 @@ export class Renderer {
       if (!m.alive) continue;
       const sprite = this.atlas.mine;
       ctx.drawImage(sprite, Math.round(m.pos.x - sprite.width / 2), Math.round(m.pos.y - sprite.height + 2));
-      if (m.fuse >= 0) {
-        ctx.globalAlpha = 0.4 + Math.abs(Math.sin(this.time * 24)) * 0.6;
-        ctx.strokeStyle = '#ff5a3c';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(m.pos.x, m.pos.y, CONFIG.mine.blastRadius * (1 - m.fuse / CONFIG.mine.fuse), 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
+      if (m.fuse < 0) continue;
+
+      /*
+       * The fuse, drawn as a shock front rather than a circle.
+       *
+       * This was `ctx.arc` with a fading alpha: a geometrically perfect,
+       * anti-aliased, semi-transparent hoop expanding out of a mine, in a game
+       * whose every other pixel is placed on a whole coordinate. It was the
+       * single most out-of-period thing on the screen, and it appeared at the
+       * exact moment the player was looking hardest.
+       *
+       * Now it is discrete pixels flung outward on the circle, jittered so the
+       * front is ragged, thinning as it widens the way debris does; and the
+       * blink is a hard on/off rather than a sine fade, because a CRT-era
+       * warning either lit or it did not.
+       */
+      const burn = 1 - m.fuse / CONFIG.mine.fuse;
+      const lit = Math.floor(this.time * 18) % 2 === 0;
+      this.shockRing(m.pos, CONFIG.mine.blastRadius * burn, lit ? '#ffb03a' : '#c8352a');
+
+      // The trigger itself, lighting up under the man standing on it.
+      ctx.fillStyle = lit ? '#ffd08a' : '#ff5a3c';
+      ctx.fillRect(Math.round(m.pos.x) - 1, Math.round(m.pos.y) - 4, 2, 1);
     }
   }
 
