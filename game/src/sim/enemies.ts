@@ -87,10 +87,10 @@ export function stepEnemies(world: World, dt: number): void {
     let moveTarget: Vec2 | null = null;
     switch (e.state) {
       case EnemyState.Idle:
-        moveTarget = idleFidget(e, dt);
+        moveTarget = siege(world, e) ?? idleFidget(e, dt);
         break;
       case EnemyState.Patrol:
-        moveTarget = patrol(world, e, dt);
+        moveTarget = siege(world, e) ?? patrol(world, e, dt);
         break;
       case EnemyState.Investigate:
         moveTarget = investigate(world, e, dt);
@@ -175,6 +175,38 @@ function nearestVisibleSoldier(world: World, e: Enemy): Actor | null {
     if (d < bestD && hasLineOfSight(world.map, e.pos, s.pos)) { bestD = d; best = s; }
   }
   return best;
+}
+
+/**
+ * Advancing on the thing the squad has been told to hold.
+ *
+ * With nobody to shoot at, a garrison used to stand around waiting to be
+ * provoked, which made "hold out for two minutes" a test of patience rather
+ * than of anything. If the map names a building the player must keep, an enemy
+ * with no target walks to it and shoots it -- so the clock is not the enemy,
+ * the enemy is.
+ *
+ * Returns null when there is nothing to besiege, so the ordinary idle and
+ * patrol behaviour takes over.
+ */
+function siege(world: World, e: Enemy): Vec2 | null {
+  const keep = world.buildings.find((b) => b.role === 'protect' && b.standing);
+  if (!keep) return null;
+
+  const dx = keep.centre.x - e.pos.x;
+  const dy = keep.centre.y - e.pos.y;
+  const dist = Math.hypot(dx, dy) || 1;
+
+  // Close enough, and with a clear line: shoot it.
+  if (dist <= e.stats.fireRange && hasLineOfFire(world.map, e.pos, keep.centre) && !e.wading) {
+    e.angle = Math.atan2(dy, dx);
+    if (e.fireCooldown <= 0) {
+      e.fireCooldown = e.stats.fireInterval * (0.8 + Math.random() * 0.4);
+      fire(world, e, keep.centre, e.stats.spread);
+    }
+    return null;
+  }
+  return { x: keep.centre.x, y: keep.centre.y };
 }
 
 /**

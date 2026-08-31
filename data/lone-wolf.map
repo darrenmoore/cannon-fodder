@@ -1,0 +1,62 @@
+name: Lone Wolf
+theme: jungle
+objective: reach
+doctrine: patrol
+order: 9
+mechanic: one man
+brief: One soldier. No herd to hide in, and one hit is still all it takes.
+squad: 1
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.#......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....#.#..TT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.......###.TT.TT.....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...............T.TTTTT..................TTTTTTTTTTTTTT
+TTTTTTTTTTT.."E".".E..T..T.......T.TT......TTTTTTTTT..................E.TTTTTTTTTTTT
+TTTTTTTTT.E.."""".......T.T....TTTTTT.......TT...TTTT....................T....TTTTTT
+TTTTTTTTT..."""""""....TTT....TTTTTT.TTTTT.T..TTTT..T.........................TTTTTT
+TTTTTTTTT""""".."""...TT.T.TT....TTT...T.TTT...TTT............................TTTTTT
+TTTTTTTTT""""...."....TT.TTTT......TT.T.TTT.T.T.T.T...........................TTTTTT
+TTT.TTTTT..........T.TTTT.TTT.TT...T...T..T...TTT.T..TTTTT.....................TTTTT
+T.TTTTTTT............T.TTT.TTT.T.......T.TTT..T.T...T.TTTTT....................TTTTT
+TTTTTTTTT...........TTTT.TT..TTTT...............T..............................TTTTT
+TTTTTTTT..............T......TTT...................T..TTTTT....................TTTTT
+TTTTTT.T...................T..T...................TT..TT..TT...................TTTTT
+TTTTTTTT...................TT.T...................TT..TTT.TT.E.................TTTTT
+TTTTTTTT...........................................TT.TT"T".....................TTTT
+TTTTTTTT...............................................TT""T....................TTTT
+TTTT...................................................T""".".................."TTTT
+TTT....................................................."""".E.................TTTTT
+TT........................................T.T..........#"#"""................."TTTTT
+TT........P............................E.T...T..........#""""".................TTTTT
+TT...........T.........................TTTT............."""""""..............X.TTTTT
+TT............T.......................T..TTTTT.TE.........""""""...............TTTTT
+TT...........T.....#....................TT.TTT.............."""".........S....TTTTTT
+TT.............T..#...#.........E......TTTTTTT................"...............TT.TTT
+TT...................##..TT...T...........TTTT.T.............................TT..TTT
+TTT................#.#.#TTTT....T.......T.TTTTT..............................T...TTT
+TTTT...............#..#.TTTTTTTT........TT.TTTT..........................T....TTTTTT
+TTTTTTTT............###TTTT.TT..T""....................................TTT.TTTTTTTTT
+TTTTTTTT...........""....TT.TTTTTT".....................................TT.TTTTTTTTT
+TTTTTTTT.........."""....T.TT.TT"T........S............................TT.TTTTTT..TT
+TTTTTTTT.........""".TT"TT.TT"""TT."".................................T....TTTT....T
+TTTTTTT.........."""S"TTTT.TT.T""".""................................TTT."TTTTTT..T.
+TTTTTTT..........."""TTTTT.....T..............................."".".T.T".T"TTTTTTT.T
+TTTTTTT.........."""".T"E......................................"""T"T"TT.""TTTTTTTTT
+TTTTTT..........."""""TTT...................##................""""TTTT"""""TTTTTTTTT
+TTTTTT...........""""""....................#.#.....E..........."".T".."""""TTTTTTTTT
+TTTTT.T............"......................#.###...............T"".".T"T."""TTTTTTTTT
+TTTTT.T......................................#................TTTTT."...E."TTTTTTTTT
+TTTTT....................#..#.##........TTTTTTT...........TTTTTTTTTT......"TTTTTTTTT
+TTTTT.T...................#.#..#....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....TTTTTTTTT
+TTTTT..TTTT..............#.......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTT
+TTTTTTTTTTTTTTTTT..............TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTT.....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT#TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.#TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

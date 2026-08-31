@@ -70,14 +70,31 @@ export const THEATRES: Theatre[] = [
   { id: 'arctic', name: 'The Ice', note: 'Cold ground, worse footing', themes: ['arctic'] },
 ];
 
+/**
+ * Where the test maps go: last, under their own heading, and never in front of
+ * a player.
+ *
+ * They were landing in whichever theatre matched their theme, which put a test
+ * range in the middle of the campaign looking like a mission. A group of their
+ * own says what they are, and `fetchLevels` has already dropped them entirely
+ * from a production build -- this only decides where they sit when they *are*
+ * listed.
+ */
+const TEST_THEATRE: Theatre = {
+  id: 'test', name: 'Test Range', note: 'Dev only — not part of the campaign', themes: [],
+};
+
 /** Buckets levels into theatres, dropping any theatre nothing landed in. */
 export function groupByTheatre(levels: LevelInfo[]): Array<{ theatre: Theatre; levels: LevelInfo[] }> {
   const groups = THEATRES.map((theatre) => ({ theatre, levels: [] as LevelInfo[] }));
+  const tests = { theatre: TEST_THEATRE, levels: [] as LevelInfo[] };
   const fallback = groups[groups.length - 1];
   for (const level of levels) {
+    if (level.dev) { tests.levels.push(level); continue; }
     (groups.find((g) => g.theatre.themes.includes(level.theme)) ?? fallback).levels.push(level);
   }
-  return groups.filter((g) => g.levels.length > 0);
+  // Always last, whatever theme the test maps happen to use.
+  return [...groups, tests].filter((g) => g.levels.length > 0);
 }
 
 /** Long, tall or roughly square -- worth showing, since it changes how it plays. */

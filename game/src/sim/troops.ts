@@ -3,9 +3,10 @@ import { RANKS, rankTier } from './campaign.js';
 import { sfxOrder } from '../shell/audio.js';
 import { buildingAt } from './buildings.js';
 import { fire } from './combat.js';
-import { hasLineOfFire, hasLineOfSight, nearestWalkable } from './map.js';
-import { buildFlowField, circleBlocked, flowTarget } from './pathfind.js';
+import { hasLineOfFire, hasLineOfSight, nearestWalkable, tileAtWorld } from './map.js';
+import { buildFlowField, circleBlocked, flowTarget, hasWalkableLine } from './pathfind.js';
 import { assignSlots, formationSlots, moveWithCollision, soldierSteerOpts, steer, stumble, unstick } from './steering.js';
+import { TILES } from './tiles.js';
 import { SoldierState } from '../types.js';
 import type { Actor, Building, Soldier, Vec2 } from '../types.js';
 import type { World } from './world.js';
@@ -25,6 +26,10 @@ const SLOT_HANDOFF = 40;
 const ARRIVED = 2.5;
 /** The squad target has to move this far before the field is rebuilt. */
 const REPATH_DISTANCE = 20;
+/** Below this speed while trying to reach a slot counts as no progress. */
+const STUCK_SPEED = 6;
+/** Seconds of no progress before a soldier is given a different slot. */
+const STUCK_TRIGGER = 0.7;
 
 /** Whatever the click landed on: an enemy, a building, or bare ground. */
 export type ClickTarget =
@@ -42,9 +47,10 @@ export function classifyClick(world: World, p: Vec2, slack = 9): ClickTarget {
   }
   if (best) return { kind: 'enemy', actor: best };
 
-  // Clicking a standing building is an order to shoot at it.
+  // Clicking a standing building is an order to shoot at it -- unless it is the
+  // one the mission is lost without, in which case it is somewhere to stand.
   const building = buildingAt(world, p.x, p.y, 2);
-  if (building) return { kind: 'building', building };
+  if (building && building.role !== 'protect') return { kind: 'building', building };
 
   return { kind: 'ground' };
 }
@@ -108,17 +114,70 @@ export function orderDemolish(world: World, building: Building): void {
 function assignFormation(world: World, centre: Vec2): void {
   const living = world.soldiers.filter((s) => s.alive);
   const spacing = CONFIG.soldier.formationSpacing;
-  // Over-generate, then drop any slot sitting in scenery.
+  const jitter = CONFIG.soldier.formationJitter;
+
+  /*
+   * The ring, roughened.
+   *
+   * A clean ring of slots put six men down in a shape you could measure with a
+   * compass, identical every time the same spot was clicked -- which reads as a
+   * parade rather than a squad taking a position. The offset is rolled per
+   * order rather than per soldier so that clicking the same place twice gives a
+   * different arrangement, which is what the owner actually asked for.
+   */
   const candidates = formationSlots(centre, living.length * 3, spacing)
+    .map((p) => ({
+      x: p.x + (Math.random() * 2 - 1) * jitter,
+      y: p.y + (Math.random() * 2 - 1) * jitter,
+    }))
     .filter((p) => !circleBlocked(world.map, p.x, p.y, CONFIG.soldier.radius))
     .slice(0, Math.max(living.length, 1));
 
   if (candidates.length === 0) {
-    for (const s of living) s.slot = { ...centre };
+    for (const s of living) { s.slot = { ...centre }; s.slotStuck = 0; }
     return;
   }
   const assigned = assignSlots(living, candidates);
-  for (const s of living) s.slot = assigned.get(s) ?? { ...centre };
+  for (const s of living) {
+    s.slot = assigned.get(s) ?? { ...centre };
+    s.slotStuck = 0;
+  }
+}
+
+/**
+ * A different slot for a man who cannot reach the one he was given.
+ *
+ * Arrival slots are drawn as a ring around the click without knowing what is
+ * standing there, so ordering a squad into a treeline hands somebody a slot
+ * inside a trunk, and he shoves at it until another order arrives. This looks
+ * for somewhere he can actually stand *and actually walk to*, and prefers cover
+ * while it is looking -- which is the other half of what the owner asked for:
+ * clicking trees should put men between the trunks, not in a line at the edge.
+ */
+function reslot(world: World, s: Soldier): void {
+  const spacing = CONFIG.soldier.formationSpacing;
+  const goal = world.orderGoal ?? s.pos;
+  let best: Vec2 | null = null;
+  let bestScore = -Infinity;
+
+  for (let i = 0; i < 14; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = spacing * (0.5 + Math.random() * 2);
+    const p = { x: goal.x + Math.cos(a) * r, y: goal.y + Math.sin(a) * r };
+    if (circleBlocked(world.map, p.x, p.y, s.radius)) continue;
+    // Reachable in a straight line from where he is now: a slot he can see is
+    // a slot he will not get wedged on the way to.
+    if (!hasWalkableLine(world.map, s.pos, p, s.radius)) continue;
+
+    // Nearer the order is better; cover is better still.
+    const d = Math.hypot(p.x - goal.x, p.y - goal.y);
+    const inCover = TILES[tileAtWorld(world.map, p.x, p.y)].blocksSight;
+    const score = -d + (inCover ? spacing * 1.5 : 0);
+    if (score > bestScore) { bestScore = score; best = p; }
+  }
+
+  s.slotStuck = 0;
+  if (best) s.slot = best;
 }
 
 export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null): void {
@@ -157,6 +216,15 @@ export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null
     steer(s, moveTarget, world.hash, world.map, soldierSteerOpts, dt);
     moveWithCollision(s, world.map, dt);
     unstick(s, world.map);
+
+    // Trying to reach a slot and getting nowhere: give him a different one
+    // rather than letting him shove at a tree until the next order.
+    if (moveTarget && s.slot && Math.hypot(s.vel.x, s.vel.y) < STUCK_SPEED) {
+      s.slotStuck += dt;
+      if (s.slotStuck > STUCK_TRIGGER) reslot(world, s);
+    } else if (s.slotStuck > 0) {
+      s.slotStuck = Math.max(0, s.slotStuck - dt * 2);
+    }
 
     if (s.wading && Math.random() < 0.08 && Math.hypot(s.vel.x, s.vel.y) > 8) {
       world.fx.splash(s.pos);

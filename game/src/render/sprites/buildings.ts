@@ -283,6 +283,123 @@ export function bakeCabin(stage: number): Sprite {
   return c;
 }
 
+/**
+ * The outpost: the one building on the map that is *yours*.
+ *
+ * It borrowed the factory sprite to begin with, which was wrong twice over. The
+ * factory is 52x54 against a hut's 36, so it loomed over a two-tile footprint;
+ * and it is a chimney, windows and flat industrial concrete, which says
+ * "somewhere things are made" when the job is to say "somewhere men are dug
+ * in". A player told to defend it read it as another thing to level.
+ *
+ * So: sandbags, not walls. A low bunker of stacked bags with a firing slit and
+ * a timber roof, at the same scale as the buildings it stands among, with the
+ * squad's own green on a flag over it -- which is the fastest way a top-down
+ * sprite can say whose it is, and the reason the original's own tents read as
+ * friendly at a glance.
+ */
+export function bakeOutpost(stage: number): Sprite {
+  const { c, g } = makeCanvas(38, 34);
+  const rnd = hashRnd(2207 + stage * 37);
+
+  if (stage >= 3) {
+    // Overrun: the bags burst and spilled, the roof gone, the flag down. Ash
+    // grey like every other wreck in the game, so "dealt with" reads the same
+    // whatever it used to be.
+    for (let y = 20; y < 31; y++) {
+      for (let x = 4; x < 34; x++) {
+        if (rnd() < 0.28) continue;
+        const lit = -((x - 19) * 0.3 + (y - 26) * 0.8) / 9;
+        px(g, x, y, lit > 0.35 ? '#8e8e88' : lit > 0 ? '#6e6e68' : rnd() < 0.3 ? '#3a3a38' : '#4e4e4a');
+      }
+    }
+    // Spilled sand from the burst bags, and charred timbers through it.
+    for (let i = 0; i < 40; i++) px(g, 5 + rnd() * 28, 22 + rnd() * 8, rnd() < 0.5 ? '#8a7f52' : '#6d6440');
+    for (let i = 0; i < 14; i++) px(g, 8 + i, 27 - ((i * 0.3) | 0), '#1c1a16');
+    for (let i = 0; i < 10; i++) px(g, 26 - i, 24 + ((i * 0.4) | 0), '#141310');
+    for (let i = 0; i < 6; i++) px(g, 10 + rnd() * 18, 23 + rnd() * 6, rnd() < 0.5 ? '#8a3410' : '#5c2008');
+    addOutline(c, '#141310');
+    return c;
+  }
+
+  /*
+   * Silhouette first.
+   *
+   * The first attempt was a rectangle of bags under a rectangle of timber, and
+   * it read as a crate. Every other building in this game is recognisable by
+   * its outline alone -- the hut is a disc, the cabin a pitch -- so this one
+   * steps *outward* as it comes down: a narrow corrugated roof, a bag wall
+   * wider than it, and a spilled apron of bags wider still. Low, splayed and
+   * dug in, which is the shape of a thing meant to be held.
+   */
+
+  // --- the bag courses, each row a little wider than the one above it
+  for (let row = 0; row < 5; row++) {
+    const y = 17 + row * 3;
+    const spread = row;                       // steps out as it descends
+    const x0 = 6 - spread;
+    const x1 = 32 + spread;
+    const offset = (row % 2) * 2;
+    for (let x = x0 + offset; x < x1; x += 4) {
+      const tone = (x * 3 + row * 7) % 3;
+      const body = tone === 0 ? '#6d6440' : tone === 1 ? '#7a7148' : '#5e5636';
+      rect(g, x, y, 4, 3, body);
+      rect(g, x, y, 4, 1, '#8a7f52');         // each bag lit along its top
+      px(g, x + 3, y + 2, '#4e4830');         // the seam between two bags
+    }
+  }
+
+  // --- corrugated roof, narrower than the wall so the bags read beneath it
+  for (let y = 9; y < 17; y++) {
+    const inset = Math.round((16 - y) * 0.35);
+    for (let x = 9 + inset; x < 29 - inset; x++) {
+      // Grooves, not grain: alternating columns is what says corrugated iron,
+      // and it is the one surface that reads the same on snow and on jungle.
+      const groove = x % 3 === 0;
+      px(g, x, y, y < 11 ? (groove ? '#6a7076' : '#878e94')
+        : groove ? '#3c4248' : y < 14 ? '#5a6066' : '#4a5056');
+    }
+  }
+  for (let x = 9; x < 29; x++) px(g, x, 9, '#9aa2a8');       // lit ridge
+  for (let x = 8; x < 30; x += 2) px(g, x, 16, '#20242a');   // eave shadow
+
+  // --- the firing slit, which is what makes it a position and not a shed
+  rect(g, 14, 19, 10, 3, '#0a0c08');
+  rect(g, 14, 19, 10, 1, '#2e2c20');
+
+  // --- sandbags spilled around the base, breaking the footprint's straight line
+  for (let i = 0; i < 14; i++) {
+    const x = 3 + ((rnd() * 32) | 0);
+    const y = 29 + ((rnd() * 2) | 0);
+    rect(g, x, y, 3, 2, rnd() < 0.5 ? '#6d6440' : '#5e5636');
+    px(g, x, y, '#8a7f52');
+  }
+
+  // --- the flag: the squad's green, on the only building that is theirs
+  rect(g, 30, 1, 1, 10, '#2e2a1e');
+  if (stage < 2) {
+    // A pennant rather than a rectangle -- it reads as cloth at seven pixels.
+    rect(g, 31, 2, 6, 3, '#4a6a2a');
+    rect(g, 31, 2, 6, 1, '#6d9a4a');
+    px(g, 36, 5, '#4a6a2a');
+    px(g, 35, 5, '#3a5220');
+  }
+
+  if (stage >= 1) {
+    // Bags burst open, spilling sand down the wall.
+    for (let i = 0; i < 18; i++) px(g, 6 + rnd() * 26, 18 + rnd() * 13, rnd() < 0.5 ? '#4e4830' : '#3a3626');
+    for (let i = 0; i < 10; i++) px(g, 8 + rnd() * 22, 28 + rnd() * 3, '#8a7f52');
+  }
+  if (stage >= 2) {
+    // Roof holed through, and the flag shot away.
+    rect(g, 8, 11, 7, 5, '#100e08');
+    for (let i = 0; i < 26; i++) px(g, 4 + rnd() * 30, 10 + rnd() * 20, rnd() < 0.5 ? '#1c1610' : '#2e2418');
+  }
+
+  addOutline(c, '#0f120c');
+  return c;
+}
+
 /** A concrete blockhouse: the objective on demolition maps. */
 export function bakeFactory(stage: number): Sprite {
   const { c, g } = makeCanvas(52, 54);

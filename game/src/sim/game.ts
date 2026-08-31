@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { sfxDenied, sfxLose, sfxWin } from '../shell/audio.js';
-import { stepBuildings } from './buildings.js';
+import { stepBuildings, stepWaves } from './buildings.js';
 import { stepBullets, stepDying, stepGrenades, throwGrenade } from './combat.js';
 import { stepEnemies } from './enemies.js';
 import { stepHostages } from './hostages.js';
@@ -116,6 +116,9 @@ export class Game {
 
     stepHostages(w, dt);
     stepBuildings(w, dt);
+    // After the buildings, so a hut levelled this step is already missing from
+    // the wave it would otherwise have contributed to.
+    stepWaves(w, dt);
     stepBullets(w, dt);
     stepGrenades(w, dt);
     stepDying(w, dt);

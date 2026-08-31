@@ -167,7 +167,17 @@ Rookie is not measurably harder than it is today.
 
 ---
 
-## Batch F — the squad
+## Batch F — the squad — **DONE**
+
+Verified in a browser: two orders to the same point produce different slots and
+none inside scenery; a man handed a slot inside a tree re-slots to reachable
+ground having moved nineteen pixels rather than shoving at the trunk; Lone Wolf
+fields one man with one plate in the sidebar.
+
+Two dev maps rather than one, and a group of their own at the bottom of the
+mission list -- the Shooting Range is flat ground with targets on it, so a
+failure there is the mechanic and never the scenery. The playtest uses it as a
+fixture and is thirty-seven checks now.
 
 ### F1. Formations stop being a lattice
 
@@ -213,7 +223,7 @@ flexible, perhaps in the map level stuff, meaning we can generate different
 types of maps with different mechanisms easily."* Map headers are already
 free-form `key: value`, so this is additive.
 
-### G1. Buildings get a role
+### G1. Buildings get a role — **DONE**
 
 Today every building spawns reinforcements, which is why Last Stand asks you to
 defend a hut that is producing the men attacking you. A `buildings:` header
@@ -223,7 +233,7 @@ falls you lose), `neutral` (scenery with hit points).
 **Done when:** Last Stand's outpost produces nobody, and levelling it loses the
 mission.
 
-### G2. The enemy attacks what you are protecting
+### G2. The enemy attacks what you are protecting — **DONE**
 
 Enemies with no target and a `protect` building on the map advance on it and
 shoot it. This is what makes "hold out" mean something other than "stand still".
@@ -231,7 +241,21 @@ shoot it. This is what makes "hold out" mean something other than "stand still".
 **Done when:** left alone on Last Stand, the outpost visibly takes damage and
 will eventually fall.
 
-### G3. Waves — *decided*
+**Verified.** The centre building is an outpost (`O`, its own tile) with 140hp
+and no reinforcements; the eight huts round it still spawn. Seventeen of
+eighteen enemies close on it, and left alone it went 140 to 50hp in twenty-two
+seconds; levelling it loses the mission immediately, mid-clock.
+
+Three things fell out of building it that were not in the brief. The outpost had
+been borrowing the *factory* sprite, which is half again as large as a hut and
+has a chimney, so it now has its own: sandbags, a corrugated roof and the
+squad's green on a pennant. The failure panel said "the squad was wiped out"
+while six men stood watching their outpost come down. And the squad's own fire
+was damaging it -- the garrison besieges it, so your men shoot toward it, and
+every round that missed a man was costing you the map. Player rounds and blasts
+no longer touch a `protect` building; theirs still do.
+
+### G3. Waves — **DONE**
 
 **Waves come out of the huts.** Not the map edge, not thin air: a wave is the
 garrison buildings emptying themselves at you, which means **levelling the huts
@@ -252,6 +276,23 @@ rather than waiting to be provoked.
 between, not a static garrison; destroying a hut visibly reduces the next wave;
 destroying all of them ends them entirely; the HUD says which wave is coming;
 and no wave spawns inside the squad's view.
+
+**Verified**, driven in a browser against the real game. Last Stand carries
+`waves: 5@22`. A wave is `maxSpawned` men scaled by the fraction of the garrison
+still standing, drawn round-robin out of the huts' own doorways: Rookie sends
+three every twenty-four seconds, Elite nine every sixteen. Levelling four of the
+eight huts cut the next wave from three men to two; levelling all eight sent
+nobody, twice, while the schedule kept counting down rather than stalling. The
+proximity trickle is off on a wave map -- the squad stood beside a hut for forty
+seconds and nothing came out of it. Every man in a wave leaves in Investigate
+walking at the squad, so a wave hunts instead of waiting to be found. And no
+doorway a living soldier can both see and is within 190px of is ever used: with
+the squad in the open beside the last hut standing, twelve consecutive waves
+came out of the far side, none out of the side facing them.
+
+Difficulty carries this mostly through *size*, not schedule (`CONFIG.wave.pace`):
+applying `spawnInterval` whole would have landed all five Elite waves inside the
+first third of a 120-second mission and left the rest of the clock silent.
 
 ### G4. A covert objective — *and a mission for it*
 

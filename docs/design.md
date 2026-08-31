@@ -32,7 +32,7 @@ sim/     the mission, and nothing that draws it
   troops.ts ──── player squad state machine
   enemies.ts ─── enemy AI (rifle / sniper / bazooka)
   combat.ts ──── bullets, rockets, grenades, blasts, dying
-  buildings.ts ─ destructible huts that spawn reinforcements
+  buildings.ts ─ destructible huts, reinforcements and waves
   hostages.ts ── freeing, following, delivering
   mines.ts ───── triggering, fuses, chain detonation
   pickups.ts ─── crate collection
@@ -162,6 +162,12 @@ hook, which is how `rescue` fails the instant a hostage dies.
   the squad is within range, capped so a village cannot spiral. When it
   collapses its tiles become walkable rubble — the level's shape changes
   permanently, which is why `map.pristine` exists to restore it on restart.
+  A map with a `waves:` header spends the same buildings on a schedule instead:
+  the garrison empties itself in bursts out of those same doorways, sized by how
+  many of them are still standing, so levelling the huts is how the player turns
+  the attacks off. The proximity trickle is switched off on those maps, since
+  leaving it running underneath would fill in the lulls that make a wave read as
+  a wave.
 - **Hostages** ([`hostages.ts`](../game/src/hostages.ts)) deliberately do *not*
   pathfind: they trail their nearest escort with simple seek-and-slide. Anything
   cleverer reads as another squad member rather than someone being led out.

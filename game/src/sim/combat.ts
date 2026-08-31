@@ -104,7 +104,9 @@ export function stepBullets(world: World, dt: number): void {
     if (hitTerrain) {
       // A round that stopped on a building damages it; on a tree it just chips.
       const struck = buildingAt(world, b.pos.x, b.pos.y, 3);
-      if (struck) damageBuilding(world, struck, b.blast > 0 ? CONFIG.building.blastDamage : b.buildingDamage);
+      if (struck && !friendlyToKeep(struck, b.faction)) {
+        damageBuilding(world, struck, b.blast > 0 ? CONFIG.building.blastDamage : b.buildingDamage);
+      }
       if (b.blast > 0) detonateRound(world, b);
       else world.fx.impact(b.pos);
       // Where the round *landed*, not where it was fired from. This is the
@@ -119,7 +121,20 @@ export function stepBullets(world: World, dt: number): void {
   }
 }
 
-const detonateRound = (world: World, b: Bullet): void => { explode(world, b.pos, b.blast); };
+const detonateRound = (world: World, b: Bullet): void => { explode(world, b.pos, b.blast, b.faction); };
+
+/**
+ * Is this round the squad's own, arriving at the building they are defending?
+ *
+ * The garrison besieges the outpost, so the squad shoots *toward* it, and every
+ * round that misses a man was landing on the thing the mission is lost without.
+ * Standing near your own objective was quietly costing you the map -- and
+ * clicking it ordered a demolition, which is worse. Their fire still damages it;
+ * that is the siege. Yours does not.
+ */
+function friendlyToKeep(struck: { role: string }, by: Faction | undefined): boolean {
+  return struck.role === 'protect' && by === Faction.Player;
+}
 
 /**
  * Does this round's path cross the body standing at `pos`?
@@ -239,7 +254,7 @@ export function damage(world: World, actor: Actor, amount = 1): void {
  * teleport, so the ordinary collision step carries it -- which is what stops a
  * man being flung through a wall or out into deep water.
  */
-export function explode(world: World, pos: Vec2, radius: number): void {
+export function explode(world: World, pos: Vec2, radius: number, by?: Faction): void {
   world.fx.explosion(pos);
   sfxExplosion();
   world.shake += CONFIG.fx.screenShake;
@@ -269,7 +284,9 @@ export function explode(world: World, pos: Vec2, radius: number): void {
   }
   // Explosives are how buildings come down.
   const struck = buildingAt(world, pos.x, pos.y, radius);
-  if (struck) damageBuilding(world, struck, CONFIG.building.blastDamage);
+  // A grenade thrown at men swarming your own outpost must not be the thing
+  // that levels it. Theirs still can; a barrel going up still can.
+  if (struck && !friendlyToKeep(struck, by)) damageBuilding(world, struck, CONFIG.building.blastDamage);
 
   // Crates and mines within the blast go up too -- chain them for a big clear.
   for (const crate of world.crates) {
@@ -311,7 +328,7 @@ export function stepGrenades(world: World, dt: number): void {
     g.prev.y = g.pos.y;
     g.t += dt / g.duration;
     if (g.t >= 1) {
-      explode(world, g.to, CONFIG.grenade.blastRadius);
+      explode(world, g.to, CONFIG.grenade.blastRadius, g.faction);
       world.grenades.splice(i, 1);
       continue;
     }

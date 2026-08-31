@@ -64,6 +64,15 @@ export interface Soldier extends Actor {
   /** Personal arrival slot, so the herd spreads out instead of piling on the click. */
   slot: Vec2 | null;
   /**
+   * Rising while he is trying to reach his slot and getting nowhere.
+   *
+   * A ring of arrival slots is drawn without knowing what is standing in it, so
+   * ordering a squad into a treeline hands two or three men a slot inside a
+   * trunk. They would shove at it forever. Past a threshold he is given a
+   * different one -- see `reslot`.
+   */
+  slotStuck: number;
+  /**
    * The name on the roster. The original's cruelty is entirely in this field:
    * a nameless casualty is a number, and a named one is Jools.
    */
@@ -225,7 +234,17 @@ export interface Hostage {
 /** A hut or factory: solid until levelled, and a source of reinforcements. */
 export interface Building {
   id: number;
-  kind: 'hut' | 'factory';
+  kind: 'hut' | 'factory' | 'outpost';
+  /**
+   * What this building is *for*, which is a mission mechanic rather than a
+   * shape.
+   *
+   * Every building used to reinforce, which is why Last Stand asked the player
+   * to defend an outpost that was producing the men attacking him. A `spawner`
+   * feeds the garrison; a `protect` building is the player's, and losing it
+   * loses the mission; `neutral` is scenery with hit points.
+   */
+  role: 'spawner' | 'protect' | 'neutral';
   tiles: Array<[number, number]>;
   centre: Vec2;
   x0: number;

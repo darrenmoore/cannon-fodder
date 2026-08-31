@@ -63,6 +63,17 @@
 
     <div id="hill" hidden><div id="hill-inner"></div></div>
 
+    <!--
+      A floor under the build-time flag.
+
+      `__DEV__` is substituted by esbuild, and a bundle built without that
+      define would otherwise hit an undefined identifier and die at boot with a
+      black screen -- which is exactly what a long-running `npm run dev` does
+      after the flag is added, since its esbuild context predates it. Declaring
+      the global first means an unsubstituted bundle simply runs without dev
+      features. When the define *is* present nothing reads this.
+    -->
+    <script>globalThis.__DEV__ = globalThis.__DEV__ ?? false;</script>
     <script type="module" src="/bundle.js"></script>
   </body>
 </html>

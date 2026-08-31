@@ -23,7 +23,7 @@ const DATA_DIR = fileURLToPath(new URL('../../data/', import.meta.url));
 // ---------------------------------------------------------------- helpers
 
 const GRASS = '.', SAND = ',', ROAD = '_', TREE = 'T', WATER = '~', DEEP = 'W',
-      BRIDGE = '=', ROCK = '#', HUT = 'h', FACTORY = 'F', FENCE = '+',
+      BRIDGE = '=', ROCK = '#', HUT = 'h', FACTORY = 'F', OUTPOST = 'O', FENCE = '+',
       TALL = '"', QUICK = '%', ICE = 'i', TENT = 'A';
 
 /** Mulberry32: small, fast, and identical across runs. */
@@ -199,7 +199,7 @@ class Grid {
   /** Flood fill of reachable tiles from a start, used for the sanity checks. */
   reachable(sx, sy) {
     const seen = new Set();
-    const walkable = (x, y) => ![TREE, ROCK, HUT, FACTORY, FENCE, DEEP].includes(this.get(x, y));
+    const walkable = (x, y) => ![TREE, ROCK, HUT, FACTORY, OUTPOST, FENCE, DEEP].includes(this.get(x, y));
     if (!walkable(sx, sy)) return seen;
     const stack = [[sx, sy]];
     seen.add(`${sx},${sy}`);
@@ -448,6 +448,39 @@ class Placer {
  */
 const BUILDERS = {
   /**
+   * The shooting range. Dev only.
+   *
+   * Deliberately the emptiest map in the game: flat ground, no cover to hide
+   * the result behind, a line of huts to level and a line of men to shoot. When
+   * the question is "does hitting things work" -- hitboxes, blast falloff,
+   * buildings coming down, a death animation -- every tree is something to rule
+   * out first. The test range next door has one of everything; this has nothing
+   * except the thing under test.
+   */
+  'test-shooting'(g, place) {
+    g.frame(ROCK, { min: 2, max: 2 });
+
+    // Squad on the left, everything to shoot on the right, nothing between.
+    const spawn = clearing(g, 8, Math.floor(g.h / 2), 5);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    // A row of huts, far enough apart that one grenade cannot reach two.
+    for (let i = 0; i < 3; i++) building(g, 26 + i * 10, 5, 2, 2, HUT);
+
+    // Men at increasing range, so a shot can be judged against distance.
+    for (let i = 0; i < 6; i++) place.put('E', 24 + i * 6, Math.floor(g.h / 2) + (i % 2 ? 4 : -4), 4, 2);
+    place.put('S', g.w - 10, 6, 4);
+    place.put('B', g.w - 10, g.h - 8, 4);
+
+    // Something to blow up, and something to pick up.
+    place.put('o', 20, Math.floor(g.h / 2) - 8, 3);
+    place.put('o', 21, Math.floor(g.h / 2) + 8, 3);
+    place.put('c', 14, Math.floor(g.h / 2), 3);
+  },
+
+  /**
    * The test range. Dev only -- `dev: true` in its header keeps it out of a
    * real player's mission list, and `__DEV__` drops the debug panel that goes
    * with it from the production bundle entirely.
@@ -500,6 +533,35 @@ const BUILDERS = {
     place.put('o', 46, 19, 3);
     place.put('c', 12, 6, 3);
     place.put('H', 60, 24, 3);
+  },
+
+  /**
+   * 09 -- one man, and no squad to hide behind.
+   *
+   * Everything this game teaches is about a herd: spread out, use the treeline,
+   * accept losses. This takes the herd away. A single soldier cannot trade a
+   * man for ground, cannot lay down fire while somebody moves, and dies to one
+   * round like everyone else -- so the whole mission is about being somewhere
+   * they are not.
+   */
+  'lone-wolf'(g, place) {
+    g.frame(TREE, { min: 4, max: 10 });
+    forest(g, 26, [3, 6]);
+    scatter(g, TALL, 16, [3, 6]);
+    scatter(g, ROCK, 8, [1, 3]);
+
+    const spawn = clearing(g, 7, Math.floor(g.h / 2), 4);
+    squad(g, place, spawn, 1);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    // A long way to the pickup, with the ground between it and him held.
+    for (let i = 1; i <= 6; i++) {
+      const x = (g.w / 7) * i;
+      for (let k = 0; k < 2; k++) place.put('E', x, g.h * g.rnd(), 7, 4);
+      if (i % 2 === 0) place.put('S', x, g.h * g.rnd(), 6);
+    }
+    place.put('X', g.w - 8, Math.floor(g.h / 2), 4);
   },
 
   /** 01 -- the basics: move, take cover, engage. */
@@ -726,7 +788,9 @@ const BUILDERS = {
         g.paint(Math.round(cx + Math.cos(ang) * 9.5), Math.round(cy + Math.sin(ang) * 9.5), GRASS, [FENCE]);
       }
     }
-    building(g, cx - 1, cy - 1, 2, 2, HUT);
+    // The thing being held. An outpost rather than a hut: it is the squad's,
+    // it produces nobody, and the mission is lost if it comes down.
+    building(g, cx - 1, cy - 1, 2, 2, OUTPOST);
 
     // Inside the wire, on the near side of the hut. `squad` only clears the
     // four natural tile types, so the outpost's fence and hut survive it.
@@ -755,6 +819,18 @@ const BUILDERS = {
 // -------------------------------------------------------------- campaign
 
 const CAMPAIGN = [
+  {
+    id: 'test-shooting', dev: true, doctrine: 'garrison', order: 98, seed: 90210, w: 54, h: 34,
+    name: 'Shooting Range', theme: 'jungle', objective: 'eliminate',
+    mechanic: 'nothing but targets',
+    brief: 'Dev only. Flat ground, huts to level and men to shoot, and no cover to blame.',
+  },
+  {
+    id: 'lone-wolf', squad: 1, doctrine: 'patrol', order: 9, seed: 887701, w: 84, h: 52,
+    name: 'Lone Wolf', theme: 'jungle', objective: 'reach',
+    mechanic: 'one man',
+    brief: 'One soldier. No herd to hide in, and one hit is still all it takes.',
+  },
   {
     id: 'test-range', dev: true, doctrine: 'garrison', order: 99, seed: 40404, w: 66, h: 30,
     name: 'Test Range', theme: 'jungle', objective: 'eliminate',
@@ -805,9 +881,9 @@ const CAMPAIGN = [
   },
   {
     id: 'last-stand', doctrine: 'swarm', order: 8, seed: 502991, w: 76, h: 76, duration: 120,
-    name: 'Last Stand', theme: 'arctic', objective: 'survive',
+    name: 'Last Stand', theme: 'arctic', objective: 'survive', waves: '5@22',
     mechanic: 'holding out',
-    brief: 'Hold the outpost for two minutes. The huts around you never stop.',
+    brief: 'Hold the outpost for two minutes. Five waves come out of the huts -- level a hut and the next one is smaller.',
   },
 ];
 
@@ -834,6 +910,8 @@ function generate(spec) {
     `mechanic: ${spec.mechanic}`,
     `brief: ${spec.brief}`,
     ...(spec.dev ? ['dev: true'] : []),
+    ...(spec.squad ? [`squad: ${spec.squad}`] : []),
+    ...(spec.waves ? [`waves: ${spec.waves}`] : []),
     'tile: 16',
     ...(spec.duration ? [`duration: ${spec.duration}`] : []),
     '---',
@@ -857,7 +935,8 @@ function validate(spec, grid) {
   };
 
   const squad = find('P');
-  if (squad.length !== 6) problems.push(`expected 6 player spawns, found ${squad.length}`);
+  const want = spec.squad ?? 6;
+  if (squad.length !== want) problems.push(`expected ${want} player spawns, found ${squad.length}`);
   if (squad.length === 0) return problems;
 
   const reach = grid.reachable(squad[0].x, squad[0].y);

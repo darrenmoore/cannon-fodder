@@ -10,7 +10,9 @@ export type ObjectiveKind = 'eliminate' | 'demolish' | 'rescue' | 'reach' | 'sur
 
 /** A contiguous block of hut or factory tiles, grouped at parse time. */
 export interface BuildingSpec {
-  kind: 'hut' | 'factory';
+  kind: 'hut' | 'factory' | 'outpost';
+  /** Derived from the character: an outpost is the squad's to hold. */
+  role: 'spawner' | 'protect' | 'neutral';
   /** Tile coordinates the building occupies. */
   tiles: Array<[number, number]>;
   centre: Vec2;
@@ -19,6 +21,18 @@ export interface BuildingSpec {
   y0: number;
   w: number;
   h: number;
+}
+
+/**
+ * A mission that attacks in waves rather than reacting to being walked into.
+ *
+ * `waves: 5@22` -- five waves, twenty-two seconds apart. The men come out of
+ * the standing garrison buildings, so this is a schedule, not a headcount: what
+ * a wave is *worth* depends on how many huts the player has left standing.
+ */
+export interface WaveSpec {
+  count: number;
+  interval: number;
 }
 
 export interface GameMap {
@@ -41,11 +55,21 @@ export interface GameMap {
   doctrine: DoctrineId;
   /** Seconds to hold out, for `survive`. */
   duration: number;
+  /** Set by a `waves:` header; null on a map whose garrison merely reacts. */
+  waves: WaveSpec | null;
   /** One-line description of the mission's new idea, shown on the menu. */
   brief: string;
   mechanic: string;
 
   playerSpawns: Vec2[];
+  /**
+   * How many men this mission fields.
+   *
+   * Defaults to the number of `P` markers, which is what every campaign map
+   * relies on. A `squad:` header overrides it downward, so a mission can send
+   * one man into a place six would never get out of.
+   */
+  squadSize: number;
   enemySpawns: Vec2[];
   sniperSpawns: Vec2[];
   bazookaSpawns: Vec2[];
@@ -56,6 +80,16 @@ export interface GameMap {
   hostages: Vec2[];
   extraction: Vec2[];
   buildings: BuildingSpec[];
+}
+
+/** `5@22`, or a bare `5` to take the default interval. Anything else is off. */
+function parseWaves(src: string | undefined): WaveSpec | null {
+  if (!src) return null;
+  const m = /^(\d+)\s*(?:@\s*([\d.]+))?$/.exec(src.trim());
+  if (!m) return null;
+  const count = Number(m[1]);
+  if (count <= 0) return null;
+  return { count, interval: Number(m[2]) || CONFIG.wave.interval };
 }
 
 const OBJECTIVES: ObjectiveKind[] = ['eliminate', 'demolish', 'rescue', 'reach', 'survive'];
@@ -106,9 +140,11 @@ export function parseMap(src: string, id = 'level'): GameMap {
       : 'eliminate',
     doctrine: isDoctrineId(header.doctrine ?? '') ? (header.doctrine as DoctrineId) : 'garrison',
     duration: Number(header.duration) || 90,
+    waves: parseWaves(header.waves),
     brief: header.brief ?? '',
     mechanic: header.mechanic ?? '',
     playerSpawns: [],
+    squadSize: 0,
     enemySpawns: [],
     sniperSpawns: [],
     bazookaSpawns: [],
@@ -149,6 +185,12 @@ export function parseMap(src: string, id = 'level'): GameMap {
   }
 
   map.pristine = grid.slice();
+  // Declared size wins, clamped to the men the map actually has room for; with
+  // no header it is simply however many `P` markers were placed.
+  const declared = Number(header.squad) || 0;
+  map.squadSize = declared > 0
+    ? Math.min(declared, map.playerSpawns.length)
+    : map.playerSpawns.length;
   map.buildings = findBuildings(map);
   // Tents double as delivery/extraction points, so a rescue map only has to
   // draw one rather than also remembering to mark it with an X.
@@ -164,7 +206,7 @@ function findBuildings(map: GameMap): BuildingSpec[] {
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
       const t = tileAt(map, x, y);
-      if ((t !== Tile.Hut && t !== Tile.Factory) || seen[y * map.width + x]) continue;
+      if ((t !== Tile.Hut && t !== Tile.Factory && t !== Tile.Outpost) || seen[y * map.width + x]) continue;
 
       const tiles: Array<[number, number]> = [];
       const stack: Array<[number, number]> = [[x, y]];
@@ -189,8 +231,12 @@ function findBuildings(map: GameMap): BuildingSpec[] {
         }
       }
 
+      const kind = t === Tile.Factory ? 'factory' : t === Tile.Outpost ? 'outpost' : 'hut';
       out.push({
-        kind: t === Tile.Factory ? 'factory' : 'hut',
+        kind,
+        // The map says what a building is for by which character it is drawn
+        // with, so a mission's mechanics live in the mission file.
+        role: kind === 'outpost' ? 'protect' : 'spawner',
         tiles,
         centre: { x: ((x0 + x1) / 2 + 0.5) * map.tile, y: ((y0 + y1) / 2 + 0.5) * map.tile },
         x0, y0, w: x1 - x0 + 1, h: y1 - y0 + 1,

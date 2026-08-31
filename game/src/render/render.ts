@@ -286,7 +286,7 @@ export class Renderer {
     const huts = map.theme === 'arctic' ? this.atlas.cabin : this.atlas.hut;
     this.huts = huts;
     for (const b of world.buildings) {
-      const sprite = (b.kind === 'factory' ? this.atlas.factory : huts)[0];
+      const sprite = this.buildingSet(b.kind, huts)[0];
       const blockCx = (b.x0 + b.w / 2) * t;
       const blockBottom = (b.y0 + b.h) * t;
       // Offset well clear of the sprite's own footprint, or the building
@@ -640,6 +640,13 @@ export class Renderer {
     void camera;
   }
 
+  /** Which baked set a building draws from. Huts follow the mission's theme. */
+  private buildingSet(kind: Building['kind'], huts: Sprite[]): Sprite[] {
+    return kind === 'factory' ? this.atlas.factory
+      : kind === 'outpost' ? this.atlas.outpost
+        : huts;
+  }
+
   private drawScenery(item: SceneryItem, live?: Building): void {
     const ctx = this.ctx;
 
@@ -647,7 +654,7 @@ export class Renderer {
     // from live state rather than baked into the terrain like everything else.
     if (live) {
       const b = live;
-      const set = b.kind === 'factory' ? this.atlas.factory : this.huts;
+      const set = this.buildingSet(b.kind, this.huts);
       // Wrecked is stage 3; a standing building shows how close it is to it.
       const sprite = set[b.standing ? Math.min(2, b.damageStage) : 3];
       ctx.drawImage(sprite, Math.round(item.x), Math.round(item.y));

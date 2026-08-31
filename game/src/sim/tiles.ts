@@ -24,6 +24,8 @@ export enum Tile {
   Rubble = 13,
   Factory = 14,
   Tent = 15,
+  /** A building the squad has to keep standing. See `Building.role`. */
+  Outpost = 16,
 }
 
 export interface TileDef {
@@ -64,6 +66,7 @@ export const TILES: Record<Tile, TileDef> = {
   [Tile.Tree]:      def(Tile.Tree, 'tree', '#3d6624', '#345a1e', { solid: true, blocksSight: true, blocksShots: true, canopy: true, sway: true }),
   [Tile.Rock]:      def(Tile.Rock, 'rock', '#6b6f66', '#7b8076', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
   [Tile.Hut]:       def(Tile.Hut, 'hut', '#8d5a2b', '#7c4e24', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
+  [Tile.Outpost]:   def(Tile.Outpost, 'outpost', '#6a6a5e', '#7a7a6c', { solid: true, blocksSight: true, blocksShots: true }),
   [Tile.Factory]:   def(Tile.Factory, 'factory', '#6d6f74', '#5e6065', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
   [Tile.Fence]:     def(Tile.Fence, 'fence', '#7a6440', '#6a5636', { solid: true, blocksShots: true }),
   [Tile.Rubble]:    def(Tile.Rubble, 'rubble', '#5c5348', '#6a6055', { speed: 0.8 }),
@@ -97,6 +100,7 @@ export const LEGEND: Record<string, Tile> = {
   'i': Tile.Ice,
   ':': Tile.Rubble,
   'A': Tile.Tent,
+  'O': Tile.Outpost,
 };
 
 /** Markers that spawn something and leave the named terrain behind. */

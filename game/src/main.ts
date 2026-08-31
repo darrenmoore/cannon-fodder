@@ -179,8 +179,10 @@ async function boot(): Promise<void> {
     (dt) => {
       controls.update(game?.world ?? null, camera.isManual);
       // A sheet is a modal: the world behind it holds still rather than being
-      // fought blind through a panel.
-      if (!game || sheetOpen()) return;
+      // fought blind through a panel. The briefing is the same promise made at
+      // the other end of a mission -- it is a title card, not a head start for
+      // the garrison, so nothing moves until the player has put it away.
+      if (!game || sheetOpen() || hud.briefingUp) return;
       game.step(dt);
       hud.update(game.world);
     },
@@ -211,7 +213,7 @@ async function boot(): Promise<void> {
 
     // Asked again on every restart, so a replay fields the roster as it stands
     // rather than the one this mission opened with.
-    const roster = (): ReturnType<typeof deploy> => deploy(campaign, map.playerSpawns.length);
+    const roster = (): ReturnType<typeof deploy> => deploy(campaign, map.squadSize);
 
     game = new Game(map, camera, renderer, input, difficulty, roster);
     missionStarted(info.id, difficulty);

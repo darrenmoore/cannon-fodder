@@ -88,6 +88,13 @@ export const CONFIG = {
      * so anything under about sixteen has them overlapping on screen.
      */
     formationSpacing: 18,
+    /**
+     * How far a slot is nudged off the ring, in world pixels.
+     *
+     * Enough that six men never land in a shape you could measure with a
+     * compass; not so much that the formation stops reading as one.
+     */
+    formationJitter: 5,
     /** Steering responsiveness. Higher = less momentum, more arcade. */
     accel: 900,
     /** Acceleration multiplier on ice -- low means long, sliding turns. */
@@ -301,6 +308,25 @@ export const CONFIG = {
     maxSpawned: 3,
     /** It only reinforces when the squad is this close. */
     spawnAggroRange: 260,
+  },
+
+  wave: {
+    /** Quiet at the top of the mission, so it does not open with a rush. */
+    lead: 10,
+    /** Gap between waves when a map names a count but not an interval. */
+    interval: 22,
+    /**
+     * How much of the interval difficulty is allowed to move.
+     *
+     * `levers.spawnInterval` runs from about 1.7 down to 0.3, and applying it
+     * whole would land every Elite wave in the first third of the mission and
+     * leave the rest of the clock silent. Blending it keeps the schedule
+     * recognisable at every setting -- Rookie waits a little longer, Elite a
+     * little less -- and lets wave *size* carry the difficulty instead.
+     */
+    pace: 0.4,
+    /** A doorway this close to a living soldier is not used to spawn a wave. */
+    hideRadius: 190,
   },
 
   hostage: {

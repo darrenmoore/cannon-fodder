@@ -1,6 +1,7 @@
 import { DIFFICULTIES } from '../sim/difficulty.js';
 import { OBJECTIVE_TEXT } from '../sim/objectives.js';
 import { formatTime, rankName, rankShort, rankTier } from '../sim/campaign.js';
+import { protectedBuilding } from '../sim/objectives.js';
 import { button, fill, heading, meter, plate, readout } from './ui.js';
 import { Phase } from '../types.js';
 import type { Aftermath, MissionRecord } from '../sim/campaign.js';
@@ -43,6 +44,16 @@ export class Hud {
   private lastGrenades = -1;
   /** While the briefing banner is up, `update` leaves the overlay alone. */
   private briefing = false;
+
+  /**
+   * True while the player is still reading the briefing.
+   *
+   * The shell holds the simulation still for exactly as long as this is set. A
+   * mission that starts behind its own title screen spends the player's first
+   * seconds without him: men walk, the survive clock runs down, and on a bad
+   * map somebody can be shot before the objective has been read.
+   */
+  get briefingUp(): boolean { return this.briefing; }
   /** Set by main.ts, so the end panel's buttons can act on the shell. */
   onNext: (() => void) | null = null;
   onRetry: (() => void) | null = null;
@@ -387,5 +398,10 @@ function failureReason(world: World): string {
   if (world.map.objective === 'rescue' && world.hostages.some((h) => !h.alive && !h.delivered)) {
     return 'A hostage was killed. There is no partial credit.';
   }
+  // Checked before the wipe-out line, because a squad standing in the open
+  // watching its outpost come down is not a squad that was wiped out, and being
+  // told it was is the game failing to explain what just happened.
+  const keep = protectedBuilding(world);
+  if (keep && !keep.standing) return 'The outpost was levelled. There was nothing left to hold.';
   return 'The squad was wiped out.';
 }

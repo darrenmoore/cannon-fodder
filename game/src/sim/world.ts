@@ -67,6 +67,10 @@ export interface World {
   enemyTotal: number;
   /** Counts down for `survive` missions. */
   timeLeft: number;
+  /** Waves already sent. Only ever advances; `map.waves.count` caps it. */
+  wavesSent: number;
+  /** Seconds until the next wave leaves the huts. */
+  waveTimer: number;
   /** One-line objective status for the HUD. */
   status: string;
 
@@ -199,7 +203,9 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
   const counter = { nextId: 1 };
   const squad = roster && roster.length > 0 ? roster : FALLBACK_ROSTER;
 
-  const soldiers: Soldier[] = map.playerSpawns.map((p, i) => {
+  // The map may place more spawns than the mission fields -- a one-man mission
+  // still needs somewhere sensible for that man to stand.
+  const soldiers: Soldier[] = map.playerSpawns.slice(0, map.squadSize).map((p, i) => {
     // The map may place more spawns than the roster holds; wrapping keeps the
     // mission playable rather than fielding an undefined name.
     const t = squad[i % squad.length];
@@ -208,6 +214,7 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
       faction: Faction.Player,
       state: SoldierState.Idle,
       slot: null,
+      slotStuck: 0,
       name: t.name,
       rank: t.missions,
       own: t.own,
@@ -244,12 +251,14 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
   }
 
   const buildings: Building[] = map.buildings.map((b, i) => {
-    const hp = b.kind === 'factory' ? CONFIG.building.factoryHp : CONFIG.building.hutHp;
+    // An outpost is built to be held, so it takes as much killing as a factory.
+    const hp = b.kind === 'hut' ? CONFIG.building.hutHp : CONFIG.building.factoryHp;
     return {
       damageStage: 0,
       ruinAge: 0,
       id: i,
       kind: b.kind,
+      role: b.role,
       tiles: b.tiles,
       centre: { ...b.centre },
       x0: b.x0, y0: b.y0, w: b.w, h: b.h,
@@ -314,6 +323,8 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     kills: 0,
     enemyTotal: enemies.length,
     timeLeft: map.duration,
+    wavesSent: 0,
+    waveTimer: map.waves ? CONFIG.wave.lead : 0,
     status: '',
     nextId: counter.nextId,
   };

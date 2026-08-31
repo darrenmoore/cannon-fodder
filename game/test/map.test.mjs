@@ -72,7 +72,13 @@ assert.ok(files.length >= 1, 'no .map files in data/ -- run tools/generate-level
 
 const maps = [];
 for (const file of files) {
-  maps.push(parseMap(await readFile(join(DATA, file), 'utf8'), file.slice(0, -4)));
+  const text = await readFile(join(DATA, file), 'utf8');
+  const parsed = parseMap(text, file.slice(0, -4));
+  // What the header asked for, read straight from the file, so the assertion
+  // below compares the parser against the map rather than against itself.
+  const declared = /^\s*squad\s*:\s*(\d+)/im.exec(text);
+  parsed.declared = declared ? Number(declared[1]) : null;
+  maps.push(parsed);
 }
 
 // ------------------------------------------------------------ parser basics
@@ -92,6 +98,19 @@ check('headers drive objective, theme and duration', () => {
   assert.equal(m.theme, 'arctic');
   assert.equal(m.objective, 'survive');
   assert.equal(m.duration, 42);
+});
+
+check('a waves header sets the schedule, and nothing else turns it on', () => {
+  const withHeader = (line) => parseMap(`name: X\n${line}\n---\n...\n`);
+  assert.equal(parseMap('name: X\n---\n...\n').waves, null);
+  assert.deepEqual(withHeader('waves: 5@22').waves, { count: 5, interval: 22 });
+  // A bare count takes the default gap, so a map can ask for waves without
+  // also having to have an opinion about pacing.
+  assert.equal(withHeader('waves: 3').waves.count, 3);
+  assert.ok(withHeader('waves: 3').waves.interval > 0);
+  // Junk is off rather than a mission that quietly attacks NaN times.
+  assert.equal(withHeader('waves: lots').waves, null);
+  assert.equal(withHeader('waves: 0').waves, null);
 });
 
 check('an unknown theme or objective falls back safely', () => {
@@ -143,7 +162,12 @@ check('nearestWalkable escapes solid terrain', () => {
 // ----------------------------------------------------------- every mission
 for (const map of maps) {
   check(`${map.id}: parses with a full squad and a stated objective`, () => {
-    assert.equal(map.playerSpawns.length, 6, 'six soldiers, as in the original');
+    // Six unless the mission says otherwise. A `squad:` header is how a one-man
+    // mission is expressed, so what is worth proving is that a map fields
+    // exactly what it declares -- not that every map fields six.
+    assert.equal(map.squadSize, map.declared ?? 6,
+      `fields the squad it declares (${map.squadSize})`);
+    assert.ok(map.playerSpawns.length >= map.squadSize, 'a spawn for every man');
     assert.ok(map.name.length > 0);
     assert.ok(['eliminate', 'demolish', 'rescue', 'reach', 'survive'].includes(map.objective));
     assert.ok(map.brief.length > 0, 'every mission should explain its new idea');

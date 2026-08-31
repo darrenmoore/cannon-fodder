@@ -13,7 +13,7 @@
  */
 
 import { PALETTES } from './paint.js';
-import { bakeCabin, bakeFactory, bakeHut, bakeTent } from './buildings.js';
+import { bakeCabin, bakeFactory, bakeHut, bakeOutpost, bakeTent } from './buildings.js';
 import { bakeBarrel, bakeCrate, bakeGrenadeIcon, bakeHostageIcon, bakeMine, bakeMuzzleFlash } from './icons.js';
 import { bakeBroadleaf, bakePalm, bakePine, bakeRock, bakeTallGrass, bakeTuft } from './terrain.js';
 import { FACINGS, UNIT_VARIANTS, WALK_FRAMES, bakeCorpse, bakeSoldier } from './units.js';
@@ -53,6 +53,8 @@ export interface Atlas {
   /** The arctic's building. Same four stages. */
   cabin: Sprite[];
   factory: Sprite[];
+  /** The building the squad holds, in its states of repair. */
+  outpost: Sprite[];
   tent: Sprite;
   crate: Sprite;
   barrel: Sprite;
@@ -101,6 +103,7 @@ export function buildAtlas(): Atlas {
     hut: [0, 1, 2, 3].map(bakeHut),
     cabin: [0, 1, 2, 3].map(bakeCabin),
     factory: [0, 1, 2, 3].map(bakeFactory),
+    outpost: [0, 1, 2, 3].map(bakeOutpost),
     tent: bakeTent(),
     crate: bakeCrate(),
     barrel: bakeBarrel(),
