@@ -1,0 +1,85 @@
+name: Village
+theme: jungle
+objective: demolish
+doctrine: hunters
+order: 6
+mechanic: enemy buildings
+brief: Huts keep sending out troopers. Grenades bring them down, rifles will not.
+tile: 16
+---
+TTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTT....TTTTTTTTTTTTTTTTTTT
+TT..T.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTT...TTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTT.TT.TTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~,.TTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT".",~~~~~,.....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....",~~~~~,.......""TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.......,~~~~~,........."""""."..........TTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTT...........................,~~~~~,.........""""""...............TTTTTTTTTTTTTTTTTTT
+TTTT..T................................,~~~~~,...................................TTTTTTTTTTTTTTT
+TTTT...................................,~~~~~,....................................TTTTTT..TTTTTT
+TTTT...................................,~~~~~,......................................TTT...TTTTTT
+TTTT..................................,~~~~~,........................................TT...TTTTTT
+TTTT..........T.......................,~~~~~,.......................................T.TT..TTTTTT
+TTTT........T..T......................,~~~~~,.............................................TTTTTT
+TTTTTT....T..TTTTT............".".....,~~~~~,.............................................TTTTTT
+TTTTT.....T..TT.T..........."".".".....,~~~~~,............................................TTTTTT
+TTTTTT....TTTTT.T..........""""""".....,~~~~~,............................................TTTTTT
+TTTTTTT.....TTTT.T.........""""""TT....,~~~~~,.....+++++++++++++++++++++++++++++..........TTTTTT
+TTTTTTTT....TTTTT...........""""."TT....,~~~~~,...........................................TTTTTT
+TTTTTT........T..............""T.TTTT...,~~~~~,..................o........................TTTTTT
+TTTTTTT......................."T.TTTT....,~~~~~,..........................................TTTTTT
+TTTTTTT...........................TT......,~~~~~,.........................................TTTTTT
+TTTTTTTT........................TTT.T.....,~~~~~,...................hh....................TTTTTT
+TTTTTTTT...................................,~~~~~,......hh..........hh....................TTTTTT
+TTTTTTTT....................................,~~~~~,.....hh................E...............TTTTTT
+TTTTTTTT.....................................,~~~~~,.............B........................TTTTTT
+TTTTTTTT.....................................,~~~~~,....o..................................TTTTT
+TTTTTTTTT.....................................,~~~~~,......................................TTTTT
+TTTTTTTTT..................T..TT...............,~~~~~,.....................................TTTTT
+TTTTTTTTT...................T..................,~~~~~,....................hh.E..............TTTT
+TTTTTTTT...................TTTTTT...............,~~~~~,...................hh................TTTT
+TTTTTTTT.......................TT................,~~~~~,....................................TTTT
+TTTTTTTT......................T..................,~~~~~,........E............................TTT
+TTTTTTTT.........................................=======................E....................TTT
+TTTTTTTT........................................c=====E=...............hh....................TTT
+TTTTTTTT..........................................,~~~~hh..............hh....................TTT
+TTTTTTT...........................................,~~~~hh..E................................TTTT
+TTTTTTT.....T.....................................,~~~~~,.........E.......................TTTTTT
+TTTTTTT....TT.T...................................,~~~~~,....................................TTT
+TTTTTTT.T.T.TTT...................................,~~~~~,......hh........................TTT.TTT
+TTTTTTT..TT.TT...................................,~~~~~,.......hh......................T.T.TTTTT
+TTTTTTT.TT.T.TT..................................,~~~~~,...............o................TT..TTTT
+TTTTTTT..TTT.....................................,~~~~~,..................................T.TTTT
+TTTTTTT..........................................,~~~~~,......E............................TTTTT
+TTTTTTT.........................................,~~~~~,......................S.............TTTTT
+TTTTTTT.........................................,~~~~~,..................................."TTTTT
+TTTTTTT.........................................,~~~~~,..............................T....TTTTTT
+TTTTTTT.........................................,~~~~~,...............................T.T"TTTTT.
+TTTTTTT.........................................,~~~~~,..............................TTTT.TTTT".
+TTTTTTT..................................T......,~~~~~,............................T.TTT.TTTT...
+TTTTTTT..............................T.TTT......,~~~~~,..............................T.T.TTTTT.T
+TTTTTTT..............................TTTTTTT....,~~~~~,............................T.TTTTTTTTTTT
+TTTTTTT................................TTT......,~~~~~,..............................TT..TTTTTTT
+TTTTTTT................................T........,~~~~~,................................T.TTTTTTT
+TTTTTTT.........................................,~~~~~,..................................TTTTTTT
+TTTTTT..........................................,~~~~~,..................................TTTTTTT
+TTTTTTT.........................................,~~~~~,..................................TTTTTTT
+TTTTTT..........................................,~~~~~,..................................TTTTTTT
+TTTTT.T..........................................,~~~~~,.................................TTTTTTT
+TTTTT............................................,~~~~~,.................................TTTTTTT
+TTTT...................................TT........,~~~~~,.................................TTTTTTT
+TTTT.............................................,~~~~~,.................................TTTTTTT
+TTTT...............................T.T.TTT.......,~~~~~,.................................TTTTTTT
+TTTT.................................T.TT.T......,~~~~~,.................................TTTTTTT
+TTT................................TTT.TT...T....,~~~~~,.................................TTTTTTT
+TTT................c...............TT...TTT.....,~~~~~,..................................TTTTTTT
+TTT.................................TT.TTT......,~~~~~,..........................."......TTTTTTT
+TTTTT.P.P.P........................T.T.TT.T.....,~~~~~,........................TTTTTTT...TTTTTTT
+TTTT................................T.TT.T.T...,~~~~~,.....................TTTTTTTTTTTTTTTTTTTTT
+T.TTT.P.P.P.TTTTTTTTTTTTTTTTTT.................,~~~~~,.................TTTTTTTTTTTTTTTTTTTTTTTTT
+..TTT........TTTTTTTTTTTTTTTTTTTTT.......TTTTTT~~~~~,.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+.TTTTT.....T..TTTTTTTTTTTTTTTTTTTTTT......TTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTT.TT..TTTTTTTTT.T"TTTTTTTTTTTTTTT.TTTT,~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTT.TTTTTTTTTT.TT""TTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTT"".TTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTT""TTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

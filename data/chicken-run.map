@@ -1,0 +1,65 @@
+name: Chicken Run
+theme: jungle
+objective: eliminate
+doctrine: garrison
+order: 1
+mechanic: basics
+brief: Move as a herd, use the treeline, and let them come to you.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.T...TTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT.TTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.......TTT....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT........T..T..........TTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....E....................E...............TTTTTTTTTTT
+TTTTTTTTTTTTTTTT..TTT.T.........................E...............................TTTTTTTT
+TTTTTTT.TTTTTT....T...............................................................TTTTTT
+TTTTTTTTTT......TTTT..............................................................TTTTTT
+TTTT.TT..T........T..........................................hh...................TTTTTT
+TTTTT..T.T...................................................hh...................TTTTTT
+TTTT...TT.........................................................................TTTTTT
+TTTT...............TT...........................T.T.TT............................TTTTTT
+TTTT..............T.TT..........................T..T..............................TTTTTT
+.TTT..............TTTT.............................TTT.T.E........................TTTTTT
+.T.T.............T..TTTT......................TTTTTT.TT...........................TTTTTT
+..TT......TT.....T.T.TT.......................TTTTTTT.TT...........................TTTTT
+TTTTT....TTTT......TT.T........................TTTTT...............................TTTTT
+TTTTT.....TT.T..................................TTTTT.T............................TTTTT
+TTTTT.....T...................................TTTTTT...............................TTTTT
+TTTTTT.........................................TTTTT................................TTTT
+TTTTTT...........................................TTT................hh..............TTTT
+TTTTTTT.............................................................hh..............TTTT
+TTTTTTT.............................................................................TTTT
+TTTTTTT.......................................T......................................TTT
+TTTTTTTT.....................................T....................c..................TTT
+T.TTTTTT..........................TT........TTT.T...........................E....T...TTT
+.TTTTTTT................TT.....T.TT.T......T.TT....................T............TT.T.TTT
+....TTTT..................TT.....T.TT.......T.TTT................TTT..T........TTT...TTT
+T...TTTT................TTTTTT..T......TT.................."...".TTTTTTT........TT...TTT
+TTTTTTTT................TTT...T..TT..TT....T...............""."""TTTTTT.T......T.TT..TTT
+TTTTTTTT.............TT.TTTT..T.....TTTTTTTT.T.........."""""""""TT....TT...........TTTT
+TTTTTTTT................TT.........TTT.T..T.............."""""""p.T..T..............TTTT
+TTTTTTTT..............TTT...TT....ETTT.TT.TTTT.........p..""."""....................TTTT
+TTTTTTTT.................T.........TcTTTTTTTT.................""...................TTTTT
+TTTTTTTT................T..............TT..........................................TTTTT
+TTTTTTTT..............................TTTTT.T......................................TTTTT
+TTTTTTTT........................E........TTT...T..................................TTTTTT
+TTTTTTT.......................................TTTT................................TTTTTT
+TTTTTTT.......................................TTTTTT.......p..........T...........TTTTTT
+TTTTTTT.................................E......TTTTT.....................T.......TTTTTTT
+TTTTTTT........................................T..T..................TTT.TT....."TTTTTTT
+TTTTTTT..........................................T............TTT.....TTTT.T.....TTTTTTT
+TTTTT............................................E...........TT..TT.TT.TT.T......TTTTTTT
+TTTT.........................................................TTTTTT.TTT..TTT...."TTTTTTT
+TTTT....................................................T....TT.TTTTTTT.T.TT.....TTTTTTT
+TTTT..P.P.P....TTTTTTT..............................E..TT.....TTTTTTTTTT.T.T.....TTTTTTT
+TTT...........TTTTTTTTTTTT...........................T.T.TTT...TTTTT.T...T.......TTTTTTT
+TTTT..P.P.P..TTTTTTTTTTTTTTTTT........................TTTTT.T.TTTT.T...TTTTTTTTTTTTTTTTT
+TTTT.........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT......TTTTTTT..T.TTTTTTTTTTTTTTTTTTTT..TT
+TTTT.........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.....TTT......TTTTTTTTTTTTTTTTTTTTTT..
+TTTTT.......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...ETTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

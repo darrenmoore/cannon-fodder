@@ -1,0 +1,53 @@
+name: The Long Road
+theme: desert
+objective: reach
+doctrine: ambush
+order: 3
+mechanic: extraction
+brief: A long march east. Get everyone still standing to the pickup.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,..,...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..T,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTT,.,,,.#,,...,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,.,....TTTTTTTTTTTTTTT....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.......TT,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTT.,,,,,,,,,,,#,,,...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,,,..............................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,.......TTT,,,,T,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTT,,,.,,,,,,,,,#,,,,,,,,,,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,,,,,,,,",,...........................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.,...,.....,TT,,T,,,,,,,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTT,,.,,.,.....,,.,,,,,,,,,,,,,,,,..,,,,,,,,#,TTTTTTT.T,"",TTTTTTTTTTTTTTTTTTT,,,,,,,,,,,,,,,...........................TTTTTTTTTTTTTTTTTTT......"....".....,..,,,,.,,,,T,,,,,,,,,,,,,,,,.,,,,,,.,,,TTTTTTTTTTTTTTTTTTTTT
+TTTTTT,,,,,,.....,,,,,,,,,,,,,,,,,,....,,,,,,,,#T,.,,..TTTT"T,.,,,,TTTTTTTTTTT,,,,,,,,,,,,,,,,,,.............................TTTTTTTTTTTT.....................,,.,.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.TTTTTTTTTTTTTTTTTT
+TTTTTT,,,,,,,....,,,,,,,,,,,,,,,,,,..,TT,,,,,,,,T,.TT,,.TTTTT.T.,..,,.,,TT,,,,,,,,,,,,,,,,,,,,...................................TTTT.........................,.,.,.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.,,".TTTTTT..TTTTTT
+TTTTT.,,,,,,,......,,,,,,,,,,,,,,,,,TTT,TT,,,,,TT,TT,.TT..TT..,,...,,,,,,,,,,,,,,,,,,,,,,,,,,,...................................................................,.,.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.,,,,.""......TTTTTT
+TTTTT,,..,,,.......,.,,,,,,,,,,,.,,,..,TT,,,,,,T.TTT.,..,,,T,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",........................................................TT...........,..,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",".......TTTTTT
+TTTTT.TT.,,,......,..,,,,,,,,,,..,,,,T,..,,,,TT,TT,TT.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,......................TTT.T..................................TT...........,.,,,,,,,,,,,,,,,,,,,T,,,,,,,,,,,,T,,,,,.,,........TTTTTT
+TT.TTTT.T.,......,,,,,,,,,,,,,,,,,,....,T,,,,,..T,,,,,,,,,,,,,,,T..,,,,,,,,,,TTT,,,,,,,,.......................TT,TTT................E.........TTT..TT..........,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,E,,T,,T,,,.,,,........TTTTTT
+TT....T......,,,,,,,,,,,,,,,,,,..,,..,,,,,,,,,,,T,,,,,,,,,,,,,,,TTT,,,,,,,,,,TT,T,,,,,,,..................,...TT,TTT.................................T..........,,,,,,,,,,,,,,,,,,,,,,,TTTT,,,,,,,,,,TTT,.............TTTTTT
+TT.T......,,,,,,,,,,,,,,,,,,,,,,....,,,,..,.,,,TT,,,,,,,,,,,,,,,,,TT,,,,,,,.TTTTT,,,,,,,................,,.#,.,,TTTTT............,,............TTT..E............,,,.,,,,,,E,,,,,,,,,,,,TT,TT.,,,,TTTTTTT..............TTTTT
+TTTT.....,,,,,,,,,,,,,,,,,,,,,,,,,T,,,,,.....,..,,,.T,T,,,,,,,,,,,T.,,,,,,,.TTTT,,,,,,,,.......E........,,,#,.T,TTT.T........TT..,,............TTT....................,,,,,,,,,,,,,,,,,,T.,,.,.,,,..TTTTT..............TTTTT
+TTTT.,,..,,,,,,,,,,,,,,,,,,,,,,TTTTT,,,,,.......,,,,TT,TT,,,,,,,,,,,,,,,,,,,,TTTT,,.#..,...............,,,,,,,.TTTT..,.......,..TT...................................,.#,,,,,,,,,,,,,,,,,,,T,,,,,,.T,,,..........TT.T..TTTTT
+TTTT.,,..,,,,,,,,,,,,,,,E,,,,,.T.T,,.,,,,......,,,,,TTT,T,,,,,,,,,,,,,,,,,,,,TT..,,,,,#.............,,,,,,,,,,,.,,,..,,,...TT.TETT...,..,.....................,..,.T,,#,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,o,....,...........TTTTT
+TTTT.,,,,,,,,,,,,,,,,,,,,,,,,,,T,T,T,,,,,,,,,,,,,,,,,TT,,,,,E,,,,,,,,,,,,,,,,,,,,,,,,#,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,T,TTT,,T,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,TTT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.......TTTT
+TTT,,,...,,,,,,,,,,,,,,,,,,,,,,,,T,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,TTTTTT,,,,,,,,,,,,,,,,,,,TT,,,,,,,,,,T,,TT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.......TTTT
+TTTTT,P.P_P_______________________________________________________,________________________________________________________TTTT_____________________T_T___________T_T______________S____________________#________.AA....TTTT
+TTTT,__._...___________________________________________________________________________________________________________________T_T____o_______________TTT_________T_____________________________________##_______.AA,....TTT
+TTTT,.P_P.P________________________________________________,_______o________________________________________________,________T______________________TTTT________________#_#_,____________________________##________.,,,..TTT
+TTTT,,......,T,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,TT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,TTTTTTT,,,,,,,,,,,,,,,,,,,,,,E,,,,,,,,,,,,,,,,,,,,,,,,,###,,,,,,,,,,,,,.TTT
+TTTTT,.....TT,T,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,T,,TT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,c,,,,,,,,,,,,,,,T.T.T,,,,,,,,,,,,,,,,#,,,",,,,,,,,,,,,,,,,#,,,#,,,,,,,,.E,,,,,,,,,,,,,TTT
+TTTTT,TT,TTTTT,...,.,,,,..,,,,,...","...........TTT,,,,,,,,,,,c,,,..E,,,..,...,...........,,,.,,,,,,,,,,,E,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.....T.TTTTT,,,,,,,,,,,,,,,,.""""................,,#,,,,,,.,.......,..,,,,,.TTT
+TTTTT,,T.TT.,T,.....,,,,....,,,....""..........TT,,,,,,,,,,,,,,,,,.,,,...............S.........,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,..,,........T..,,,,,,,,,,,,,,,,,,"""...................,,,,,,.E.............,,,,,TTT
+TTTTTT,,,.TT........,,......,,.,,...........T....T,,,,,,,,,,,,,,,,,.............................,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,...........,,,,,,,,,,,,,,,,,,.,",,.,E.....................,,,...............,,,,TTTT
+TTTTTT.....T.........T.........,,.............T,,,,,,,,,,,,,,,,,,,.............................E,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,..........,,,,,,,,,,,,,,,,,,.,...,,,.......................E,,............,,,,,,TTTT
+TTTTTTT.............TT,.......................,TT,,,,,,,,,,,,,,,,,............................,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,...........,,,,,,,,,,,,E,,....,,,.,,......................,",""...........,,,,,.TTTT
+TTTTTTT.............T..T.T.................TT.TT,.,,,,,,,,,,,...,.............................,,,,,,,,,,,,,,,,,,,,E,,,,,,,,,,,,,,,,,,,,,,,.........,,,,,,,,,,,.,.......,".,.......................""""""..........,,,,,,TTTT
+TTTTTTTT........#..T.TTT...................T...TTTT,,,,,,,,,...,,,.............................,,,,,,,,,,,,,,,,,,,,,,,,,,,,,TT,,,,,,,,,,,,...........,,,,..,,.....#,....,,......T.T.T..............""""".........,,,,,,TTTTT
+TTTTTTTT......###....TTTT..................,T,T..T,,,,T,,,,,...,,,...........................,..,,,,,,,,,,,,,,,,,,,,,,,,,,,,,TE,,,,,,,,,,..............,,..,,...,##,#...........TTTTT............."""""".........,,,,,,TTTTT
+TTTTTTTT.......#."...TT....................,.T.T,T..T.T,..,.,..............................,,,,.,,,,,,,,.,,,,,,,,,,,,,,TTTTTTTT,,,,,,,,,,.................,,,...,#,........TT...T.T.T......,,,.....""""...,.....,,.,,,TTTTTT
+TTTTTTTTT.......#.T.TTTTT.................E..,T,.,.,TTT,,..,TTTTTTTT..............,,......,.,,...,,..,,,..,,,,,,,,,,TTTTTTTTTTTTT,,,,,,,,,.................,,...............TT...TTT..,,,.,,,,....TTTTTTTTTTT.,,TT.T.,TTTTTT
+TTTTTTTTTT........."T..TT.............TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..........,,,.....,,......,,.,,,,,...,,..,TTTTTTTTTTTTTTTTTTT,...,,...............................T.T.T.TTTTTTTTTT.,,TTTTTTTTTTTTTTTTTTTT,.TT,TTTTTTT
+TTTTTTTTTT.............TTT.........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT........,,,,....,.......,,,.,,,,,,..,.TTTTTTTTTTTTTTTTTTTTTTTTTT....TTTTT.......E..................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTT....TTTTTTT.......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.,..,,,,,,...,.....,TTT......,.,TTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTT.TT..T.T....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,.,,,,.,.,.TTTTTTTTTTTTTTTTTTTTTT.T..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT................TTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTT
+TTTTTTTTTTTTTTTTTTTTTTT..T..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT......TTTT...TTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...TTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.T.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

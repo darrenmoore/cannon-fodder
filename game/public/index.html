@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Cannon Fodder</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <aside id="hud"></aside>
+      <canvas id="screen"></canvas>
+    </div>
+
+    <div id="overlay" hidden><div id="overlay-card"></div></div>
+
+    <div id="menu" hidden>
+      <div id="menu-inner">
+        <h1>Cannon&nbsp;Fodder</h1>
+        <p class="menu-sub">War has never been so much fun. Pick a mission.</p>
+        <div id="menu-difficulty"></div>
+        <p id="menu-blurb" class="menu-blurb"></p>
+        <div id="menu-list"></div>
+        <p class="menu-foot">Click a mission, or press its number. Left/right arrows change difficulty; Enter resumes the last mission.</p>
+      </div>
+    </div>
+
+    <script type="module" src="/bundle.js"></script>
+  </body>
+</html>

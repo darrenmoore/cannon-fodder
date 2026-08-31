@@ -1,0 +1,73 @@
+name: Ice Station
+theme: arctic
+objective: rescue
+doctrine: patrol
+order: 7
+mechanic: hostages and ice
+brief: Walk every prisoner back to the tent. Ice ruins your footing; one dead hostage ends it.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..T.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..........TTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..............TTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTT......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT................E.TTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTT........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT......E...............TTTTTTTTTTTTTTTTTTTT
+TTTTTTTTT...........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....hh..................TTT........TTTTTTTTT
+TTTTTTTTT.............TTTTTTTTTTTTTTTT......................hh......H....hh...........i....TTTTTTTTT
+TTTTTTTTT...............TTTTTTTTTTT......................................hh......T...iiiii.TTTTTTTTT
+TTTTTTTTT.................................................E.........................iiiiiiiTTTTTTTTT
+TTTTTTTTT............................................................................iiiii.TTTTTTTTT
+TTTTTTTTT............................................................H...............iiiiiiTTTTTTTTT
+TTTTTTTTTi................................................................E...E.....iiiiii.TTTTTTTTT
+TTTTTTTTT......................................................E.......................iii.TTTTTTTTT
+TTTTTTTTT..i..............................................................................iTTTTTTTTT
+TTTTTTTTTiiiii.........................................i...........H...................Ti.TTTTTTTTTT
+TTTTTTTTTTiiii........................................ii...............H...E...........i.TTTTTTTTTTT
+TTTTTTTTTiiiiii.......................................iii...............................TTTTTTTTTTTT
+TTTTTTTTTiiiT.ii......................................ii................................T.TTTTTTTTTT
+TTTTTTTTTiTiTi.i...................................i,,,,,,i,..E...........................TTTTTTTTTT
+TTTTTTTTTiiiiTT...................................,i~~~~~~~~,,.............................TTTTTTT..
+TTTTTTTTiiiii.i.................................,,~~WWWWWWWW~~,.............................TTTTTT..
+TTTTTTTT......................................,,~~WWWWWWWWWWWW~,,.......E......S.......T....TTTTTTTT
+TTTTTTTT..........................i...i......,~~WWWWWWWWWWWWWWW~~,..................TTTTT...TTTTTTTT
+TTTTTTTT..........................ii.iiii..,,~WWWWWWWWWWWWWWWWWWW~,,..................TT....TTTTTTTT
+TTTTTTT............................iiiiii.,~~WWWWWWWWWWWWWWWWWWWWW~~,,..............TTT......TTTTTTT
+TTTTTTT.............................iiiiii~WWWWWWWWW~~~~~~~~WWWWWWWW~~,,.............T.......TTTTTTT
+TTTTTTT..............................,i,~~WWWWWWWW~~,,,,,,,,~~WWWWWWWW~~,=...................TTTTTTT
+TTTTTT..............,,,,,,,,,,,T,,==i~~~WWWWWWWW~~,,........,,~WWWWWWWWW~==,,,,,,,,,,,,,,,,,..TTTTTT
+TTTTTT..........,,,,~~~~~~~~~~~~~~==~WWWWWWWWW~~,,............,~~WWWWWWWW==~~~~~~~~~~~~~~~~~,,TTTTTT
+TTTTT.........,,~~~~WWWWWWWWWWWWWW==WWWWWWWWW~,,...............,,~WWWWWWW==WWWWWWWWWWWWWWWWW~~~TTTTT
+~TTTT......,,,~~WWWWWWWWWWWWWWWWWW==WWWWWWW~~,...................,~~WWWWW==WWWWWWWWWWWWWWWWWWWW~~~TT
+W~~~Ti,,,,,~~~WWWWWWWWWWWWWWWWWWWW==WWWWWW~,,.....................,,~~WWW==WWWWWWWWWWWWWWWWWWWWWWW~~
+WWWW~~~~~~~WWWWWWWWWWWWWWWWWWWWWWW==WWWW~~,TTT......................,,~~W==WWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW==W~~~,,.T..T.......................,,~==WWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWW~~~~~~~~~~~~~~==~,,,..TTTTT.........................,==~~~~~~~~~~~~~~~~~WWWWWWWW
+WWWWWWWWWWWWWWWW~~~~,,,,,,,,,,,###c=,....TTTTT............................=,,,,,,,,,,,,,,,,,~~~WWWWW
+~WWWWWWWWWWWWW~~,,,,.............#.......Ti.TT..............................................,,,~~~WW
+T~~~WWWWWWW~~~,,.......................i.iiTT..................................................,TT~~
+TTTT~~~~~~~,,,......................iiiiiiii...................................................TTTTT
+TTTTT,TT,T,T........................iiiii......................................................TTTTT
+TTTTT..TTTTT.......................iiiii.......................................................TTTTT
+TTTTTTTTTTT.........................ii........................................................TTTTTT
+TTTTTT.TTT.TT...###.................i.........................................................TTTTTT
+TTTTTTT.T.T.....#.#..........................................................................TTTTTTT
+TT.T...TT..TT.....#..........................................................................TTTTTTT
+TT......T....................................................................................TTTTTTT
+TTT..TTT.............................................................i......................TTTTTTTT
+TTTTT..T.#..................iii..................................TT.iii.....................TTTTTTTT
+TTTTTTTT#....................ii................................T...Tiiii....................TTTTTTTT
+TTTTTTTTT.#..TTTT.TT........iii..................................TT.iiii...................TTTTTTTTT
+TTTTTTT.....TTT.....TTT....iiii...............................TTTiiiiiiii................TTTTTTTTTTT
+TTTTTT.......T.......TTTT...ii...............................iTTiiiiiiiiTTTT.........TTTTTTTTTTTTTTT
+TTTTTT.P.P.P.T..AA...TTTTTTT.i...................TT...........iiiiT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTT...........AA....TTTTTTTTTTTTTTTTTTTTT......TTT........TT..iTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTT.P.P.P.T.......TTTTTTTTTTTTTTTTTT.TTTT.T.....T........TTiTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTT.......T.......TTTTTTTTTTTTTTTT..T.T...T.TT..........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTT.....TTT.....TTTTTTTTTTTTTTTTTT...T.T..T.TTTT...i..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTT.TTTTTTT.TTTTTTTTTTTTTTTTT.T....TT.T.T..TTTTTTTTTTTTTTTTTTTTTTTTTTTT....TTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..T.TTTTTTTTTTTTTTTTTTTTTTTTTTTT..TT.TTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....TTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....T.TTTTTTTTTTTTTTTTTTT

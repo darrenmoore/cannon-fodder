@@ -1,0 +1,97 @@
+name: River Run
+theme: jungle
+objective: eliminate
+doctrine: garrison
+order: 2
+mechanic: deep water
+brief: Deep water cannot be crossed. Take a bridge, and expect it covered.
+tile: 16
+---
+TTTTT....TTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..T...T
+TTTTTTTT.TT.....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....TT
+TTTTTT....TTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.T...T
+TTTTTTTTTTT.E.TTT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTT..............TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTT.......................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTT.......................S..TTTTTTTTTTTTTT.......TTTTTTTTTTTT
+TTTTT....E................................................TTTTTT
+TTTTT.......................T.....................E.......TTTTTT
+TTTTT..............E.....T...............................TTTTTTT
+TTTTT......................T.T.T.........................TTTTT.T
+TTTTT....................TTT..TT.........................TTT...T
+TTTTT.....................TTTT.T........................TTT...TT
+TTTTT.....................TTT.E.........................TTTTT.TT
+TTTTT.....................TT............................TTTTTTTT
+TTTTT......................c................E...........TTTTTTTT
+TTTTT...................................................TTTTTTTT
+TTTT..................................................E.TTTTTTTT
+TTTT....................................................TTTTTTTT
+TTTT....................................................TTTTTTTT
+TTTT....................................................TTTTTTTT
+TTTT.....................................................TTTTTTT
+TTT....................................................TTTTTTTTT
+TTTT................................................TT.T.TTTTTTT
+TTTT................................................T.TT.TTTTTTT
+TTT.................................................TT.TTTTTTTTT
+TTT...........E....E...T.T..........................T.T..TTTTTTT
+TTT..................TT..T.................TTT......T..TT.TTTTTT
+TTTTT.......T.T......TTT.T.................TTTT..........TTTTTTT
+TTT..T.....T....E.....TT.TTT..............TTTTT...........TTTTTT
+TTTTT.....,T,TT,,....TTTTTTT.............T.TTTT............TTTTT
+TTTT....,,~~~~~~~,=T..TT..TT...............T.TT............TTTTT
+TTTT..,,~~WWWWWWW~=T.TTTTT...............T.T.TT............TTTTT
+TTTTT,~~WWWWWWWWWWo=T.TTT...............TTTT.TT............TTTTT
+TTTTT~WWWWWWWWWWWW==~,TT................TTTTTT............TTTTTT
+TTT~~WWWWWWWWWWWWW==W~,..................T.TT..ET..........TTTTT
+TT~WWWWWWWWWWWWWWW==WW~,..................TTTT...........TTTTTTT
+~~WWWWWWWWWWWWWWWW==WWW~,...............TT...T.........T.TTTTTTT
+WWWWWWWWWWWWWWWWWW==WWWW~,...............T..T............T.TTTTT
+WWWWWWWWWW~~~~~~~W==WWWWW~,...............................TTTTTT
+WWWWWWWW~~,,,,,,,~==WWWWWW~,.....................E......T..TTTTT
+WWWWWW~~,,.......,==WWWWWWW~,..............................TTTTT
+WWWWW~T,...........=~WWWWWWW~,................E............TTTTT
+WWW~~TT.............,~WWWWWWW~,...............,,,,,,,,,,...TTTTT
+WW~TTTT..............,~WWWWWWW~,,..........o==~~~~~~~~~~,,,TTTTT
+~~TTTTT...............,~WWWWWWW~~,,,,.,,,,,~==WWWWWWWWWW~~~~~~T~
+TTTTTTT................,~WWWWWWWW~~~~,~~~~~W==WWWWWWWWWWWWWWWW~W
+TTTTTTT.................,~WWWWWWWWWWW~WWWWWW==WWWWWWWWWWWWWWWWWW
+TTTTTTT..................,~WWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWW
+TTTTTTT...................,~WWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWW
+TTTTTT.....................,~WWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWW
+TTTTTT......................,~WWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWW
+TTTTTT.......................,~WWWWWWWWWWWWW==~~~~~~~~~~WWWWWWWW
+TTTTTT........................,~~WWWWWWWWWW~==,,,,,,,,,,~~~~~~W~
+TTTTTT.........................,,~~~~W~~~~~,==..........,,,,,T~T
+TTTTTT...........................,,,,~,,,,,.........TT.TT....TTT
+TTTTTT...............................,.................TTT...TTT
+TTTTTTT.............................................T.TTT....TTT
+TTTTTTT..............................................TTTT....TTT
+TTTTTTT..T.............................................TT...TTTT
+TTTTTTT.T.T...........................................T.....TTTT
+TTTTTTTTTT............................................TTTT.TTTTT
+TTTTTTTTT..T...........................................TT...TTTT
+TTTTTTT.T.............................................TTT.TTTTTT
+TTTTTTT..TT............................................TT..TTTTT
+TTTTTTT....................................................TTTTT
+TTTTTTT...................................................TTTTTT
+TTTTTTT...................................................TTTTTT
+TTTTTTT...................................................TTTTTT
+TTTTTTT...................................................TTTTTT
+TTTTTTT...................................................TTTTTT
+TTTTTT....................................................TTTTTT
+TTTTTT...................................................TTTTTTT
+TTTTTT...................................................TTTTTTT
+TTTTT...................................c................TTTTTTT
+TTTTT.......T................................T............TTTTTT
+TTTTT......T.TT.............................T.T.T.........TTTTTT
+TTTT.......TTT.T.............................T.T.T........TTTTTT
+TTTT.......TTTT..............................TTT.T........TTTTTT
+TTTT.......TTTTTT.............................TTT.........TTTTTT
+TTTT......TTTT................P.P.P..........T..TT........TTTTTT
+TTTT.T....................T...........TTT.....TT..TTTTTT..TTTTTT
+TTT....T...............TTTTT..P.P.P..TTTTTTTTTTTTTTTTTTT.TTTTTTT
+TTTTTTTT............TTTTTTTT.........TTTTTTTTTTTTTTTTTT.T.TTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTT.........TTTTTTTTTTTTTTT......TTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTT.......TTTTTTTTTTTTTTTTTTT..TTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTT.T...TTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTT

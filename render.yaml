@@ -1,0 +1,37 @@
+# Render blueprint — https://render.com/docs/blueprint-spec
+#
+# Deploy: Render dashboard -> New -> Blueprint -> pick darrenmoore/cannon-fodder.
+# Render reads this file and creates the service. Nothing here needs secrets.
+#
+# Two choices worth making BEFORE the first deploy, because neither can be
+# changed afterwards without recreating the service:
+#   region  frankfurt | oregon | ohio | virginia | singapore
+#   plan    free (spins down after 15 min idle, ~30s cold start) | starter ($7/mo, always on)
+
+services:
+  - type: web
+    name: cannon-fodder
+    runtime: node
+    region: frankfurt
+    plan: free
+    branch: main
+
+    # The repo root is the working directory. `data/` sits beside `game/`, and
+    # server.js reads it as ../data, so the build runs from inside game/.
+    buildCommand: cd game && npm ci --include=dev && npm run build
+    startCommand: cd game && node server.js
+
+    healthCheckPath: /
+
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # server.js binds 127.0.0.1 by default. Render health-checks the port from
+      # outside the process, so it has to listen on the wildcard here.
+      - key: HOST
+        value: 0.0.0.0
+      # playwright is a devDependency (screenshot + playtest harnesses only) and
+      # `npm ci --include=dev` installs it. Without this its postinstall pulls
+      # ~400MB of browsers that the server never launches.
+      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+        value: "1"

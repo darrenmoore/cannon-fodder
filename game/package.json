@@ -1,0 +1,22 @@
+{
+  "name": "cannon-fodder-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A browser prototype of Sensible Software's Cannon Fodder (1993)",
+  "type": "module",
+  "scripts": {
+    "dev": "node build.mjs --watch",
+    "build": "node build.mjs",
+    "start": "node server.js",
+    "check": "tsc --noEmit && node tools/generate-levels.mjs --check && node test/map.test.mjs",
+    "levels": "node tools/generate-levels.mjs",
+    "shots": "node tools/shoot.mjs --fit",
+    "playtest": "node tools/playtest.mjs",
+    "measure": "node tools/measure.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "playwright": "^1.62.1",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,6 @@
+node_modules/
+game/public/bundle.js
+game/public/bundle.js.map
+
+# Screenshot output from tools/shoot.mjs and tools/playtest.mjs.
+game/shots/

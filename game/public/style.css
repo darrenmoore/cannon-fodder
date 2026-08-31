@@ -1,0 +1,492 @@
+/*
+ * The chrome. Three layers, in this order:
+ *
+ *   1. tokens        the palette everything else is built from
+ *   2. the UI kit    ui.ts's five components -- panel, button, plate, readout,
+ *                    meter -- styled once and reused by every screen
+ *   3. the screens   sidebar, overlay, mission select
+ *
+ * Nothing below layer 2 invents its own button or its own border. That is the
+ * whole point of having the kit: the mission select and the end-of-mission
+ * panel cannot drift apart, because they are made of the same parts.
+ */
+
+:root {
+  --sidebar-w: 188px;
+
+  /* Olive, not emerald. The game's ground palette is a sunlit khaki green and
+     the chrome has to sit in the same family or it reads as a different game. */
+  --ink: #d6dcae;
+  --ink-dim: #8e9a63;
+  --ink-faint: #5f6a3d;
+  --gold: #f0d878;
+  --blood: #b4402a;
+
+  --plate: #2a3117;
+  --plate-hi: #3d4623;
+  --plate-lo: #161b0b;
+  --well: #10140a;
+  --edge: #0a0d05;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--edge);
+  color: var(--ink);
+  font: 12px/1 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ============================================================== the UI kit */
+
+.ui-panel {
+  background: var(--plate);
+  border-top: 1px solid var(--plate-hi);
+  border-left: 1px solid var(--plate-hi);
+  border-right: 1px solid var(--plate-lo);
+  border-bottom: 1px solid var(--plate-lo);
+}
+.ui-panel.tone-dark { background: var(--well); }
+.ui-panel.tone-warn { background: #3a2113; }
+.ui-panel.tone-good { background: #26401c; }
+
+/* --- button */
+.ui-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--plate);
+  border-top: 1px solid var(--plate-hi);
+  border-left: 1px solid var(--plate-hi);
+  border-right: 1px solid var(--plate-lo);
+  border-bottom: 2px solid var(--plate-lo);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, transform 0.06s, border-color 0.1s;
+}
+.ui-btn:hover, .ui-btn:focus-visible {
+  background: var(--plate-hi);
+  outline: none;
+}
+/* Pressing pushes the plate into the bevel rather than moving the whole thing. */
+.ui-btn:active { transform: translateY(1px); border-bottom-width: 1px; margin-bottom: 1px; }
+.ui-btn.tone-good { background: #2f5222; border-top-color: #4a7a34; border-left-color: #4a7a34; }
+.ui-btn.tone-good:hover { background: #3d6a2c; }
+.ui-btn.tone-warn { background: #4a2718; border-top-color: #74412a; border-left-color: #74412a; }
+.ui-btn.tone-warn:hover { background: #5e3320; }
+
+.ui-btn-body { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.ui-btn-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.ui-btn-hint { color: var(--ink-dim); font-size: 10px; letter-spacing: 0.04em; }
+
+.ui-key {
+  padding: 3px 6px;
+  background: var(--well);
+  border: 1px solid var(--plate-hi);
+  border-radius: 2px;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+/* --- plate: chevrons instead of a border, which is how the original does it */
+.ui-plate {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  background: linear-gradient(#333c1c, #232a12);
+  border-top: 1px solid #47522a;
+  border-bottom: 1px solid var(--plate-lo);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.ui-plate-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ui-plate-value { color: var(--gold); }
+
+/* The chevron is drawn, not a glyph, so it lines up on the pixel grid. */
+.ui-chev {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-top: 2px solid var(--ink-dim);
+  border-right: 2px solid var(--ink-dim);
+}
+.ui-chev.left { transform: rotate(-135deg); }
+.ui-chev.right { transform: rotate(45deg); }
+
+/* A dead soldier keeps his plate. That is the point of the plate. */
+.ui-plate.dead {
+  background: linear-gradient(#2a1613, #1a0e0b);
+  border-top-color: #4a2018;
+  color: #7a5148;
+  text-decoration: line-through;
+  text-decoration-color: var(--blood);
+}
+.ui-plate.dead .ui-chev { border-color: #5c2a20; }
+
+/* --- readout */
+.ui-readout { display: flex; align-items: baseline; gap: 7px; padding: 2px 7px; }
+.ui-readout-value { color: var(--gold); font-size: 17px; font-weight: 700; }
+.ui-readout-label {
+  color: var(--ink-dim);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.ui-readout-value.pulse { animation: ui-pulse 0.32s ease-out; }
+@keyframes ui-pulse {
+  0% { color: #fff6d0; transform: scale(1.35); }
+  100% { color: var(--gold); transform: scale(1); }
+}
+
+/* --- pips */
+.ui-pips { display: flex; gap: 4px; padding: 2px 7px; }
+.ui-pip { width: 9px; height: 9px; background: #8fd44a; box-shadow: 0 0 0 1px var(--edge); }
+.ui-pip.dead { background: #4a2020; }
+
+/* --- meter */
+.ui-meter { padding: 4px 7px; }
+.ui-meter-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  color: var(--ink-dim);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.ui-meter-text { color: var(--gold); }
+.ui-meter-track { height: 6px; background: var(--well); box-shadow: inset 0 0 0 1px var(--plate-lo); }
+.ui-meter-fill { display: block; height: 100%; background: linear-gradient(#d8b64c, #9a7a20); }
+
+/* --- heading */
+.ui-heading {
+  margin: 12px 0 5px;
+  padding: 0 7px;
+  color: var(--ink-faint);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.ui-heading::after {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-top: 4px;
+  background: linear-gradient(90deg, var(--plate-hi), transparent);
+}
+
+/* =============================================================== the stage */
+
+#stage { display: flex; height: 100%; }
+#screen { display: block; flex: 1; height: 100%; cursor: crosshair; }
+
+/* --------------------------------------------------------------- sidebar */
+/*
+ * Down the left edge, as in the original. The column exists mainly to hold the
+ * roster: a casualty should read as a name leaving a list, not as a counter
+ * going down.
+ */
+#hud {
+  width: var(--sidebar-w);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 6px 8px;
+  background: linear-gradient(#232a13, #171d0d);
+  border-right: 2px solid var(--edge);
+  box-shadow: inset -1px 0 0 var(--plate-lo);
+  overflow: hidden;
+}
+
+.hud-mission { padding: 0 7px 2px; }
+.hud-mission b {
+  display: block;
+  color: var(--gold);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.15;
+}
+.hud-diff {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.diff-rookie { background: #2f4a24; color: #bfe39a; }
+.diff-regular { background: #3c4a1c; color: #dbe89a; }
+.diff-veteran { background: #5a4118; color: #f0c878; }
+.diff-elite { background: #5c2018; color: #f0a08c; }
+
+.hud-body { flex: 1; min-height: 0; overflow: hidden; }
+.hud-roster { display: flex; flex-direction: column; gap: 2px; }
+.hud-objective {
+  padding: 0 7px;
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hud-hint {
+  padding: 8px 7px 0;
+  border-top: 1px solid var(--plate-lo);
+  color: var(--ink-faint);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.hud-hint b { color: var(--ink-dim); font-weight: 700; }
+
+/* --------------------------------------------------------------- overlay */
+#overlay {
+  position: fixed;
+  inset: 0 0 0 var(--sidebar-w);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 11, 5, 0.78);
+  pointer-events: none;
+  z-index: 5;
+}
+#overlay[hidden] { display: none; }
+/* The briefing is a caption; the result panel is a thing you click. */
+#overlay.interactive { pointer-events: auto; }
+
+/* --- briefing */
+.briefing { text-align: center; padding: 0 30px; }
+.briefing-title {
+  color: var(--gold);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 3px 0 #5c5210;
+}
+.briefing-obj {
+  margin-top: 14px;
+  color: var(--ink);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.briefing-line { margin-top: 10px; color: var(--ink-dim); font-size: 12px; font-style: italic; }
+
+/* --- result */
+.result {
+  width: min(440px, 90vw);
+  padding: 26px 26px 22px;
+  background: linear-gradient(#242c14, #171d0d);
+  border-top: 2px solid var(--plate-hi);
+  border-left: 2px solid var(--plate-hi);
+  border-right: 2px solid var(--edge);
+  border-bottom: 2px solid var(--edge);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+.result-title {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.result.win .result-title { color: var(--gold); text-shadow: 0 3px 0 #5c5210; }
+.result.lose .result-title { color: #e07050; text-shadow: 0 3px 0 #52180d; }
+.result-sub { margin-top: 10px; color: var(--ink-dim); font-size: 11px; letter-spacing: 0.08em; }
+
+.result-roll { margin: 20px auto 0; max-width: 240px; }
+.result-roll-head {
+  margin-bottom: 7px;
+  color: var(--blood);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.result-roll .ui-plate {
+  background: linear-gradient(#2a1613, #1a0e0b);
+  border-top-color: #4a2018;
+  color: #a8756a;
+  margin-bottom: 2px;
+}
+.result-roll .ui-plate .ui-chev { border-color: #5c2a20; }
+.result-perfect { margin-top: 18px; color: #a8c07a; font-size: 11px; font-style: italic; }
+
+.result-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 22px; }
+
+/* ============================================================ mission select */
+
+#menu {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  background: radial-gradient(ellipse at 50% -10%, #2f3a1c 0%, #141a0b 55%, #080b04 100%);
+}
+#menu[hidden] { display: none; }
+#menu-inner { max-width: 1000px; margin: 0 auto; padding: 48px 24px 64px; }
+
+#menu h1 {
+  margin: 0;
+  font-size: 58px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-shadow: 0 4px 0 #5c5210, 0 5px 12px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+.menu-sub {
+  margin: 14px 0 30px;
+  text-align: center;
+  color: var(--ink-dim);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.menu-foot { margin: 30px 0 0; text-align: center; color: var(--ink-faint); font-size: 11px; letter-spacing: 0.08em; }
+
+#menu-difficulty { display: flex; justify-content: center; gap: 5px; margin: 0 0 12px; }
+.diff {
+  padding: 8px 20px;
+  background: var(--plate);
+  border-top: 1px solid var(--plate-hi);
+  border-left: 1px solid var(--plate-hi);
+  border-right: 1px solid var(--plate-lo);
+  border-bottom: 2px solid var(--plate-lo);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.diff:hover { background: var(--plate-hi); color: var(--ink); }
+.diff.on { background: var(--plate-hi); color: var(--gold); box-shadow: inset 0 2px 0 var(--gold); }
+.menu-blurb {
+  margin: 0 0 24px;
+  text-align: center;
+  color: #a3b47c;
+  font-size: 11px;
+  font-style: italic;
+  min-height: 14px;
+}
+
+/* --- mission groups */
+/*
+ * Missions are grouped into theatres rather than listed flat, so the campaign
+ * reads as a shape you are moving through. Later groups will lock.
+ */
+#menu-list { display: flex; flex-direction: column; gap: 26px; }
+
+.theatre-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.theatre-name {
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.theatre-note { color: var(--ink-faint); font-size: 10px; letter-spacing: 0.08em; }
+.theatre-rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--plate-hi), transparent); }
+
+.theatre-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 8px;
+}
+
+/*
+ * No left accent bar: the cards are grouped by theatre now, so a per-card
+ * colour stripe is repeating information the heading already carries.
+ */
+.mission {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 15px;
+  background: linear-gradient(#232b14, #1a2010);
+  border-top: 1px solid var(--plate-hi);
+  border-left: 1px solid var(--plate-hi);
+  border-right: 1px solid var(--plate-lo);
+  border-bottom: 2px solid var(--plate-lo);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.mission:hover, .mission:focus-visible {
+  background: linear-gradient(#33401d, #232c12);
+  outline: none;
+  transform: translateY(-2px);
+}
+.mission:active { transform: translateY(0); }
+.mission.last { box-shadow: inset 0 0 0 1px #6b7d40; }
+
+.m-num { font-size: 22px; font-weight: 700; color: #56703a; min-width: 30px; line-height: 1.1; }
+.mission:hover .m-num { color: var(--gold); }
+.m-body { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+.m-name { font-size: 14px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.m-obj { color: var(--ink-dim); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+.m-mech { color: #a3b47c; font-size: 11px; font-style: italic; line-height: 1.4; }
+.m-levers { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.lever {
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 1px #3b4d26;
+  color: #9db97a;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.m-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: var(--ink-faint);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.m-doctrine { color: #b0975c; }
+/* The theatre heading carries the terrain now, so the card need not repeat it. */
+.m-theme { display: none; }
+
+@media (max-width: 720px) {
+  :root { --sidebar-w: 150px; }
+  #menu h1 { font-size: 36px; }
+  .m-meta { display: none; }
+  .hud-hint { display: none; }
+}

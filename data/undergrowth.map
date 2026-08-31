@@ -1,0 +1,77 @@
+name: Undergrowth
+theme: jungle
+objective: eliminate
+doctrine: patrol
+order: 4
+mechanic: tall grass
+brief: Tall grass hides you but not your bullets. Snipers own the open ground.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...TTTTTTTTTTT.TTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTT.TT.TTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT""""""."TTTTTTT.TTTTTTTTT.T...TTT
+TTTTTTTT""""".TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"""""""""""""""TTTTTTTTTTTTTTT..TTTT
+TTTTTTTT"""""."..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"""""""""""""""""""""TTTTTTTTTTTT.TTTTT
+TTTTTTTT"""........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT""""""""""""""""""""""""""""""""""""""TTTT
+TTTTTTTT............".TTTTTTTTTTTTT""""""""T"""""""""""""S"""""""""".p""""""""""""""""""""""TTTT
+TTTTTTTT................".TTTT""...""""""""T"TTT""""""""""""""""""T..""""""""""""""""""""E""TTTT
+TTTTTTTT.........................."""""""""TTTTTT""""""""""""""""TTTT""...."""."""""""""""""TTTT
+TTTTTTTT.............""..........""""""""T"TTTTT"T""""""""""".""""T.".........."""""""""""""TTTT
+TTTTTTTT.".".....""""""........."""""""""""TT""T""""""""""".......T"..........""""""""""""""TTTT
+TTTTTTTT""".""""""""""....""..."""""""""""""T"""""""""""""...................."""..""""""""TTTTT
+TTTTTTTTT"..""""""""""....""..""""""""""""""""TT""""""""""...."................".....""""""TTTTT
+TTTTTTTTT"...""..""""........."""""""""""""""""""""""""S"...E""......................"""T""TTTTT
+TTTTTTTT.""......"""..........."""""""""""""""""""""""""...."......................."""TT"TTTTTT
+TTTTTTT"T"""....."""..........."""""""""""""""""""""""""..."........................""TT""TTTTTT
+T.T.TTTT"""""....""".."...."."""""""""""""""""T"""""""...."""""."..................."".TTTTTTTTT
+T..TTTT""""""""""""""""".""""""""""""""""""""T""TE""".....""""""""."."....""........"".TTTTTTTTT
+.T..TTT""""""""""""""""""""""""""""""""""""""TTTTTT""...""""".""""""c""...""............"TTTTTTT
+TTTTTTT"""""""""""""""""""""""""""""""""""""T"T"""""""""""""".""""""""""................TTTTTTTT
+TTTTTTT"""""""""""""""""""""""""""""""""""""TT"TTT"""""""""""""""""""S""".............."TTTTTTTT
+TTTTTTT."""""""""""""""""""""""""""""""."""""""T""""""""""""p"""""""""""""".............TTTTTTTT
+TTTTTTT."""""""""""""""""""""""""""""......"""""""""""""""""""""""""""""""............."TTTTTTTT
+TTTTTTT."""""""""""""""""""#"""""""""......""""""""""""""""""""""""""""""".....E......"TTTTTTTTT
+TTTTTTT""""""""""""""""""""##"""""""......."""""""""""""""""""""""""""""""............"TTTTTTTTT
+TTTTTTT.""""""""""""""""""##""""""..........."""""""""""""""""""""""""""""""......T"...TTTTTTTTT
+TTTTTTT."""""""""""""""""""""""""............""""""""""""""""""""""""""""""""......TTT.TTTTTTTTT
+TTTTTTT."""""""""""""""""""""""""........""""""""""""""""""""""""""""""""""""".""T"TTT.TTTTTTTTT
+TTTTTTT"""""""""""""""""""""""""."....E..""""""""E""""""""""""""""""""""""""""""TT.T..".TTTTTTTT
+TTTTTTT."""""""""""""""""""TT"""........."""""""""""""""""""""""""""""""""""""""TT.TTT."TTTTTTTT
+TTTTTTT.""""""""""""""""T"TTT"""......."""""""""""""""""""""""""""""""""""""""""".T"""..TTTTTTTT
+TTTTTTT"""""""""""""""""TT"TTT""......"""""""""""""""""""""""""""""""E"""""""""""""T""""TTTTTTTT
+TTTTTTT""""""""""""""""""TT""TT"......."""""""""""""""""""""""""""""""""""""""""""""""""TTTTTTTT
+TTTTTTT"""""""""""""""""TTT""T.""......""""""""""""""""""""""""""""""""""""""""""""""".".TTTTTTT
+TTTTTTT""""""""""""""""""T"T"""""""..."""""""""""""""""""""""""""""""""""""""""""""""..."TTTTTTT
+TTTTTT""""""""""""""""""""TT"""""""""""""""""""""""""""""""""""""""""""""""""""""""....."TTTTTTT
+TTTTTT""""""""""""""""""""""E"""""""""""""""c""""""""""""""""""""""""""""""""""".E...."".TTTTTTT
+TTTTTT"""""""""""""""""""""""""""""""""""""""""""""""...".."""""""""""""""""""""""...".".TTTTTTT
+TTTTT""""""""""""""""""""""""""""""""""""""""""""""".......""""""""""""""""""""""""""."..TTTTTTT
+TTTT."""""""""""""""""""""""""""""""""""""""""""""""........""""""""""""""""""""""""""...TTTTTTT
+TT.T.""""""""""....""""""""""""""""""""""""""""""""..........""""""""""""""""""""""""".."TTTTTTT
+TTTT"""""""""......"""""""""""""""""""""""""""""""............""""""""""""""""""""""""S."TTTTTTT
+TT.TT""""..""......""""""""""""""""""""""""""""".............""""""""""""""""""""""""".T.TTTTTTT
+TT..T""""..""........""""""""""""""""""""""""."""............"""""""""..."""""""""""""T""TTTTTTT
+TTTT"TT"""............""""""""""""""""""""""...""............"""""""E......"""""""""T".TTTTTTTTT
+TTTTTT""".........."""""""""""""""""""""""""".............."""""""""......."""""""""""T.TTTTTTTT
+TTTT.T""...........""""""""""""""""""""""""""""""........."""""""""".......""""""""""T"TTTTTTTTT
+TTTT"T"""..........""""""""""""""""""""""""""""""........."""""""""".""."""""""""""""""""TTTTTTT
+TTT""T""""........."""""""""""""""""""""""""""""""...."".."""""""""""""""""""""""""""""""TTTTTTT
+TTT""""""".........""""""""""""""""""""""""""""""....."""""""""""""""""""""""""""""""""""TTTTTTT
+TTT"""""".........."""""""""""#""""""""""""""""""....""""""""""""""""""""""""""""""""""""TTTTTTT
+TTTT"""".""""....""""""""""#"#""""""""""""""""""""..""""""""""""""""""""""T"""""""""""""""TTTTTT
+TTTT"""""."""""..."""""""""###"""""""""""""""""""""""""""""""""""""""""TTTTT""""""""""""""TTTTTT
+TTTT""""T...""""."""""""""""#""""""""""""""""""""""""""""""""""""""""""""T"""T""""""""""""TTTTTT
+TTTT""""T"T.""""""""""""""""""""""....""""""""""""""""""""""""""T"""""""."TT"""""""""""""""TTTTT
+TTTTT"""."T"""""""""""""""""""""""....""""""""""""""""""""""""TT...""""TT.T""""""""""""""""TTTTT
+TTTTT".....""""""""""""""""""""""""...""""""""""""""""""""""""TTT.".""".."T"""""p""""""""""TTTTT
+TTTTT.......""""""T""""""""""""..""....""""""..""""""""""""E"""TTT.".."."...""""""""""""""""TTTT
+TTTTT.P.P.P."""""""""""""""""""........""""".T"T.""""""""""""".T.".."..TT".""""""""""#""""""T.TT
+TTTT.........""""TTT""T""""""""........"""".T"T..""E"".""""""""."TTTTTTTTTTTTT"""""###""""""..T.
+TTTTT.P.P.P."""T"T"T"T""".".T"....."..."""...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT""####"""""...T
+TTTTT.......TTTTTTTTTTT"TTT"TT"..."""""..""TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT""""#""""".TT
+TTTTTT.....TTTTTTTTTTTTTTTTTT""...."""..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT#""""""T.T
+TTTTTTTT.TTTTTTTTTTTTTTTTTTTT."."..".TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTT
