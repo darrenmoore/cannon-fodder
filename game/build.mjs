@@ -12,6 +12,15 @@ const options = {
   sourcemap: watch,
   minify: !watch,
   logLevel: 'info',
+  /**
+   * True only under `--watch`, i.e. `npm run dev`.
+   *
+   * esbuild substitutes the literal before minifying, so `if (__DEV__)` in a
+   * production build becomes `if (false)` and the whole branch -- the test
+   * range, the debug panel, everything behind it -- is dropped from the bundle
+   * rather than merely hidden. Dev-only has to mean absent, not unreachable.
+   */
+  define: { __DEV__: JSON.stringify(watch) },
 };
 
 if (watch) {

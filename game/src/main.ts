@@ -126,6 +126,25 @@ async function boot(): Promise<void> {
   if (levels.length === 0) throw new Error('no missions found in data/');
 
   /**
+   * The campaign proper: the missions that form a sequence.
+   *
+   * The test range is listed in the menu of a dev build but is not part of the
+   * run, so "next mission" from the last real mission must not walk into it and
+   * the last real mission must still be the last. Everything about *ordering* --
+   * what follows what, what has a next -- reads this; only the menu reads
+   * `levels`.
+   */
+  const campaignLevels = levels.filter((l) => !l.dev);
+
+  // Dev only, and absent rather than hidden in a real build: `__DEV__` is a
+  // literal `false` there, so esbuild drops this call, the module and the whole
+  // panel from the bundle.
+  if (__DEV__) {
+    const { mountDebugPanel } = await import('./ui/debug.js');
+    mountDebugPanel(() => game?.world ?? null);
+  }
+
+  /**
    * A phone screen that goes to sleep mid-firefight, and a mission that keeps
    * running while the player answers the door.
    *
@@ -198,8 +217,8 @@ async function boot(): Promise<void> {
     missionStarted(info.id, difficulty);
     // The end-of-mission panel drives the shell rather than the other way
     // round, so "next mission" is one click from where you finished.
-    const index = levels.findIndex((l) => l.id === info.id);
-    hud.hasNext = index >= 0 && index < levels.length - 1;
+    const index = campaignLevels.findIndex((l) => l.id === info.id);
+    hud.hasNext = index >= 0 && index < campaignLevels.length - 1;
     hud.onNext = (): void => { if (game) game.nextRequested = true; };
     hud.onRetry = (): void => { game?.restart(); hud.hideOverlay(); };
     hud.onMissions = (): void => { if (game) game.exitRequested = true; };
@@ -345,8 +364,8 @@ async function boot(): Promise<void> {
 
     const outcome = await play(info, difficulty);
     if (outcome === 'next') {
-      const at = levels.findIndex((l) => l.id === info.id);
-      queued = at >= 0 ? levels[at + 1] ?? null : null;
+      const at = campaignLevels.findIndex((l) => l.id === info.id);
+      queued = at >= 0 ? campaignLevels[at + 1] ?? null : null;
     }
   }
 }

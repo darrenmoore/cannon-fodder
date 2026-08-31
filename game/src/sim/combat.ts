@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { debug } from '../ui/debug.js';
 import { sfxDeath, sfxEnemyShot, sfxExplosion, sfxShot } from '../shell/audio.js';
 import { buildingAt, damageBuilding } from './buildings.js';
 import { raiseAlarm } from './enemies.js';
@@ -195,6 +196,9 @@ export function stepDying(world: World, dt: number): void {
 
 export function damage(world: World, actor: Actor, amount = 1): void {
   if (!actor.alive) return;
+  // The only line the debug panel costs the simulation. `__DEV__` is folded to
+  // `false` in a production build, so this and the import vanish with it.
+  if (__DEV__ && debug.invulnerable && actor.faction === Faction.Player) return;
   actor.hp -= amount;
   if (actor.hp > 0) return;
 

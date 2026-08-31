@@ -407,7 +407,7 @@ leave a mission uncompletable.
 
 ---
 
-## Batch I — the test level
+## Batch I — the test level — **DONE**
 
 The brief asks for a way to see everything at once, and it is the item that
 makes every later batch cheaper to verify.
@@ -435,6 +435,17 @@ one command.
 
 **Done when:** a new sprite or enemy can be looked at without playing a mission
 to reach it, and none of it ships in a production build.
+
+**Verified both ways.** A dev build lists nine missions and puts the panel in
+the page; a production build lists eight, has no panel, and the string
+`debug-panel` does not appear in the bundle at all -- dropped by dead-code
+elimination rather than hidden. Invulnerability holds six of six under
+point-blank fire, `+sniper` spawns one, `kill all` clears the map.
+
+One consequence worth recording: adding a ninth map made Last Stand offer "next
+mission" into the test range, which `playtest.mjs` caught. Ordering now reads a
+campaign list that excludes dev maps, so the range is in the menu but not in the
+run.
 
 ---
 

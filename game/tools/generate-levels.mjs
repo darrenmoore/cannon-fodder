@@ -447,6 +447,61 @@ class Placer {
  * returns nothing -- the grid is mutated in place.
  */
 const BUILDERS = {
+  /**
+   * The test range. Dev only -- `dev: true` in its header keeps it out of a
+   * real player's mission list, and `__DEV__` drops the debug panel that goes
+   * with it from the production bundle entirely.
+   *
+   * Everything the game can draw or simulate, on one screen-and-a-bit, laid out
+   * in bands so a new sprite or hazard can be looked at without playing three
+   * missions to reach it. It is a real, completable map -- the validator holds
+   * it to the same standard as the campaign -- because a test level that cannot
+   * be finished stops being run.
+   */
+  'test-range'(g, place) {
+    g.frame(ROCK, { min: 2, max: 3 });
+
+    // --- terrain bands, left to right: grass, sand, water with a bridge,
+    //     ice, quicksand. Each wide enough to stand a squad in.
+    g.fillRect(1, 1, 14, g.h - 2, GRASS);
+    g.fillRect(15, 1, 10, g.h - 2, SAND);
+    g.fillRect(25, 1, 6, g.h - 2, WATER);
+    g.fillRect(27, 12, 2, 6, DEEP);
+    g.fillRect(25, 20, 6, 2, BRIDGE);
+    g.fillRect(31, 1, 8, g.h - 2, ICE);
+    g.fillRect(39, 1, 6, g.h - 2, QUICK);
+    g.fillRect(45, 1, g.w - 46, g.h - 2, GRASS);
+
+    // --- cover to hide in and shoot through
+    scatter(g, TREE, 5, [2, 3], [GRASS]);
+    scatter(g, TALL, 4, [2, 3], [GRASS]);
+    scatter(g, ROCK, 3, [1, 2], [GRASS]);
+
+    // --- the squad, bottom left on clean grass
+    const spawn = clearing(g, 7, g.h - 6, 4);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    // --- one of each building, spaced so a grenade reaches only one
+    building(g, 48, 4, 2, 2, HUT);
+    building(g, 54, 4, 3, 3, FACTORY);
+    building(g, 48, 12, 2, 2, TENT);
+
+    // --- one of each enemy, in the open where they can be looked at
+    place.put('E', 50, 20, 4, 2);
+    place.put('E', 54, 22, 4, 2);
+    place.put('S', 58, 8, 4);
+    place.put('B', 58, 16, 4);
+
+    // --- every hazard and pickup
+    for (let i = 0; i < 4; i++) place.put('*', 42, 6 + i * 5, 3);
+    place.put('o', 46, 16, 3);
+    place.put('o', 46, 19, 3);
+    place.put('c', 12, 6, 3);
+    place.put('H', 60, 24, 3);
+  },
+
   /** 01 -- the basics: move, take cover, engage. */
   'chicken-run'(g, place) {
     g.frame(TREE, { min: 3, max: 9 });
@@ -701,6 +756,12 @@ const BUILDERS = {
 
 const CAMPAIGN = [
   {
+    id: 'test-range', dev: true, doctrine: 'garrison', order: 99, seed: 40404, w: 66, h: 30,
+    name: 'Test Range', theme: 'jungle', objective: 'eliminate',
+    mechanic: 'everything at once',
+    brief: 'Dev only. One of everything, for looking at rather than winning.',
+  },
+  {
     id: 'chicken-run', doctrine: 'garrison', order: 1, seed: 20250830, w: 88, h: 56,
     name: 'Chicken Run', theme: 'jungle', objective: 'eliminate',
     mechanic: 'basics',
@@ -772,6 +833,7 @@ function generate(spec) {
     `order: ${spec.order}`,
     `mechanic: ${spec.mechanic}`,
     `brief: ${spec.brief}`,
+    ...(spec.dev ? ['dev: true'] : []),
     'tile: 16',
     ...(spec.duration ? [`duration: ${spec.duration}`] : []),
     '---',

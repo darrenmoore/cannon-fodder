@@ -30,6 +30,8 @@ const SPEAKER_OFF = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER_BODY}
 
 export interface LevelInfo {
   id: string;
+  /** A test map, listed only in a dev build. See `fetchLevels`. */
+  dev?: boolean;
   name: string;
   theme: string;
   objective: string;
@@ -89,7 +91,11 @@ function shapeOf(l: LevelInfo): string {
 export async function fetchLevels(): Promise<LevelInfo[]> {
   const res = await fetch('/api/maps');
   if (!res.ok) throw new Error(`could not list missions: ${res.status}`);
-  return res.json() as Promise<LevelInfo[]>;
+  const levels = (await res.json()) as LevelInfo[];
+  // The test range lives in `data/` like every other map, so the server lists
+  // it; a real player must never see it. Belt and braces with the `__DEV__`
+  // define -- this hides it, and the define drops the debug panel entirely.
+  return __DEV__ ? levels : levels.filter((l) => !l.dev);
 }
 
 /**

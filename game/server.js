@@ -73,6 +73,9 @@ function summarise(src) {
   const rows = lines.slice(i).filter((l) => l.length > 0);
   return {
     name: header.name ?? 'Unnamed',
+    // Dev-only maps: the test range is served like any other file, and the
+    // menu is what hides it. The server stays a dumb file server.
+    dev: header.dev === 'true',
     theme: header.theme ?? 'jungle',
     objective: header.objective ?? 'eliminate',
     doctrine: header.doctrine ?? 'garrison',
