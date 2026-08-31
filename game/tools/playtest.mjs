@@ -19,7 +19,7 @@ const flag = (n, d = null) => {
   const i = args.indexOf(`--${n}`);
   return i === -1 ? d : (args[i + 1] ?? true);
 };
-const PORT = flag('port', '5199');
+const PORT = flag('port', '5210');
 const SHOTS = flag('shots');
 const BASE = `http://localhost:${PORT}`;
 

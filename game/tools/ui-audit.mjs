@@ -16,7 +16,7 @@
  */
 import { chromium } from 'playwright';
 
-const BASE = process.env.CF_URL ?? `http://localhost:${process.env.PORT ?? 5199}`;
+const BASE = process.env.CF_URL ?? `http://localhost:${process.env.PORT ?? 5210}`;
 const VERBOSE = process.argv.includes('--verbose');
 
 /** The floors. Not suggestions -- these are what the audit exists to defend. */

@@ -8,6 +8,12 @@
  *   node tools/shoot.mjs --only ice-station    # one mission
  *   node tools/shoot.mjs --menu                # just the level select
  *   node tools/shoot.mjs --zoom 2              # magnify to inspect tiling
+ *   node tools/shoot.mjs --port 5199           # against a dev server you own
+ *
+ * It serves its own port by default, NOT 5199. The owner keeps `npm run dev`
+ * running there and plays while work goes on, and a harness that drives his
+ * session -- stepping his world, moving his camera -- is indistinguishable from
+ * the game misbehaving. Pass --port to aim it somewhere on purpose.
  *
  * Shots are deterministic where they can be: the game is stepped a fixed
  * number of times with a fixed dt before capture, so two runs of the same
@@ -26,7 +32,7 @@ const has = (name) => args.includes(`--${name}`);
 
 const OUT = flag('out', 'shots/current');
 const ONLY = flag('only');
-const PORT = flag('port', '5199');
+const PORT = flag('port', '5210');
 const ZOOM = Number(flag('zoom', 1));
 const WIDTH = Number(flag('width', 1280));
 const HEIGHT = Number(flag('height', 800));

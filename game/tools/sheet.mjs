@@ -21,7 +21,7 @@ const flag = (n, d) => {
 const SCALE = Number(flag('scale', 5));
 const ONLY = flag('only');
 const OUT = flag('out', 'shots/sheet.png');
-const PORT = flag('port', '5199');
+const PORT = flag('port', '5210');
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
