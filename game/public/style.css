@@ -1388,7 +1388,30 @@ html, body {
   text-align: center;
   text-transform: uppercase;
 }
-.sheet-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 18px; }
+/* Stuck to the bottom of the card rather than to the end of the list.
+   The card scrolls, so `Done` sat below the fold on a 900px desktop as well as
+   on a phone -- reachable only by a scroll with nothing to announce it, which
+   is the same as unreachable for anybody who does not think to try. It belongs
+   to the sheet, not to the settings. */
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 18px;
+  position: sticky;
+  bottom: -18px;
+  padding: 10px 0;
+  background: #171d0d;
+  box-shadow: 0 -10px 12px -8px #0d1207;
+}
+/* A pause sheet is short and has nothing to scroll, so its buttons should not
+   look like a bar bolted to the bottom of one. */
+.sheet-body:not(:has(.sheet-rows)) .sheet-actions {
+  position: static;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
 .sheet-note {
   margin: 14px 0 0;
   color: var(--ink-faint);
@@ -1398,15 +1421,28 @@ html, body {
 }
 
 .sheet-rows { margin-top: 14px; }
+/* A row is two columns when both fit and two lines when they do not.
+   It used to be one flex line with `min-width: 0` on the label, which lets the
+   label shrink to nothing while the control keeps its natural width -- so the
+   five-segment Zoom control squeezed its own description into a 40px column
+   setting one word per line, and then overlapped it. Measured at 217px tall
+   against 61px for every other row. `wrap` plus a floor on the label is the
+   whole fix: when the control will not fit beside it, it drops below it. */
 .sheet-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 8px 0;
   border-bottom: 1px solid var(--plate-lo);
 }
 .sheet-row:last-child { border-bottom: 0; }
-.sheet-row-text { flex: 1; min-width: 0; }
+.sheet-row-text { flex: 1 1 190px; min-width: 190px; }
+/* When the control has dropped to its own line it takes the whole of it, so a
+   wrapped row reads as two deliberate rows rather than as a control that fell
+   off the end of the first one. */
+.sheet-row > .ui-segmented { flex: 0 1 auto; margin-left: auto; }
+.sheet-row-text + .ui-segmented:not(:only-child) { min-width: 0; }
 .sheet-row-text b {
   display: block;
   font-size: var(--fs-body);
@@ -1423,7 +1459,16 @@ html, body {
 /* On a phone the label and its control stop fitting side by side long before
    the text itself becomes the problem, so the row turns into two. */
 @media (max-width: 460px) {
-  .sheet-row { flex-direction: column; align-items: stretch; }
+  /* `flex: 1 1 190px` grows along the *main* axis, and turning the row into a
+     column turns that axis vertical -- so the label stretched to fill the row
+     and every setting became 263px tall with a canyon of empty green between
+     the words and the control. The basis has to be reset with the direction. */
+  .sheet-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .sheet-row-text { flex: 0 0 auto; min-width: 0; }
+  /* Five segments do not fit 390px, and the fifth was simply off the edge.
+     Scrolling is already what this control does when it overflows; it just
+     needs to be allowed to wrap instead when there is nowhere to scroll to. */
+  .ui-segmented { flex-wrap: wrap; }
 }
 
 /* --- segmented control */

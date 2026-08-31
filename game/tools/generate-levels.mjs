@@ -910,6 +910,96 @@ const BUILDERS = {
     for (let i = 0; i < 3; i++) place.put('E', g.w * (0.25 + 0.5 * g.rnd()), 8 + g.rnd() * 6, 5, 3);
   },
 
+  /**
+   * The decoy, as a mission rather than as a footnote.
+   *
+   * A round that stops on scenery raises the alarm *where it landed*, not where
+   * it was fired from -- so a shot into the far trees walks the garrison into
+   * the far trees. That has been true for two batches and no mission required
+   * it, which is nearly the same as it not existing: a mechanic nobody is ever
+   * made to use is a mechanic nobody discovers.
+   *
+   * `throw-your-voice` names the trick in its brief and is hand-written by
+   * another hand; this is the second map the spec offered instead of editing
+   * it, and it is built around hostages the way the brief pictures.
+   *
+   * The shape is the whole lesson. Prisoners on open ground so the last stretch
+   * cannot be crossed in cover; a ring of sentries facing outward so fighting
+   * through is expensive; and the noise-target far off the flank, well away
+   * from the pen and on the *opposite* side from the squad -- because a
+   * distraction you walk past on the way is not a distraction.
+   */
+  'the-far-trees'(g, place) {
+    g.fillRect(0, 0, g.w, g.h, GRASS);
+    g.frame(TREE, { min: 5, max: 11 });
+    forest(g, 20, [3, 6]);
+    scatter(g, TALL, 12, [3, 6]);
+
+    const penX = Math.round(g.w * 0.6);
+    const penY = Math.round(g.h * 0.52);
+
+    // The pen: open ground, so the last stretch is crossed in the open. This is
+    // what makes going round the ring worth the walk.
+    g.disc(penX, penY, 9, GRASS, [TREE, TALL, ROCK]);
+    for (let i = 0; i < 3; i++) place.put('H', penX, penY, 3);
+
+    // A ring rather than a scatter, because the player has to be able to *see*
+    // that it is a ring before deciding to pull it apart.
+    const RING = 13;
+    for (let a = 0; a < 360; a += 45) {
+      const sx = Math.round(penX + Math.cos((a * Math.PI) / 180) * RING);
+      const sy = Math.round(penY + Math.sin((a * Math.PI) / 180) * RING);
+      g.disc(sx, sy, 2, GRASS, [TREE, TALL]);
+      place.put('E', sx, sy, 2, 3);
+    }
+    // Two who walk, so the ring is not a photograph.
+    for (let i = 0; i < 2; i++) place.put('p', penX, penY, 16, 6);
+
+    /*
+     * The far trees themselves: a stand of rock in among them.
+     *
+     * Rock as well as timber because a round has to *stop* on something to
+     * raise the alarm where it landed, and a lone outcrop reads as a thing to
+     * shoot at in a way that one more tree does not.
+     */
+    /*
+     * Placed by the range the alarm actually carries, not by the look of the
+     * map -- and the difference is the whole mission.
+     *
+     * A round on scenery is heard `impactAlarmFloor` away, which is twelve
+     * tiles. The ring stands `RING` tiles out from the pen. So the stand has to
+     * sit inside twelve tiles of the sentries on the near arc, which puts it
+     * about `RING + 11` from the pen and not a step further: the first attempt
+     * put it across the map, where it was twenty-one tiles from the closest
+     * sentry and pulled precisely nobody.
+     *
+     * Nine rather than eleven, and it was measured rather than guessed: at
+     * eleven the stand's near edge sat 148px from the closest sentry against a
+     * 190px alarm, which pulled one man. At nine the whole near shoulder of the
+     * ring is inside it. Closer still would pull them *across* the pen, which
+     * is the one thing a decoy must not do.
+     */
+    const bearing = -Math.PI / 4;
+    const decoyX = Math.round(penX + Math.cos(bearing) * (RING + 9));
+    const decoyY = Math.round(penY + Math.sin(bearing) * (RING + 9));
+    g.disc(decoyX, decoyY, 7, GRASS, [TREE, TALL]);
+    g.disc(decoyX, decoyY, 4, ROCK, [GRASS]);
+    forest(g, 3, [2, 3]);
+
+    // In from the far corner: the shot goes one way and the walk goes another.
+    const spawn = clearing(g, 9, Math.round(g.h * 0.8), 4);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    // Home is behind them. Walking prisoners back out is the second half, and
+    // the ring is still awake for it.
+    building(g, 6, Math.round(g.h * 0.8) + 5, 2, 2, TENT);
+
+    place.put('c', Math.round(g.w * 0.28), Math.round(g.h * 0.6), 6);
+    place.put('c', Math.round(g.w * 0.42), Math.round(g.h * 0.3), 6);
+  },
+
   /** 05 -- minefield: cross slowly, or blow a lane through it. */
   minefield(g, place) {
     g.fillRect(0, 0, g.w, g.h, SAND);
@@ -1341,8 +1431,19 @@ const BUILDERS = {
     for (let y = 0; y < g.h; y++) {
       for (let k = 0; k < 3; k++) g.set(wallX + k, y, ROCK);
     }
-    // The gap, filled by a factory. This is the door.
-    for (let y = gapY - 2; y <= gapY + 2; y++) for (let k = 0; k < 3; k++) g.set(wallX + k, y, FACTORY);
+    /*
+     * The gap, filled by a factory. This is the door -- and it has to be the
+     * size of the sprite that stands in it.
+     *
+     * It was five tiles tall against a 54px sprite, so the block was 80px of
+     * footprint wearing 54px of building: twenty-six pixels of bare ground
+     * showed between the roof and the stone above it, and the door read as a
+     * hut parked in a hole rather than as the thing plugging it. The wall
+     * itself was never the problem -- a flood fill from the west edge cannot
+     * reach the east side either way -- but a door that visibly does not fill
+     * its frame is a door nobody believes in.
+     */
+    for (let y = gapY - 1; y <= gapY + 1; y++) for (let k = 0; k < 3; k++) g.set(wallX + k, y, FACTORY);
 
     const spawn = clearing(g, 10, gapY, 5);
     squad(g, place, spawn);
@@ -2069,6 +2170,12 @@ const CAMPAIGN = [
    * missions share an objective -- a run of three demolitions in a row is the
    * same mission three times however different the ground is.
    */
+  {
+    id: 'the-far-trees', doctrine: 'garrison', order: 19, seed: 640217, w: 100, h: 58,
+    name: 'The Far Trees', theme: 'jungle', objective: 'rescue',
+    mechanic: 'a shot that lands elsewhere',
+    brief: 'Three of ours, ringed and out in the open. Put a round in the far trees and they go to the far trees.',
+  },
   {
     id: 'salt-pan', layout: 'island', doctrine: 'ambush', order: 38, seed: 517742, w: 96, h: 72,
     name: 'Salt Pan', theme: 'desert', objective: 'collect',

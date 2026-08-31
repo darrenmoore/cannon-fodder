@@ -184,6 +184,23 @@ export const CONFIG = {
     woundAlarm: 0.7,
     impactAlarm: 0.7,
     /**
+     * A floor, in pixels, on how far a round striking scenery carries.
+     *
+     * As a fraction of `hearing` alone it was **66px on Rookie** -- four tiles
+     * -- so the decoy the briefs describe, and that a whole mission is now
+     * built around, did nothing for most of the people who would ever try it.
+     * Measured: a round into a rock stand pulled zero of eight sentries.
+     *
+     * The floor rather than a bigger fraction, because the *fraction* is right
+     * -- a hit on scenery should always be quieter than the shot that caused
+     * it, and on Elite it still is. What was wrong is that a mechanic the
+     * player is invited to use was tuned out of existence at the difficulty
+     * where they are most likely to be learning it. Twelve tiles: far enough to
+     * pull a picket off a position, short enough that it is a decoy rather than
+     * a whistle.
+     */
+    impactAlarmFloor: 190,
+    /**
      * How much further than the investigate radius a noise is *noticed*.
      *
      * The response used to be binary -- inside the radius everybody dropped

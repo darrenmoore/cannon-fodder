@@ -439,7 +439,7 @@ rename. Those are campaign structure and new maps; they stay in 008.
 
 ---
 
-### M — the front end: **M6 only; the rest is [101](101-ui-spec.md)**
+### M — the front end: **M6 only, and DONE; the rest is [101](101-ui-spec.md)**
 
 Every screen in this game belongs to [101](101-ui-spec.md), whole -- composition
 *and* behaviour. This spec used to keep the routing half of the intro on the
@@ -453,7 +453,7 @@ first one anybody sees.
 
 One item is left here, and it is not a screen: it is a measurement.
 
-**M6 · The settings sheet's layout, and its content.**
+**M6 · The settings sheet's layout, and its content — DONE.**
 
 The fault first, because it is measured rather than judged. `.sheet-row` needs a
 real two-column rule so a control that will not fit drops to its own line
@@ -514,7 +514,7 @@ on it being done.
 
 ---
 
-### L — distraction — **L1/L2 DONE, L3 answered, L4 open**
+### L — distraction — **DONE**
 
 One sitting for the mechanics, plus a map. Depends on nothing; can be pulled
 forward.
@@ -543,7 +543,7 @@ label on it — the wounded man reads as alive among corpses because he twitches
 and this should be judged the same way. A held facing (L2) may be the whole
 answer.
 
-**L4 · A map that teaches it — open.** `throw-your-voice` already exists at order 16
+**L4 · A map that teaches it — DONE, as a new mission.** `throw-your-voice` already exists at order 16
 with the right doctrine and the right brief line, but its objective is
 `collect`. The brief pictures **hostages ringed by a garrison, where the only
 way in is to make a noise somewhere else**. Either give that map hostages or
@@ -748,7 +748,7 @@ that rather than working out where the wobble went.
 
 ---
 
-### S — the things on the ground that look wrong
+### S — the things on the ground that look wrong — **7 done, 2 did not reproduce, 1 needs a critic**
 
 **This batch is the reconciliation's finding, and it should not have needed
 one.** When 101 was created it gathered every pixel-judged item; when the owner
@@ -838,6 +838,74 @@ the owner's to invoke.
 > does for five of `map-format.md`'s.
 
 ---
+
+
+### What S turned up
+
+**S1 fences — done.** Posts always, rails only along the sides that continue,
+and a corner gets one rail east and one south joined at the post. It reads the
+neighbours the way `Tile.Bridge` and `Tile.Road` already did.
+
+**S2 rubble — done.** A levelled building sorts to the back of the depth list
+rather than to its own footprint, so every actor is drawn in front of it. It was
+sharing the standing building's `sortY`, which is right for a wall and nonsense
+for a heap of one.
+
+**S3 bridges — done, and the Braided Water bug had a cause.** The span direction
+was read off *one tile's* east-west neighbours, and `river` builds crossings
+**two tiles wide** -- so the body of a north-south span had an east-west
+neighbour and laid its boards across itself, while the one-tile ends had none
+and laid theirs correctly. Counting the run in each direction answers it for a
+bridge of any width and gives every tile the same answer. Also: rails nicked a
+pixel here and there rather than ruled; the deck takes the ground's own tone
+where it lands, so a span onto ice no longer looks like a span onto grass; and
+where a deck ends over water it ends broken, in pieces.
+
+**S7 hold ring — done.** `ctx.arc`, a hairline stroke and a pulsing
+`globalAlpha` -- three prohibitions in four lines, on the thing a `hold` mission
+asks you to stare at for forty-five seconds. It is a marching dashed ring of
+placed pixels now, with four ticks pointing in, and the pulse is a tone change
+between two solid colours.
+
+**S8 the valley map — already true.** The arctic has three valley-shaped
+missions: `the-spine` (ridgeline), `white-cut` and `the-crevasse` (canyon), the
+last added by R1. Nothing to build.
+
+**S9 the rename — done.** "The Ice" named the surface where the other two
+theatres name places; fifteen missions of snow, sea ice, frozen rivers and
+mountain passes are a front. **The Frozen North.**
+
+**S10 `docs/style.md` and `/style` — done**, and it is the reason the rest of
+this batch could be argued at all. `/pixel-check` is the law; this is the
+language. Both are read off parts of the tree that already work.
+
+---
+
+**S5's blocking half did not reproduce, and the real fault was next to it.** A
+flood fill from the west edge cannot reach the east side: **the wall blocks.**
+What is wrong is the door. The gap was **five tiles tall against a 54px
+sprite** -- 80px of footprint wearing 54px of building, so twenty-six pixels of
+bare ground showed between the roof and the stone above it. That is the "pretty
+big gap from the house roof to the stone" exactly, and it is why the wall did
+not read as blocking: a door that visibly does not fill its frame is a door
+nobody believes in. The gap is three tiles now and the sprite fills it.
+
+*I made two measurement errors reaching that, both reported the map was broken
+when it was not. Worth remembering: a flood fill answers "can they get round
+it"; scanning left and right from a building answers nothing at all.*
+
+**S6 heads through rock did not reproduce.** `paintCrag` already writes into the
+same overhead layer as the canopy, so a man inside a rock mass is covered and a
+man south of one is drawn in front -- which is correct. Photographed at two
+placements against a crag face on Through the Wall, including with the head
+inside the rock tile, and it was right both times. **Not fixed, because nothing
+was found to fix.** If it is real it wants the exact spot: which map, which
+edge, and roughly where.
+
+**S4 -- Not a Sound's delivery building -- is not done.** It is pure drawing,
+with no cause to find and nothing measurable to check, and the session that
+draws a building is the one that cannot say whether it looks like this game.
+It stays open for a critic, with S5's *sprite* beside it.
 
 ---
 

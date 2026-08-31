@@ -25,7 +25,7 @@ import {
   dither, foliageFor, mix, packColor, PLANKS, shade, shoreFor, surfaceFor, threshAt,
 } from './palette.js';
 import { Material, sampleField } from './terrain.js';
-import { Tile } from '../sim/tiles.js';
+import { Tile, TILES } from '../sim/tiles.js';
 import type { GameMap } from '../sim/map.js';
 import type { Ramp } from './palette.js';
 import type { TerrainInfo } from './terrain.js';
@@ -537,12 +537,32 @@ function paintDetails(
       const n = detail.at(x + t / 2, y + t / 2);
 
       if (tile === Tile.Bridge) {
-        // Boards laid across the span, each a slightly different weathered tone
-        // and grained along its length. A flat fill with evenly spaced dark
-        // lines reads as decking in an architectural drawing.
-        // Boards lie across the span: if the bridge runs east-west, the boards
-        // run north-south, because that is the way you lay a deck.
-        const spanEW = tileAt(map, tx - 1, ty) === Tile.Bridge || tileAt(map, tx + 1, ty) === Tile.Bridge;
+        /*
+         * Which way the bridge runs, decided by how far it runs each way.
+         *
+         * This asked whether either east-west neighbour was also bridge, which
+         * is the wrong question for a crossing two tiles wide -- and `river`
+         * builds them two wide. The body of a north-south span therefore had an
+         * east-west neighbour and laid its boards the wrong way, while the
+         * one-tile ends had none and laid theirs the right way. Braided Water's
+         * top-right bridge is exactly that: a span running north to south with
+         * its two end tiles facing across it.
+         *
+         * Counting the run in each direction answers it for a bridge of any
+         * width, and gives the same answer for every tile in one -- including
+         * the ends, which is where it was visibly wrong.
+         */
+        const run = (dx: number, dy: number): number => {
+          let n = 0;
+          for (let k = 1; k < 24; k++) {
+            if (tileAt(map, tx + dx * k, ty + dy * k) !== Tile.Bridge) break;
+            n++;
+          }
+          return n;
+        };
+        const alongEW = run(-1, 0) + run(1, 0);
+        const alongNS = run(0, -1) + run(0, 1);
+        const spanEW = alongEW >= alongNS;
         const across = !spanEW;
         for (let s2 = 0; s2 < t; s2++) {
           const board = ((across ? y + s2 : x + s2) / 3) | 0;
@@ -558,22 +578,121 @@ function paintDetails(
           }
         }
         // A rail along each side of the span, which is what gives it height.
+        // Ragged by a pixel here and there, because sawn timber left in a river
+        // is not a ruled line -- and a ruled line is the tell this renderer is
+        // most often caught by.
         g.fillStyle = tone(PLANKS, 4);
         const railed = (dx: number, dy: number): boolean => tileAt(map, tx + dx, ty + dy) !== Tile.Bridge;
+        const nick = (i: number): number => (((i * 2654435761) >>> 28) % 3 === 0 ? 1 : 0);
         if (across) {
-          if (railed(0, -1)) g.fillRect(x, y, t, 2);
-          if (railed(0, 1)) g.fillRect(x, y + t - 2, t, 2);
+          if (railed(0, -1)) for (let k = 0; k < t; k++) g.fillRect(x + k, y + nick(x + k), 1, 2);
+          if (railed(0, 1)) for (let k = 0; k < t; k++) g.fillRect(x + k, y + t - 2 - nick(x + k + 7), 1, 2);
         } else {
-          if (railed(-1, 0)) g.fillRect(x, y, 2, t);
-          if (railed(1, 0)) g.fillRect(x + t - 2, y, 2, t);
+          if (railed(-1, 0)) for (let k = 0; k < t; k++) g.fillRect(x + nick(y + k), y + k, 2, 1);
+          if (railed(1, 0)) for (let k = 0; k < t; k++) g.fillRect(x + t - 2 - nick(y + k + 7), y + k, 2, 1);
+        }
+
+        /*
+         * Where the deck meets what is beyond it.
+         *
+         * A bridge ended at a hard tile boundary whatever it landed on, so a
+         * span onto ice looked exactly like a span onto grass and both looked
+         * pasted down. The last two pixels take the ground's own tone, so the
+         * timber runs *into* the bank -- and where it ends over water instead
+         * it is broken, and looks it: splintered planks with the ends missing.
+         */
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as Array<[number, number]>) {
+          if ((across ? dx !== 0 : dy !== 0)) continue;       // only the two ends
+          const beyond = tileAt(map, tx + dx, ty + dy);
+          if (beyond === Tile.Bridge) continue;
+          const wet = beyond === Tile.Water || beyond === Tile.DeepWater;
+          const ex = dx > 0 ? x + t - 2 : x;
+          const ey = dy > 0 ? y + t - 2 : y;
+          if (wet) {
+            // Broken: the last boards are gone in pieces rather than cut off.
+            for (let k = 0; k < t; k++) {
+              const bite = ((((x + y + k) * 2654435761) >>> 27) % 4);
+              if (bite === 0) continue;
+              g.fillStyle = tone(PLANKS, 0);
+              if (dx !== 0) g.fillRect(ex, y + k, Math.min(2, bite), 1);
+              else g.fillRect(x + k, ey, 1, Math.min(2, bite));
+            }
+          } else {
+            // Landfall: the ground's own colour, so the join is a join.
+            g.fillStyle = TILES[beyond].color;
+            for (let k = 0; k < t; k++) {
+              const lip = ((((x + y + k * 3) * 2654435761) >>> 28) % 2);
+              if (dx !== 0) g.fillRect(ex, y + k, 1 + lip, 1);
+              else g.fillRect(x + k, ey, 1, 1 + lip);
+            }
+          }
         }
       } else if (tile === Tile.Fence) {
-        g.fillStyle = '#4a3c26';
-        g.fillRect(x, y + 7, t, 2);
-        g.fillRect(x, y + 12, t, 2);
-        g.fillStyle = '#7b6743';
-        g.fillRect(x, y + 6, t, 1);
-        for (let px = 1; px < t; px += 5) g.fillRect(x + px, y + 3, 2, 12);
+        /*
+         * A fence that knows which way it runs.
+         *
+         * This drew two left-to-right rails and a row of posts in *every* tile,
+         * whatever its neighbours were doing -- so a north-south run was a
+         * stack of horizontal rails lying across the line of the fence, and a
+         * corner had no corner in it. The machinery to fix it was already here
+         * and this one tile was not using it: `Tile.Bridge` two branches above
+         * asks whether each neighbour is also bridge, `Tile.Road` asks whether
+         * it runs vertically, and `terrain.ts` computes an 8-neighbour
+         * same-material bitmask for every tile on the map.
+         *
+         * So: posts always, rails only along the sides that continue. An
+         * L-shaped corner gets one rail east and one rail south and joins
+         * itself at the post, which is what a corner is.
+         */
+        const runsW = tileAt(map, tx - 1, ty) === Tile.Fence;
+        const runsE = tileAt(map, tx + 1, ty) === Tile.Fence;
+        const runsN = tileAt(map, tx, ty - 1) === Tile.Fence;
+        const runsS = tileAt(map, tx, ty + 1) === Tile.Fence;
+        const lone = !runsW && !runsE && !runsN && !runsS;
+
+        const RAIL = '#4a3c26';
+        const RAIL_HI = '#7b6743';
+        const POST = '#3a2f1d';
+        const POST_HI = '#8a744a';
+
+        // Rails run to the tile edge on each side that continues, and stop
+        // short of the middle otherwise -- so an end post is an end.
+        const mid = t / 2;
+        g.fillStyle = RAIL;
+        for (const [row, hi] of [[7, 6], [12, 11]] as Array<[number, number]>) {
+          if (runsW || lone) g.fillRect(x, y + row, mid, 2);
+          if (runsE || lone) g.fillRect(x + mid, y + row, mid, 2);
+          g.fillStyle = RAIL_HI;
+          if (runsW || lone) g.fillRect(x, y + hi, mid, 1);
+          if (runsE || lone) g.fillRect(x + mid, y + hi, mid, 1);
+          g.fillStyle = RAIL;
+        }
+        // The vertical run is the same rails turned ninety degrees: two lines
+        // down the tile rather than across it, so the fence reads as a fence
+        // from either direction instead of as a ladder laid flat.
+        for (const [col, hi] of [[5, 4], [10, 9]] as Array<[number, number]>) {
+          if (runsN) { g.fillRect(x + col, y, 2, mid); g.fillStyle = RAIL_HI; g.fillRect(x + hi, y, 1, mid); g.fillStyle = RAIL; }
+          if (runsS) { g.fillRect(x + col, y + mid, 2, mid); g.fillStyle = RAIL_HI; g.fillRect(x + hi, y + mid, 1, mid); g.fillStyle = RAIL; }
+        }
+
+        // Posts. A corner or an end gets one in the middle to join to; a
+        // straight run gets them spaced along it.
+        const corner = (runsN || runsS) && (runsW || runsE);
+        const end = [runsN, runsS, runsW, runsE].filter(Boolean).length <= 1;
+        g.fillStyle = POST;
+        if (corner || end || lone) {
+          g.fillRect(x + mid - 1, y + 3, 3, 12);
+          g.fillStyle = POST_HI;
+          g.fillRect(x + mid - 1, y + 3, 1, 12);
+        } else if (runsW || runsE) {
+          for (let px = 1; px < t; px += 5) g.fillRect(x + px, y + 3, 2, 12);
+          g.fillStyle = POST_HI;
+          for (let px = 1; px < t; px += 5) g.fillRect(x + px, y + 3, 1, 12);
+        } else {
+          for (let py = 1; py < t; py += 5) g.fillRect(x + 6, y + py, 4, 2);
+          g.fillStyle = POST_HI;
+          for (let py = 1; py < t; py += 5) g.fillRect(x + 6, y + py, 4, 1);
+        }
       } else if (tile === Tile.Quicksand) {
         /*
          * A crust that has sagged, not a target painted on the ground.

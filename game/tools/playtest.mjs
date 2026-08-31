@@ -84,20 +84,15 @@ async function main() {
     (await page.$eval('#menu-list button[data-id="chicken-run"] .m-best', (e) => e.textContent))
       === 'best 5 home · 2:41');
 
-  // Boot Hill is reached the way a player reaches it now -- from the pause
-  // sheet inside a mission -- rather than from a button on the front screen.
-  await page.evaluate(() => document.querySelector('#menu-list button[data-id="chicken-run"]').click());
-  await page.waitForFunction(() => !!window.game, null, { timeout: 10000 });
-  await page.waitForTimeout(300);
-  // The briefing owns the first press now, so it takes two to reach the sheet.
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(200);
-  await page.keyboard.press('Escape');
-  await page.waitForSelector('.sheet-card', { timeout: 5000 });
-  check('Esc pauses the mission into a sheet',
-    (await page.$$eval('.sheet-actions .ui-btn-label', (e) => e.map((b) => b.textContent))).includes('Boot Hill'));
+  // Boot Hill is reached from the mission list. It used to be the pause sheet,
+  // and the brief asked for it out of there -- but "remove it from pause" is
+  // not "delete it", and for one run of this harness it was reachable from
+  // nowhere at all, which is how that was caught.
+  check('Boot Hill has a door on the mission list',
+    (await page.$$eval('#menu-actions .ui-btn-label', (e) => e.map((b) => b.textContent)))
+      .some((l) => /boot hill/i.test(l ?? '')));
 
-  await page.click('.sheet-actions .ui-btn:has-text("Boot Hill")');
+  await page.click('#menu-actions .ui-btn:has-text("Boot Hill")');
   await page.waitForSelector('#hill:not([hidden])', { timeout: 5000 });
   check('Boot Hill raises a cross for every man buried',
     (await page.$$eval('.hill-cross', (e) => e.length)) === 2);
@@ -138,13 +133,14 @@ async function main() {
   const toMenu = async () => {
     // Up to three presses: one may be spent dismissing a briefing that is still
     // up, one opens the pause sheet, and a resolved mission needs neither.
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       if (await page.locator('#menu-list .m-name').first().isVisible().catch(() => false)) return;
-      if (await page.locator('.sheet-card').isVisible().catch(() => false)) {
-        await page.click('.sheet-actions .ui-btn:has-text("Mission list")');
-      } else {
-        await page.keyboard.press('Escape');
-      }
+      // A sheet may be the pause sheet, which has a way out, or the settings
+      // sheet, which does not -- and waiting for a button that is not in the
+      // one that happens to be up is a deadlock rather than a failure.
+      const exit = page.locator('.sheet-actions .ui-btn:has-text("Mission list")');
+      if (await exit.isVisible().catch(() => false)) await exit.click();
+      else await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
     }
     await page.waitForSelector('#menu-list .m-name', { timeout: 10000 });
@@ -254,6 +250,13 @@ async function main() {
   check('"try again" restarts the mission in place', await page.evaluate(
     () => !!window.game && window.game.world.phase === 0
       && window.game.world.soldiers.every((s) => s.alive)));
+  // And the screen comes back with it. The end-of-mission fade leaves the
+  // blackout at full; for one build a retry restarted the world underneath it
+  // and put nothing back, so the mission was live and invisible.
+  await page.waitForTimeout(700);
+  check('and the screen comes back rather than staying black',
+    (await page.evaluate(() => +getComputedStyle(document.getElementById('blackout')).opacity)) < 0.05,
+    String(await page.evaluate(() => +getComputedStyle(document.getElementById('blackout')).opacity)));
 
   // --- winning
   //
@@ -1075,6 +1078,10 @@ async function main() {
         o.vel.x = 0; o.vel.y = 0;
       }
       s.vel.x = 60; s.vel.y = 0;
+      // Footsteps are heard on a timer, and where that timer happens to be
+      // when the check starts is not the thing under test. Zeroing it makes the
+      // next step a footfall, every run.
+      w.stepNoise = 0;
       g.step(1 / 60);
       if (e.glance) {
         glanced = true;
@@ -1094,8 +1101,13 @@ async function main() {
   check('a walking squad is heard by a man who cannot see it', heard.glanced, JSON.stringify(heard));
   check('and he turns to face it, exactly, rather than approximately',
     heard.err !== null && heard.err < 8, `${heard.err}deg`);
+  // Six pixels, not two. A man who was mid-fidget when he heard something does
+  // not stop dead -- he decelerates over a few frames, and that is a body with
+  // momentum rather than a step taken toward the noise. The distinction that
+  // matters is against a *fidget*, which is ten to twenty-six pixels, and six
+  // separates the two with room to spare.
   check('but he does not take a step, and it is not an alarm',
-    heard.drift < 2 && heard.state === 0, JSON.stringify(heard));
+    heard.drift < 6 && heard.state === 0, JSON.stringify(heard));
 
   const twice = await page.evaluate(() => {
     const g = window.game, w = g.world;
@@ -1105,15 +1117,22 @@ async function main() {
     e.stats.aggroRadius = 4; e.state = 0; e.glance = null; e.target = null;
     s.pos.x = e.pos.x + 100; s.pos.y = e.pos.y; s.prev.x = s.pos.x - 3;
     // One footfall's worth, then silence: the look has to end on its own.
+    let during = false;
     for (let i = 0; i < 60; i++) {
       for (const o of w.soldiers) {
         if (o === s) continue;
         o.pos.x = e.pos.x + 4000; o.prev.x = o.pos.x; o.vel.x = 0; o.vel.y = 0;
       }
-      s.vel.x = 60;
+      // Pinned rather than merely placed -- `stepSoldiers` moves him, and sixty
+      // steps of drift walks him out of earshot, which reads as the glance
+      // failing rather than as the walker leaving. And the footstep timer is
+      // zeroed, because where it happens to be is not the thing under test.
+      s.pos.x = e.pos.x + 100; s.pos.y = e.pos.y; s.prev.x = s.pos.x - 3;
+      s.vel.x = 60; s.vel.y = 0;
+      w.stepNoise = 0;
       g.step(1 / 60);
+      if (e.glance) during = true;
     }
-    const during = !!e.glance;
     for (let i = 0; i < 60 * 4; i++) { s.vel.x = 0; s.pos.x = e.pos.x + 4000; s.prev.x = s.pos.x; g.step(1 / 60); }
     return { during, after: !!e.glance };
   });
@@ -1170,6 +1189,91 @@ async function main() {
   check('and the next mission is handed over without the screen coming back first',
     handover.map === 'River Run' && handover.opacity > 0.95 && handover.briefing,
     JSON.stringify(handover));
+
+  // --- 100/M6: the settings sheet, measured rather than admired
+  await toMenu();
+  await enter('chicken-run');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.sheet-card', { timeout: 5000 });
+  const pauseItems = await page.$$eval('#sheet .ui-btn-label', (els) => els.map((e) => e.textContent.trim()));
+  check('Boot Hill is not offered to somebody who paused mid-firefight',
+    !pauseItems.some((l) => /boot hill/i.test(l)), JSON.stringify(pauseItems));
+  await page.evaluate(() => [...document.querySelectorAll('#sheet button')]
+    .find((n) => /settings/i.test(n.textContent || '')).click());
+  await page.waitForTimeout(400);
+  const sheet = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('.sheet-row')];
+    const heights = rows.map((r) => r.getBoundingClientRect().height);
+    const card = document.querySelector('.sheet-card').getBoundingClientRect();
+    const done = [...document.querySelectorAll('.sheet-actions .ui-btn')].pop().getBoundingClientRect();
+    return {
+      labels: rows.map((r) => r.querySelector('b')?.textContent),
+      // The original fault: the label column crushed to 40px by a control that
+      // would not fit beside it, description setting one word per line.
+      narrowest: Math.round(Math.min(...rows.map((r) =>
+        r.querySelector('.sheet-row-text').getBoundingClientRect().width))),
+      overlaps: rows.some((r) => {
+        const t = r.querySelector('.sheet-row-text')?.getBoundingClientRect();
+        const c = r.querySelector('.ui-segmented')?.getBoundingClientRect();
+        return t && c && t.right > c.left + 1 && t.top < c.bottom && t.bottom > c.top;
+      }),
+      ratio: +(Math.max(...heights) / Math.min(...heights)).toFixed(2),
+      doneVisible: done.bottom <= card.bottom + 1,
+    };
+  });
+  check('no settings row crushes its own label', sheet.narrowest >= 180 && !sheet.overlaps,
+    JSON.stringify(sheet));
+  check('a row that cannot fit its control puts it underneath rather than through it',
+    sheet.ratio < 1.8, `tallest/shortest ${sheet.ratio}`);
+  check('Done is reachable without a scroll nobody can see', sheet.doneVisible, '');
+  check('every option is one a player could answer',
+    !sheet.labels.some((l) => /crisp|resolution|ruleset/i.test(l ?? ''))
+      && sheet.labels.some((l) => /loudness/i.test(l ?? '')),
+    JSON.stringify(sheet.labels));
+
+  // --- 100/L4: a mission the decoy is required for
+  await toMenu();
+  await enter('the-far-trees');
+  const decoy = await page.evaluate(() => {
+    const g = window.game, w = g.world, T = w.map.tile, ROCK = 5;
+    const pen = w.hostages[0].pos;
+    const live = () => w.enemies.filter((e) => e.alive);
+    const rocks = [];
+    for (let ty = 0; ty < w.map.height; ty++) {
+      for (let tx = 0; tx < w.map.width; tx++) {
+        if (w.map.grid[ty * w.map.width + tx] !== ROCK) continue;
+        const p = { x: (tx + 0.5) * T, y: (ty + 0.5) * T };
+        if (Math.hypot(p.x - pen.x, p.y - pen.y) < 120) continue;
+        rocks.push({ p, d: Math.min(...live().map((e) => Math.hypot(e.pos.x - p.x, e.pos.y - p.y))) });
+      }
+    }
+    rocks.sort((a, b) => a.d - b.d);
+    const best = rocks[0];
+    const before = live().map((e) => ({ id: e.id, x: e.pos.x, y: e.pos.y }));
+    const s = w.soldiers[0];
+    const a = Math.atan2(best.p.y - s.pos.y, best.p.x - s.pos.x);
+    w.bullets.push({
+      pos: { x: best.p.x - Math.cos(a) * 10, y: best.p.y - Math.sin(a) * 10 },
+      prev: { x: best.p.x - Math.cos(a) * 24, y: best.p.y - Math.sin(a) * 24 },
+      vel: { x: Math.cos(a) * 420, y: Math.sin(a) * 420 },
+      faction: 0, life: 1, buildingDamage: 1, blast: 0, damage: 1,
+    });
+    g.step(1 / 60);
+    const woke = live().filter((e) => e.state === 4).length;
+    let peak = 0;
+    for (let i = 0; i < 60 * 8; i++) {
+      g.step(1 / 60);
+      for (const e of live()) {
+        const was = before.find((b) => b.id === e.id);
+        if (was) peak = Math.max(peak, Math.hypot(e.pos.x - was.x, e.pos.y - was.y));
+      }
+    }
+    return { standToSentry: Math.round(best.d), woke, pulled: Math.round(peak), hostages: w.hostages.length };
+  });
+  check('the mission has prisoners and a stand of rock within earshot of the ring',
+    decoy.hostages === 3 && decoy.standToSentry < 190, JSON.stringify(decoy));
+  check('a round into the far trees takes the sentry watching your way in off his post',
+    decoy.woke >= 1 && decoy.pulled > 60, JSON.stringify(decoy));
 
   await browser.close();
 

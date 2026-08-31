@@ -250,7 +250,26 @@ async function boot(): Promise<void> {
     const index = campaignLevels.findIndex((l) => l.id === info.id);
     hud.hasNext = index >= 0 && index < campaignLevels.length - 1;
     hud.onNext = (): void => { if (game) game.nextRequested = true; };
-    hud.onRetry = (): void => { game?.restart(); hud.hideOverlay(); };
+    hud.onRetry = (): void => {
+      if (!game) return;
+      game.restart();
+      hud.hideOverlay();
+      /*
+       * Straight back into it, out of the black.
+       *
+       * A retry is a mission opening in every way that matters -- and it was
+       * not treated as one: the panel was hidden, the world rebuilt, and
+       * *nothing put the screen back*, so the blackout stayed at full from the
+       * end-of-mission fade and the player was left looking at a black
+       * rectangle with a live mission running under it. It never recovered.
+       *
+       * It does not get the briefing, though, which the first fix gave it. You
+       * have just read that briefing and just failed the mission it describes;
+       * a card between you and trying again is a card in the way. So: the fade,
+       * and none of the ceremony.
+       */
+      void fadeIn(CONFIG.banner.fade);
+    };
     hud.onMissions = (): void => { if (game) game.exitRequested = true; };
     /**
      * Esc and the PAUSE button.
@@ -263,10 +282,13 @@ async function boot(): Promise<void> {
      */
     const openPause = (): void => {
       if (!game || sheetOpen()) return;
+      // Boot Hill is not here any more: a link to the graves is a strange thing
+      // to offer somebody who paused mid-firefight, and the brief asked for it
+      // out. Its door moves to the front end, which is 101's -- until that
+      // lands it is reachable from the mission list only.
       showSheet('Paused', map.name, [
         { label: 'Resume', tone: 'good', key: 'Enter', onPick: () => {} },
         { label: 'Settings', onPick: () => showSettings(() => layout.apply()) },
-        { label: 'Boot Hill', hint: `${campaign.fallen.length} buried`, onPick: () => void visitBootHill() },
         { label: 'Restart mission', tone: 'warn', key: 'R', onPick: () => { game?.restart(); hud.hideOverlay(); } },
         { label: 'Mission list', onPick: () => { if (game) game.exitRequested = true; } },
       ]);
@@ -326,8 +348,26 @@ async function boot(): Promise<void> {
      * list it is turned out here, so the two routes look the same rather than
      * one of them cutting straight to a live map.
      */
-    setBlackout(1);
-    hud.showBriefing(game.world);
+    /**
+     * Opening a mission: black, briefing, and up out of the black when it goes.
+     *
+     * A function rather than three statements because **a retry is an opening
+     * too**, and it was not treated as one: `onRetry` rebuilt the world and hid
+     * the panel, and nothing anywhere put the screen back. The blackout was
+     * still at full from the end-of-mission fade, so retrying a mission left
+     * the player looking at a black rectangle with a live game running
+     * underneath it -- reproduced, and it never recovered.
+     *
+     * Everything that starts a mission goes through here now, so a fourth route
+     * cannot forget the same step.
+     */
+    const openMission = (): void => {
+      setBlackout(1);
+      hud.showBriefing(game!.world);
+      window.addEventListener('pointerdown', dismissBriefing, true);
+      window.addEventListener('keydown', dismissBriefing, true);
+    };
+
     const dismissBriefing = (e: Event): void => {
       if (!game || game.world.phase !== 0) return;
       e.preventDefault();
@@ -357,8 +397,8 @@ async function boot(): Promise<void> {
       window.removeEventListener('pointerdown', dismissBriefing, true);
       window.removeEventListener('keydown', dismissBriefing, true);
     };
-    window.addEventListener('pointerdown', dismissBriefing, true);
-    window.addEventListener('keydown', dismissBriefing, true);
+
+    openMission();
 
     try {
       localStorage.setItem(LAST_PLAYED_KEY, info.id);

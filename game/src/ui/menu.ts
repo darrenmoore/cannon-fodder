@@ -1,6 +1,7 @@
 import { DIFFICULTIES, DIFFICULTY_ORDER, DOCTRINES, describeLevers, isDifficultyId, isDoctrineId, resolveLevers } from '../sim/difficulty.js';
 import { objectiveText } from '../sim/objectives.js';
 import { bootHillOpen } from './boothill.js';
+import { button, fill } from './ui.js';
 import { formatTime } from '../sim/campaign.js';
 import { resolveUnlocks } from '../sim/unlock.js';
 import { musicOn, musicSource, onMusicChange, syncMusic } from '../shell/music.js';
@@ -97,7 +98,10 @@ export interface Theatre {
 export const THEATRES: Theatre[] = [
   { id: 'jungle', name: 'The Jungle', note: 'Where every recruit starts', themes: ['jungle'] },
   { id: 'desert', name: 'The Desert', note: 'No cover, and a long way to walk', themes: ['desert'] },
-  { id: 'arctic', name: 'The Ice', note: 'Cold ground, worse footing', themes: ['arctic'] },
+  // Renamed from "The Ice", which named the surface rather than the theatre --
+  // and the other two are places. Fifteen missions of snow, sea ice, frozen
+  // rivers and mountain passes are a front, not a substance.
+  { id: 'arctic', name: 'The Frozen North', note: 'Cold ground, worse footing', themes: ['arctic'] },
 ];
 
 /**
@@ -155,15 +159,31 @@ export function showMenu(
   initialDifficulty: DifficultyId,
   onDifficultyChange: (d: DifficultyId) => void,
   campaign: CampaignState,
-  // Off the front screen for now. The hill is still reachable from the sidebar
-  // mid-mission, so this stays wired rather than being torn out and rebuilt.
-  _onBootHill: () => Promise<void>,
+  /*
+   * The only door to Boot Hill.
+   *
+   * It used to be the pause sheet, and the brief asked for it out of there --
+   * a link to the graves is a strange thing to offer somebody who paused
+   * mid-firefight. Removing it without putting it anywhere would have deleted
+   * the screen and the one-time rename with it, which is not what "remove it
+   * from pause" means; it left the feature reachable from nowhere and the
+   * playtest caught it inside a minute.
+   *
+   * So the door is here, on the list, where choosing what to do next is
+   * already what you are doing. 101's front end may move it again.
+   */
+  onBootHill: () => Promise<void>,
 ): Promise<MenuChoice> {
   const root = document.getElementById('menu') as HTMLElement;
   const list = document.getElementById('menu-list') as HTMLElement;
   const tabs = document.getElementById('menu-difficulty') as HTMLElement;
   const blurb = document.getElementById('menu-blurb') as HTMLElement;
+  const actions = document.getElementById('menu-actions') as HTMLElement;
   root.hidden = false;
+
+  fill(actions, button(`Boot Hill${campaign.fallen.length ? ` — ${campaign.fallen.length} buried` : ''}`, {
+    onClick: () => void onBootHill(),
+  }));
 
   let difficulty: DifficultyId = initialDifficulty;
 

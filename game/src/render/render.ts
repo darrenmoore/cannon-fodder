@@ -416,7 +416,23 @@ export class Renderer {
     for (const item of this.scenery) {
       if (item.x > viewR + 8 || item.x + item.sprite.width < viewL - 8) continue;
       if (item.y > viewB + 8 || item.y + item.sprite.height < viewT - 20) continue;
-      this.drawList.push({ sortY: item.sortY, scenery: item, building: this.liveBuildings.get(item.buildingId ?? -1) });
+      const live = this.liveBuildings.get(item.buildingId ?? -1);
+      /*
+       * Rubble is ground, and ground is walked *on*.
+       *
+       * A levelled building kept the standing building's place in the depth
+       * sort, because it is the same scenery entry with a different sprite --
+       * so a soldier crossing a demolished hut was drawn behind it, which is
+       * correct for a wall and nonsense for a heap of it. Sorting it to the top
+       * of the map rather than to its own footprint puts every actor in front
+       * of it and nothing behind it, which is what flat means here.
+       */
+      const flat = live !== undefined && !live.standing;
+      this.drawList.push({
+        sortY: flat ? -Infinity : item.sortY,
+        scenery: item,
+        building: live,
+      });
     }
     for (const a of world.actors) {
       // The dead are drawn too, but only while they are still falling.
@@ -1218,26 +1234,50 @@ export class Renderer {
   private drawExtractionZones(world: World): void {
     if (world.extraction.length === 0) return;
     const ctx = this.ctx;
-    const pulse = 0.4 + Math.sin(this.time * 2.4) * 0.2;
+    /*
+     * The zone, as marks on the ground rather than as a stroked circle.
+     *
+     * It was `ctx.arc` with a hairline stroke and a pulsing `globalAlpha` --
+     * three prohibitions in four lines, and the reason it was on
+     * `/pixel-check`'s worklist. It is also the thing a `hold` mission asks you
+     * to stand in for forty-five seconds, so it is looked at longer than almost
+     * anything else in the game.
+     *
+     * Kept as a circle, because the original's own aim marker is one. What
+     * changes is that every pixel is placed: a dashed ring of whole pixels,
+     * marching slowly round, with four corner ticks that say which ground is
+     * meant rather than merely enclosing it. The pulse is a *tone* change
+     * between two solid colours instead of an alpha ramp -- the same bargain
+     * the dither makes everywhere else.
+     */
+    const lit = Math.sin(this.time * 2.4) > 0;
     for (const z of world.extraction) {
-      // The drawn ring is the *real* one: a zone on a tent counts from the
-      // tent's edge, so a circle drawn at the bare radius would be a picture of
-      // a rule the game is not playing by. How this ring is drawn is still on
-      // /pixel-check's worklist -- arc, alpha and a hairline stroke are all
-      // three things the hardware could not do -- but it should at least be
-      // honest while it is wrong.
+      // The drawn ring is the real one: a zone on a tent counts from the tent's
+      // edge, so a circle at the bare radius would picture a rule the game is
+      // not playing by.
       const r = z.pad + CONFIG.extraction.radius;
-      ctx.globalAlpha = pulse;
-      ctx.strokeStyle = '#8fe0ff';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(z.x, z.y, r, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = pulse * 0.4;
-      ctx.beginPath();
-      ctx.arc(z.x, z.y, r * 0.6, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
+      const cx = Math.round(z.x);
+      const cy = Math.round(z.y);
+
+      // Dashes, marching. `step` keeps the dash length even at any radius.
+      const step = 2.2 / r;
+      const drift = this.time * 0.6;
+      let i = 0;
+      for (let a = 0; a < Math.PI * 2; a += step, i++) {
+        // Three on, two off, moving round the ring about a fifth of a turn a
+        // second -- slow enough to read as a marker rather than as a warning.
+        if ((i + Math.floor(drift * 8)) % 5 >= 3) continue;
+        ctx.fillStyle = lit ? '#8fe0ff' : '#4c8ba8';
+        ctx.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 1, 1);
+      }
+
+      // Four ticks pointing in, on the axes: they turn a ring into a target.
+      ctx.fillStyle = lit ? '#bff0ff' : '#5fa3c0';
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as Array<[number, number]>) {
+        for (let k = 0; k < 4; k++) {
+          ctx.fillRect(cx + dx * (r - k) - (dy ? 0 : 0), cy + dy * (r - k), 1, 1);
+        }
+      }
     }
   }
 

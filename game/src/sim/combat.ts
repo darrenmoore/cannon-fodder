@@ -118,7 +118,12 @@ export function stepBullets(world: World, dt: number): void {
       // Where the round *landed*, not where it was fired from. This is the
       // decoy: put one into a hut across the clearing and the garrison walks
       // to the hut.
-      raiseAlarm(world, b.pos, world.levers.hearing * CONFIG.enemy.impactAlarm);
+      // The floor matters more than the fraction here: see `impactAlarmFloor`.
+      // A decoy that only carries four tiles is not a decoy.
+      raiseAlarm(world, b.pos, Math.max(
+        world.levers.hearing * CONFIG.enemy.impactAlarm,
+        CONFIG.enemy.impactAlarmFloor,
+      ));
       world.bullets.splice(i, 1);
       continue;
     }

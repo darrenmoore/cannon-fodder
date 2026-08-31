@@ -1,6 +1,6 @@
 import { bindKeys, button, fill, heading, segmented } from './ui.js';
-import { onSettingsChange, settings, updateSettings } from './settings.js';
-import type { Handedness, Resolution, Rules } from './settings.js';
+import { settings, updateSettings } from './settings.js';
+import type { Handedness } from './settings.js';
 
 /**
  * The modal sheet: pause, and settings.
@@ -160,7 +160,7 @@ export function showSettings(onLayoutChange: () => void): void {
     // a screen it cannot see being used, and two of those judgements have
     // already been wrong; the player wanting something else is the normal case,
     // not an edge one, so the range is wide enough to actually reach it.
-    row('Zoom', 'How much ground fits on screen. Pinch, or use the mouse wheel.',
+    row('Zoom', 'How much ground fits on screen.',
       [
         { id: '-2' as const, label: 'Widest' },
         { id: '-1' as const, label: 'Wider' },
@@ -171,14 +171,31 @@ export function showSettings(onLayoutChange: () => void): void {
       String(settings().zoomBias) as '-2' | '-1' | '0' | '1' | '2',
       (v) => { updateSettings({ zoomBias: Number(v) }); onLayoutChange(); });
 
-    row('Resolution', 'Half is kinder to an older phone.',
-      [{ id: 'full' as const, label: 'Full' }, { id: 'half' as const, label: 'Half' }],
-      settings().resolution,
-      (v: Resolution) => { updateSettings({ resolution: v }); onLayoutChange(); });
-
-    row('Crisp pixels', 'Hard sprite edges on a fractional-density screen.',
-      onOff, bool(settings().crisp),
-      (v) => { updateSettings({ crisp: v === 'on' }); onLayoutChange(); });
+    /*
+     * One question, because underneath it always was one.
+     *
+     * `Resolution` and `Crisp pixels` were two rows, and they multiply into a
+     * single number -- the device pixel ratio the canvas is sized at. Nobody
+     * outside this file could have known that, and neither row could be
+     * answered by a player: "half is kinder to an older phone" is a shrug, and
+     * "hard sprite edges on a fractional-density screen" is a sentence about
+     * hardware. What a player can answer is how sharp they want it and what
+     * they are willing to pay for that.
+     */
+    row('Picture', 'Sharp on a good screen, Fast on an old one.',
+      [
+        { id: 'sharp' as const, label: 'Sharp' },
+        { id: 'auto' as const, label: 'Auto' },
+        { id: 'fast' as const, label: 'Fast' },
+      ],
+      settings().resolution === 'half' ? 'fast' : settings().crisp ? 'sharp' : 'auto',
+      (v) => {
+        updateSettings({
+          resolution: v === 'fast' ? 'half' : 'full',
+          crisp: v === 'sharp',
+        });
+        onLayoutChange();
+      });
 
     rows.appendChild(heading('controls'));
     row('Handedness', 'Which thumb the action bar sits under.',
@@ -196,30 +213,49 @@ export function showSettings(onLayoutChange: () => void): void {
     row('Music', 'On the front screen only.', onOff, bool(settings().music),
       (v) => updateSettings({ music: v === 'on' }));
 
+    /*
+     * `volume` has been saved, clamped, persisted and coerced since the day
+     * settings existed, and has never once been reachable -- a stored
+     * preference with no way to state it. Three steps rather than a slider,
+     * because a slider is a control this UI does not otherwise have and a
+     * volume nobody can name is the thing that got us here.
+     */
+    row('Loudness', 'Music and gunfire.',
+      [
+        { id: 'quiet' as const, label: 'Quiet' },
+        { id: 'normal' as const, label: 'Normal' },
+        { id: 'loud' as const, label: 'Loud' },
+      ],
+      settings().volume <= 0.2 ? 'quiet' : settings().volume >= 0.6 ? 'loud' : 'normal',
+      (v) => updateSettings({ volume: v === 'quiet' ? 0.15 : v === 'loud' ? 0.75 : 0.35 }));
+
     rows.appendChild(heading('rules'));
-    row('Ruleset', 'Modern adds what 1993 did not have.',
-      [{ id: 'classic' as const, label: 'Classic' }, { id: 'modern' as const, label: 'Modern' }],
-      settings().rules,
-      (v: Rules) => updateSettings({ rules: v }));
+    /*
+     * Named after what it does rather than after which era it belongs to.
+     *
+     * "Ruleset: Classic / Modern" asks the player to know what 1993 had, which
+     * is a question about history rather than about the game in front of them.
+     * There is exactly one mechanic behind the switch, so the switch is called
+     * after it -- and the description says what the control *is*, not when it
+     * was invented.
+     */
+    row('Waypoints', 'Long-press to queue a second move. Off is the 1993 game.',
+      onOff, settings().rules === 'modern' ? 'on' : 'off',
+      (v) => updateSettings({ rules: v === 'on' ? 'modern' : 'classic' }));
 
-    const note = document.createElement('p');
-    note.className = 'sheet-note';
-    note.textContent = settings().rules === 'modern'
-      ? 'Modern: long-press the ground to queue a waypoint.'
-      : 'Classic is the 1993 game. Modern layers on conveniences it never had.';
-    const stopWatching = onSettingsChange((s) => {
-      note.textContent = s.rules === 'modern'
-        ? 'Modern: long-press the ground to queue a waypoint.'
-        : 'Classic is the 1993 game. Modern layers on conveniences it never had.';
-    });
-
-    body.append(rows, note);
+    /*
+     * The standing note is gone with the row that needed it. It existed to
+     * explain what `Ruleset: Modern` meant, which is a sign the control was
+     * named wrong -- a setting that needs a paragraph underneath the list is a
+     * setting whose own label is not doing its job.
+     */
+    body.append(rows);
 
     const actions = document.createElement('div');
     actions.className = 'sheet-actions';
     actions.appendChild(button('Done', {
       tone: 'good', key: 'Enter',
-      onClick: () => { stopWatching(); dismiss(); },
+      onClick: () => dismiss(),
     }));
     body.appendChild(actions);
     return body;
