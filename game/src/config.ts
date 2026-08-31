@@ -12,8 +12,57 @@ export const CONFIG = {
   MAX_STEPS_PER_FRAME: 5,
 
   camera: {
-    /** Integer scale factor. 3 => a 10px soldier draws 30px on screen. */
-    zoom: 3,
+    /**
+     * Zoom is derived from the viewport rather than fixed, by `layout.ts`.
+     *
+     * A constant scale factor applied to *device* pixels meant a retina laptop
+     * showed half as much world as a non-retina one -- the field of view was
+     * already inconsistent between two desktops before any phone turned up. So
+     * what is pinned here is the field of view the simulation is tuned around,
+     * and the scale factor falls out of it: a sniper reaches 190 world pixels,
+     * so a viewport much shorter than that means being shot from off-screen.
+     */
+    zoom: {
+      /** The Amiga's own field of view, which is what the missions are built for. */
+      targetWorldW: 320,
+      targetWorldH: 200,
+      /**
+       * The point at which the view stops being playable and starts being a
+       * letterbox, and the floor the auto-pick is never allowed to cross.
+       *
+       * Deliberately well below `targetWorldW/H`. Those describe the framing
+       * the missions were built for; this describes the framing below which
+       * the game stops working, and testing against the former made a cliff --
+       * a desktop window a few pixels short of the ideal dropped the whole way
+       * to zoom 2 and halved every sprite on screen.
+       */
+      minWorldW: 240,
+      minWorldH: 150,
+      /**
+       * What the auto-pick actually aims at, in world pixels.
+       *
+       * Between the two framings this has been through. A 1920x1080 desktop
+       * running at scale 3 shows 577x360 world pixels, which is what the game
+       * always did and reads as distant -- a soldier is ten pixels tall and
+       * there are thirty-six tiles across. Scale 5 shows 346x216, which is too
+       * close to read a firefight. 430x270 is scale 4 there, and scale 3 on a
+       * laptop, which is where both sizes want to be.
+       */
+      idealWorldW: 430,
+      idealWorldH: 270,
+      /**
+       * The auto-pick stays inside this. Anything closer than 4 is the
+       * player's own decision, never one made for them: a scale nobody asked
+       * for that crops the battlefield is worse than one that is merely
+       * further away than they would have chosen.
+       */
+      autoMax: 4,
+      /** Below 2 a soldier stops being legible; above 6 a 4K desktop gains nothing. */
+      min: 2,
+      max: 6,
+      /** Used until the layout has measured anything. */
+      start: 3,
+    },
     /** Higher = snappier follow. Units: 1/sec. */
     follow: 4.5,
     /** Squad centroid can drift this far from centre before the camera chases. */
@@ -27,8 +76,18 @@ export const CONFIG = {
     radius: 3.4,
     speed: 74,
     /** How hard neighbours push each other apart, relative to move speed. */
-    separation: 1.5,
-    separationRadius: 11,
+    separation: 1.6,
+    separationRadius: 15,
+    /**
+     * Radius step between rings of arrival slots, in world pixels.
+     *
+     * This is a *look* as much as a rule. Two soldiers touch at twice their
+     * radius -- under seven pixels -- and a ring step much beyond that still
+     * lands them shoulder to shoulder once the herd has settled, which reads as
+     * a huddle rather than a squad. A soldier sprite is thirteen pixels wide,
+     * so anything under about sixteen has them overlapping on screen.
+     */
+    formationSpacing: 18,
     /** Steering responsiveness. Higher = less momentum, more arcade. */
     accel: 900,
     /** Acceleration multiplier on ice -- low means long, sliding turns. */
@@ -47,6 +106,27 @@ export const CONFIG = {
      * past a sentry does not silently clear the map for you.
      */
     autoEngageRange: 0.68,
+  },
+
+  /**
+   * What surviving buys you.
+   *
+   * These are multipliers applied to the soldier's own numbers, interpolated
+   * from 1 at Private to the value here at General. They are small on purpose:
+   * big enough that a veteran demonstrably shoots straighter, small enough that
+   * losing one is a loss and not a defeat.
+   *
+   * The point of the edge being *real* rather than cosmetic is the decision it
+   * creates. A rank that only changed a label would make the sidebar prettier;
+   * a rank that changes the odds makes "who do I send across the open ground"
+   * an actual question, with a veteran's better chances on one side and a
+   * veteran's worse loss on the other.
+   */
+  veteran: {
+    /** Aim error at the top of the ladder, relative to a recruit's. */
+    spread: 0.55,
+    /** Time between shots at the top of the ladder. */
+    fireInterval: 0.84,
   },
 
   enemy: {

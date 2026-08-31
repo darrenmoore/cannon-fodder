@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { RANKS, rankTier } from './campaign.js';
 import { sfxOrder } from './audio.js';
 import { buildingAt } from './buildings.js';
 import { fire } from './combat.js';
@@ -106,7 +107,7 @@ export function orderDemolish(world: World, building: Building): void {
 /** Ring of walkable slots around a point, one per surviving soldier. */
 function assignFormation(world: World, centre: Vec2): void {
   const living = world.soldiers.filter((s) => s.alive);
-  const spacing = CONFIG.soldier.radius * 2.6;
+  const spacing = CONFIG.soldier.formationSpacing;
   // Over-generate, then drop any slot sitting in scenery.
   const candidates = formationSlots(centre, living.length * 3, spacing)
     .filter((p) => !circleBlocked(world.map, p.x, p.y, CONFIG.soldier.radius))
@@ -224,9 +225,29 @@ function updateFiring(world: World, s: Soldier, manualFireAt: Vec2 | null, cfg: 
 
   s.angle = Math.atan2(aim.y - s.pos.y, aim.x - s.pos.x);
   if (s.fireCooldown <= 0) {
-    s.fireCooldown = cfg.fireInterval;
-    fire(world, s, aim, cfg.spread);
+    const edge = veteranEdge(s);
+    s.fireCooldown = edge.fireInterval;
+    fire(world, s, aim, edge.spread);
   }
+}
+
+/**
+ * What rank is worth in a firefight.
+ *
+ * Interpolated smoothly across the whole ladder rather than stepped at each
+ * promotion, so surviving always improves a soldier slightly instead of doing
+ * nothing for four missions and then a lot. A Private fires at exactly the
+ * numbers in CONFIG; only a General sees the full CONFIG.veteran multipliers,
+ * and nobody has ever met one.
+ */
+function veteranEdge(s: Soldier): { spread: number; fireInterval: number } {
+  const cfg = CONFIG.soldier;
+  if (s.rank <= 0) return { spread: cfg.spread, fireInterval: cfg.fireInterval };
+  const t = rankTier(s.rank) / (RANKS.length - 1);
+  return {
+    spread: cfg.spread * (1 + (CONFIG.veteran.spread - 1) * t),
+    fireInterval: cfg.fireInterval * (1 + (CONFIG.veteran.fireInterval - 1) * t),
+  };
 }
 
 const inFiringSolution = (world: World, s: Soldier, at: Vec2): boolean =>

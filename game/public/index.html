@@ -2,28 +2,54 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <!--
+      viewport-fit=cover is what lets the game paint under a notch and a home
+      indicator; the safe-area insets in style.css then keep anything readable
+      out from under them. interactive-widget stops an on-screen keyboard
+      (the Boot Hill rename field) from shoving the whole layout upward.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#0a0d05" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Cannon Fodder</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <div id="stage">
       <aside id="hud"></aside>
-      <canvas id="screen"></canvas>
+      <!--
+        The canvas's positioning context. The action bar is anchored to this
+        rather than to the page, so it lands inside the battlefield on a phone
+        and inside the play area beside the sidebar on a desktop.
+      -->
+      <div id="viewport">
+        <canvas id="screen"></canvas>
+        <div id="controls"></div>
+      </div>
     </div>
 
     <div id="overlay" hidden><div id="overlay-card"></div></div>
+    <div id="sheet" hidden></div>
 
     <div id="menu" hidden>
       <div id="menu-inner">
         <h1>Cannon&nbsp;Fodder</h1>
         <p class="menu-sub">War has never been so much fun. Pick a mission.</p>
+        <div id="menu-actions"></div>
         <div id="menu-difficulty"></div>
         <p id="menu-blurb" class="menu-blurb"></p>
         <div id="menu-list"></div>
-        <p class="menu-foot">Click a mission, or press its number. Left/right arrows change difficulty; Enter resumes the last mission.</p>
+        <p class="menu-foot" id="menu-foot"></p>
       </div>
     </div>
+
+    <div id="hill" hidden><div id="hill-inner"></div></div>
 
     <script type="module" src="/bundle.js"></script>
   </body>

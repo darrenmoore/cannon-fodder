@@ -1,10 +1,12 @@
 import { CONFIG } from './config.js';
+import { RECRUITS } from './campaign.js';
 import { resolveLevers } from './difficulty.js';
 import { Fog } from './fog.js';
 import { Fx } from './fx.js';
 import { nearestWalkable, restoreTiles } from './map.js';
 import { SpatialHash } from './steering.js';
 import { EnemyKind, EnemyState, Faction, Phase, SoldierState } from './types.js';
+import type { Deployment } from './campaign.js';
 import type { DifficultyId, Levers } from './difficulty.js';
 import type { GameMap } from './map.js';
 import type { FlowField } from './pathfind.js';
@@ -121,14 +123,15 @@ function rollTraits(levers: Levers, kind: EnemyKind): EnemyTraits {
 }
 
 /**
- * The roster. These are the original's names, in the original's order — Jools
- * and Jops lead every squad, and the recruits behind them are the ones the
- * game expects you to spend.
+ * The roster of last resort.
+ *
+ * Who actually deploys is decided by `campaign.ts` and passed in, because the
+ * roster outlives the mission now. This fallback exists for the throwaway world
+ * the renderer builds to read building placements from, which never gets shown
+ * to anyone — see `renderer.prepare` in main.ts.
  */
-const ROSTER = [
-  'JOOLS', 'JOPS', 'STOO', 'RJ', 'GARY', 'ANDY',
-  'BUZZ', 'TEDDY', 'HAWK', 'MAC', 'FRANK', 'WILL',
-];
+const FALLBACK_ROSTER: Deployment[] = RECRUITS.slice(0, 12)
+  .map((name) => ({ name, missions: 0, own: false, fresh: false }));
 
 const spawnActor = (counter: { nextId: number }, pos: Vec2, faction: Faction, radius: number): Actor => ({
   id: counter.nextId++,
@@ -137,7 +140,11 @@ const spawnActor = (counter: { nextId: number }, pos: Vec2, faction: Faction, ra
   prev: { x: pos.x, y: pos.y },
   vel: { x: 0, y: 0 },
   radius,
-  angle: Math.PI / 2,
+  // Facing south, but not all of them exactly. Six men standing in a clearing
+  // all looking precisely the same way is the tell that they were placed rather
+  // than that they are waiting -- and the sprite has eight facings, so a
+  // scatter of a couple of steps either side costs nothing and reads at once.
+  angle: Math.PI / 2 + ((counter.nextId * 2654435761) % 5 - 2) * (Math.PI / 4),
   alive: true,
   hp: 1,
   fireCooldown: 0,
@@ -182,22 +189,28 @@ export function makeEnemy(
   };
 }
 
-export function createWorld(map: GameMap, difficulty: DifficultyId): World {
+export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Deployment[]): World {
   // Undo any demolition from the previous attempt at this level.
   restoreTiles(map);
   const levers = resolveLevers(difficulty, map.doctrine);
   const counter = { nextId: 1 };
+  const squad = roster && roster.length > 0 ? roster : FALLBACK_ROSTER;
 
-  const soldiers: Soldier[] = map.playerSpawns.map((p, i) => ({
-    ...spawnActor(counter, p, Faction.Player, CONFIG.soldier.radius),
-    faction: Faction.Player,
-    state: SoldierState.Idle,
-    slot: null,
-    name: ROSTER[i % ROSTER.length],
-    // The first two are the veterans of the original's opening mission; the
-    // roster runs down from there, which is the order they get sent to die in.
-    rank: Math.max(0, ROSTER.length - i),
-  }));
+  const soldiers: Soldier[] = map.playerSpawns.map((p, i) => {
+    // The map may place more spawns than the roster holds; wrapping keeps the
+    // mission playable rather than fielding an undefined name.
+    const t = squad[i % squad.length];
+    return {
+      ...spawnActor(counter, p, Faction.Player, CONFIG.soldier.radius),
+      faction: Faction.Player,
+      state: SoldierState.Idle,
+      slot: null,
+      name: t.name,
+      rank: t.missions,
+      own: t.own,
+      fresh: t.fresh,
+    };
+  });
 
   /** An enemy standing near a patrol node walks a beat; the rest hold ground. */
   const nearestNode = (p: Vec2): Vec2 | null => {

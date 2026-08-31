@@ -1,5 +1,10 @@
 import { DIFFICULTIES, DIFFICULTY_ORDER, DOCTRINES, describeLevers, isDifficultyId, isDoctrineId, resolveLevers } from './difficulty.js';
 import { OBJECTIVE_TEXT } from './objectives.js';
+import { bootHillOpen } from './boothill.js';
+import { formatTime } from './campaign.js';
+import { musicOn, musicSource, onMusicChange, syncMusic } from './music.js';
+import { updateSettings } from './settings.js';
+import type { CampaignState } from './campaign.js';
 import type { DifficultyId, DoctrineId } from './difficulty.js';
 
 /**
@@ -10,6 +15,18 @@ import type { DifficultyId, DoctrineId } from './difficulty.js';
  * replayed at any setting, and the card shows what actually changes -- whether
  * they hear you, hunt you, flank, throw grenades, and whether you get fog.
  */
+
+/**
+ * The music switch, drawn rather than set as a glyph so it stays on the pixel
+ * grid and inherits the chrome's colours. The body is filled, the waves and the
+ * strike are stroked; `style.css` colours them from one rule each.
+ */
+const SPEAKER_BODY = '<path class="cone" d="M4 9.5h3.6L12 5.4v13.2L7.6 14.5H4z"/>';
+const SPEAKER_ON = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER_BODY}`
+  + '<path class="wave" d="M15.4 9.3a4 4 0 0 1 0 5.4"/>'
+  + '<path class="wave" d="M18.1 6.7a7.6 7.6 0 0 1 0 10.6"/></svg>';
+const SPEAKER_OFF = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER_BODY}`
+  + '<path class="slash" d="M15.6 9.6l5 4.8"/><path class="slash" d="M20.6 9.6l-5 4.8"/></svg>';
 
 export interface LevelInfo {
   id: string;
@@ -84,6 +101,10 @@ export function showMenu(
   lastPlayed: string | null,
   initialDifficulty: DifficultyId,
   onDifficultyChange: (d: DifficultyId) => void,
+  campaign: CampaignState,
+  // Off the front screen for now. The hill is still reachable from the sidebar
+  // mid-mission, so this stays wired rather than being torn out and rebuilt.
+  _onBootHill: () => Promise<void>,
 ): Promise<MenuChoice> {
   const root = document.getElementById('menu') as HTMLElement;
   const list = document.getElementById('menu-list') as HTMLElement;
@@ -95,13 +116,52 @@ export function showMenu(
 
   return new Promise((resolve) => {
     const cleanup: Array<() => void> = [];
+
+    // --- the music switch
+    //
+    // Pinned to the corner rather than sat in the row of buttons. It is the one
+    // control here that is not about choosing a mission, you touch it once and
+    // then forget it, and a speaker with its waves struck out says "off" without
+    // needing a word -- so it carries no label at all.
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.id = 'music-toggle';
+    root.appendChild(toggle);
+
     const finish = (id: string): void => {
       for (const off of cleanup) off();
       root.hidden = true;
       list.textContent = '';
       tabs.textContent = '';
+      toggle.remove();
       resolve({ id, difficulty });
     };
+
+    const renderToggle = (): void => {
+      const on = musicOn();
+      const source = musicSource();
+      // On-and-playing, on-but-held-back, and off are three different states,
+      // and the button has to tell them apart. A player whose browser is sitting
+      // on the autoplay is owed a reason rather than a switch that looks broken.
+      const blocked = on && source === 'none';
+      toggle.classList.toggle('on', on && !blocked);
+      toggle.classList.toggle('blocked', blocked);
+      toggle.setAttribute('aria-pressed', String(on));
+      toggle.title = !on
+        ? 'Music off  (M)'
+        : blocked ? 'Click anywhere to start the music  (M)'
+        : source === 'synth' ? 'Music on — house march  (M)'
+        : 'Music on  (M)';
+      toggle.setAttribute('aria-label', toggle.title);
+      toggle.innerHTML = on ? SPEAKER_ON : SPEAKER_OFF;
+    };
+
+    const flipMusic = (): void => {
+      updateSettings({ music: !musicOn() });
+      syncMusic();
+      renderToggle();
+    };
+    toggle.addEventListener('click', flipMusic);
 
     // --- difficulty tabs
     const renderTabs = (): void => {
@@ -177,6 +237,8 @@ export function showMenu(
           <span class="m-theme"></span>
           <span class="m-doctrine"></span>
           <span class="m-size"></span>
+          <span class="m-ribbons"></span>
+          <span class="m-best"></span>
         </span>`;
 
       // Map headers are author-supplied text; set them as text, never HTML.
@@ -195,13 +257,46 @@ export function showMenu(
         leverBar.appendChild(chip);
       }
 
+      // Ribbons.
+      //
+      // All four are always drawn, and the ones you have not earned are drawn
+      // dim rather than hidden. A locked thing you cannot see is not a goal; a
+      // gap in a row of four, on a card you are already looking at, is. This is
+      // also why `Theatre.locked` stays unwired — hiding the later theatres
+      // would take away the very thing that makes them worth reaching.
+      const record = campaign.records[level.id];
+      const ribbons = el.querySelector('.m-ribbons') as HTMLElement;
+      for (const id of DIFFICULTY_ORDER) {
+        const cleared = !!record?.clears.includes(id);
+        const rib = document.createElement('i');
+        rib.className = `ribbon diff-${id}${cleared ? ' on' : ''}`;
+        rib.title = cleared
+          ? `Cleared on ${DIFFICULTIES[id].name}`
+          : `Not yet cleared on ${DIFFICULTIES[id].name}`;
+        ribbons.appendChild(rib);
+      }
+      if (record) el.classList.add('cleared');
+
+      // The par. Shown on the card as well as in the sidebar so that choosing a
+      // mission and playing it are anchored to the same number.
+      const best = el.querySelector('.m-best') as HTMLElement;
+      best.textContent = record
+        ? `best ${record.bestHome} home · ${formatTime(record.bestTime)}`
+        : '';
+
       el.addEventListener('click', () => finish(level.id));
       return el;
     };
 
     // Number keys pick a mission, left/right change difficulty.
     const onKey = (e: KeyboardEvent): void => {
-      if (root.hidden) return;
+      // The hill draws over the menu without hiding it, so a number key would
+      // otherwise launch a mission out from under someone reading the graves.
+      if (root.hidden || bootHillOpen()) return;
+      if (e.key === 'm' || e.key === 'M') {
+        flipMusic();
+        return;
+      }
       const n = Number(e.key);
       if (n >= 1 && n <= Math.min(9, levels.length)) {
         finish(levels[n - 1].id);
@@ -226,8 +321,13 @@ export function showMenu(
     window.addEventListener('keydown', onKey);
     cleanup.push(() => window.removeEventListener('keydown', onKey));
 
+    renderToggle();
     renderTabs();
     renderList();
+
+    // A blocked autoplay starts later, on the first gesture. The button has to
+    // stop claiming "click anywhere to start" the moment it actually does.
+    cleanup.push(onMusicChange(() => renderToggle()));
   });
 }
 

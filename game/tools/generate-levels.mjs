@@ -331,6 +331,53 @@ function scatter(g, tile, count, sizeRange, over = [GRASS]) {
   }
 }
 
+/** How far from the drop point a soldier may start, in tiles. */
+const SQUAD_SPREAD = 4.4;
+
+/**
+ * Drops the squad around a spawn point.
+ *
+ * They were laid out on a perfect 3x2 lattice, two tiles apart, in every
+ * mission — which reads exactly as what it is the moment the game starts. Real
+ * men standing about waiting to be told what to do do not form a grid. This
+ * keeps them clustered enough to be one squad and scatters them enough not to
+ * be a formation, and it will not stack two on the same tile.
+ */
+function squad(g, place, at, count = 6) {
+  // Clear the ground it needs rather than trusting the caller's `clearing()` to
+  // have been generous enough. A radius-four pad cannot hold six men two and a
+  // half tiles apart, so the scatter quietly failed and fell back to the very
+  // lattice it exists to avoid -- silently, and only on some maps.
+  g.disc(at.x, at.y, SQUAD_SPREAD + 1.5, GRASS, [TREE, ROCK, TALL, QUICK]);
+
+  const taken = new Set();
+  let placed = 0;
+  for (let attempt = 0; attempt < 300 && placed < count; attempt++) {
+    const a = g.rnd() * Math.PI * 2;
+    const r = 1.6 + Math.sqrt(g.rnd()) * SQUAD_SPREAD;
+    const x = Math.round(at.x + Math.cos(a) * r);
+    const y = Math.round(at.y + Math.sin(a) * r * 0.85);
+    const key = `${x},${y}`;
+    if (taken.has(key) || !g.isOpen(x, y)) continue;
+    // Never shoulder to shoulder: the herd steering wants room to spread.
+    let tooClose = false;
+    for (const k of taken) {
+      const [tx, ty] = k.split(',').map(Number);
+      if (Math.hypot(tx - x, ty - y) < 2.4) { tooClose = true; break; }
+    }
+    if (tooClose) continue;
+    taken.add(key);
+    g.set(x, y, 'P');
+    place.used.push({ x, y });
+    placed++;
+  }
+  // A mission is not shippable with a short squad, and the validator will say
+  // so -- but fall back to the lattice rather than silently writing five men.
+  for (let i = placed; i < count; i++) {
+    g.set(at.x - 2 + (i % 3) * 2, at.y - 1 + Math.floor(i / 3) * 2, 'P');
+  }
+}
+
 /** Clears a landing pad of open ground and returns its centre. */
 function clearing(g, x, y, r) {
   g.disc(g.w * 0 + x, y, r, GRASS, [TREE, ROCK, TALL, QUICK]);
@@ -406,9 +453,7 @@ const BUILDERS = {
     forest(g, 16, [3, 6]);
     scatter(g, TALL, 5, [3, 5]);
     const spawn = clearing(g, 8, g.h - 8, 5);
-    for (let i = 0; i < 6; i++) {
-      g.set(spawn.x - 2 + (i % 3) * 2, spawn.y - 1 + Math.floor(i / 3) * 2, 'P');
-    }
+    squad(g, place, spawn);
     place.used.push(spawn);
     place.confineTo(spawn.x, spawn.y);
 
@@ -428,9 +473,7 @@ const BUILDERS = {
     forest(g, 14, [3, 5]);
     const bridges = river(g, { axis: 'h', width: 4, wobble: 7, crossings: [0.3, 0.72], deep: true });
     const spawn = clearing(g, Math.floor(g.w / 2), g.h - 7, 5);
-    for (let i = 0; i < 6; i++) {
-      g.set(spawn.x - 2 + (i % 3) * 2, spawn.y - 1 + Math.floor(i / 3) * 2, 'P');
-    }
+    squad(g, place, spawn);
     place.used.push(spawn);
     place.confineTo(spawn.x, spawn.y);
 
@@ -460,7 +503,7 @@ const BUILDERS = {
     verge(g, 2);
 
     const spawn = clearing(g, 8, Math.floor(g.h / 2), 4);
-    for (let i = 0; i < 6; i++) g.set(spawn.x - 2 + (i % 3) * 2, spawn.y - 1 + Math.floor(i / 3) * 2, 'P');
+    squad(g, place, spawn);
     place.used.push(spawn);
     place.confineTo(spawn.x, spawn.y);
 
@@ -494,7 +537,7 @@ const BUILDERS = {
     scatter(g, ROCK, 4, [2, 3], [GRASS, TALL]);
 
     const spawn = clearing(g, 8, g.h - 8, 4);
-    for (let i = 0; i < 6; i++) g.set(spawn.x - 2 + (i % 3) * 2, spawn.y - 1 + Math.floor(i / 3) * 2, 'P');
+    squad(g, place, spawn);
     place.used.push(spawn);
     place.confineTo(spawn.x, spawn.y);
 
@@ -520,7 +563,7 @@ const BUILDERS = {
     road(g, { x: 6, y: g.h - 8 }, { x: g.w - 8, y: 8 });
 
     const spawn = clearing(g, 8, g.h - 8, 4);
-    for (let i = 0; i < 6; i++) g.set(spawn.x - 2 + (i % 3) * 2, spawn.y - 1 + Math.floor(i / 3) * 2, 'P');
+    squad(g, place, spawn);
     place.used.push(spawn);
     place.confineTo(spawn.x, spawn.y);
 
@@ -549,7 +592,7 @@ const BUILDERS = {
     river(g, { axis: 'v', width: 2, wobble: 5, crossings: [0.45] });
 
     const spawn = clearing(g, 8, g.h - 8, 4);
-    for (let i = 0; i < 6; i++) g.set(spawn.x - 2 + (i % 3) * 2, spawn.y - 1 + Math.floor(i / 3) * 2, 'P');
+    squad(g, place, spawn);
     place.used.push(spawn);
     place.confineTo(spawn.x, spawn.y);
 
@@ -584,7 +627,7 @@ const BUILDERS = {
     river(g, { axis: 'h', width: 3, wobble: 5, crossings: [0.35, 0.75], deep: true });
 
     const spawn = clearing(g, 9, g.h - 8, 4);
-    for (let i = 0; i < 6; i++) g.set(spawn.x - 2 + (i % 3) * 2, spawn.y - 1 + Math.floor(i / 3) * 2, 'P');
+    squad(g, place, spawn);
     place.used.push(spawn);
     place.confineTo(spawn.x, spawn.y);
 
@@ -630,8 +673,11 @@ const BUILDERS = {
     }
     building(g, cx - 1, cy - 1, 2, 2, HUT);
 
-    for (let i = 0; i < 6; i++) g.set(cx - 4 + (i % 3) * 2, cy + 4 + Math.floor(i / 3) * 2, 'P');
+    // Inside the wire, on the near side of the hut. `squad` only clears the
+    // four natural tile types, so the outpost's fence and hut survive it.
+    squad(g, place, { x: cx, y: cy + 5 });
     place.used.push({ x: cx, y: cy });
+    place.confineTo(cx, cy + 5);
 
     place.put('c', cx + 5, cy - 4, 3);
     place.put('c', cx - 5, cy + 4, 3);

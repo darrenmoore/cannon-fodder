@@ -1,0 +1,20 @@
+{
+  "name": "Cannon Fodder",
+  "short_name": "Fodder",
+  "description": "A top-down squad shooter. Herd six fragile soldiers across a scrolling map.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0a0d05",
+  "theme_color": "#0a0d05",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

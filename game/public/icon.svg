@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <!--
+    The home-screen icon. Drawn on the same 32px grid and out of the same
+    palette as everything else, with no anti-aliasing, because an icon that
+    reads as a modern app beside a game that refuses to is the wrong first
+    impression. A helmet, which is the one silhouette the original is
+    remembered by.
+  -->
+  <rect width="32" height="32" fill="#0a0d05"/>
+  <rect x="2" y="2" width="28" height="28" fill="#2a3117"/>
+  <rect x="2" y="2" width="28" height="1" fill="#3d4623"/>
+  <rect x="2" y="2" width="1" height="28" fill="#3d4623"/>
+
+  <!-- helmet dome -->
+  <rect x="10" y="8"  width="12" height="2" fill="#8fa03f"/>
+  <rect x="8"  y="10" width="16" height="2" fill="#8fa03f"/>
+  <rect x="7"  y="12" width="18" height="4" fill="#7a8a35"/>
+  <!-- brim -->
+  <rect x="5"  y="16" width="22" height="2" fill="#5f6a2a"/>
+  <rect x="5"  y="18" width="22" height="1" fill="#3d4623"/>
+  <!-- face in shadow -->
+  <rect x="11" y="19" width="10" height="5" fill="#161b0b"/>
+  <!-- one gold band, the colour the chrome uses for anything that matters -->
+  <rect x="7"  y="13" width="18" height="1" fill="#f0d878"/>
+</svg>

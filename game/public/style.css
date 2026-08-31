@@ -1,18 +1,63 @@
 /*
- * The chrome. Three layers, in this order:
+ * The chrome. Four layers, in this order:
  *
- *   1. tokens        the palette everything else is built from
- *   2. the UI kit    ui.ts's five components -- panel, button, plate, readout,
+ *   1. tokens        the palette and the type scale everything is built from
+ *   2. the UI kit    ui.ts's components -- panel, button, plate, readout,
  *                    meter -- styled once and reused by every screen
- *   3. the screens   sidebar, overlay, mission select
+ *   3. the screens   sidebar, overlay, mission select, Boot Hill
+ *   4. the layouts   the same screens rearranged for a phone
  *
  * Nothing below layer 2 invents its own button or its own border. That is the
  * whole point of having the kit: the mission select and the end-of-mission
  * panel cannot drift apart, because they are made of the same parts.
+ *
+ * Layer 4 is the reason layer 1 has a type scale rather than literal pixel
+ * sizes. Every readable thing sizes from a token, and the tokens are redefined
+ * per layout mode, so making the game legible on a phone is one block of
+ * declarations rather than a hunt through six hundred lines. `data-layout` is
+ * the only thing any of it branches on; `layout.ts` is the only thing that sets
+ * it, and it decides from CSS pixels and orientation rather than from a
+ * user-agent string, because a narrow desktop window has the same problem a
+ * phone does and deserves the same answer.
  */
 
 :root {
   --sidebar-w: 188px;
+  /* Reserved bottom bar in portrait, before the home-indicator inset. */
+  --bar-h: 104px;
+
+  /*
+   * The touch-target floor. 44px is the smallest thing a finger hits reliably,
+   * and every control in the game is held to it -- buttons, difficulty tabs,
+   * mission cards, roster plates once they became tappable.
+   */
+  --tap: 44px;
+
+  /*
+   * The type scale.
+   *
+   * The old sheet ran from 9px to 14px with up to 0.22em of letter-spacing on
+   * the smallest of it, which is unreadable on a phone at arm's length and was
+   * being "solved" by a media query that set `display: none`. Hiding the thing
+   * the player needed was never the answer; sizing it was.
+   */
+  --fs-micro: 10px;   /* keycaps, theatre notes -- decoration, not reading */
+  --fs-sm: 11px;      /* hints, card meta */
+  --fs-body: 12px;    /* roster plates, the objective line */
+  --fs-lg: 14px;      /* button labels, the mission name */
+  --fs-xl: 18px;      /* readout values */
+  --fs-display: 40px; /* briefing and result titles */
+  --fs-title: 27px;
+  --fs-brand: 58px;
+
+  /*
+   * Tracking is a legibility cost that rises as type shrinks. Uppercase at 9px
+   * with 0.22em between the letters reads as a texture rather than a word, so
+   * the small tokens carry less of it and the large ones keep the look.
+   */
+  --track-tight: 0.06em;
+  --track: 0.12em;
+  --track-wide: 0.2em;
 
   /* Olive, not emerald. The game's ground palette is a sunlit khaki green and
      the chrome has to sit in the same family or it reads as a different game. */
@@ -27,19 +72,34 @@
   --plate-lo: #161b0b;
   --well: #10140a;
   --edge: #0a0d05;
+
+  /* Notch, home indicator, rounded corners. Zero on a desktop. */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
 }
 
 * { box-sizing: border-box; }
 
 html, body {
   margin: 0;
+  /*
+   * `dvh`, not `100%`. A percentage height collapses the moment a mobile
+   * browser shows or hides its own chrome, which is every time the page is
+   * scrolled -- and the fallback matters, because a browser without `dvh`
+   * still has to get a full-height game.
+   */
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
+  overscroll-behavior: none;
   background: var(--edge);
   color: var(--ink);
-  font: 12px/1 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  font: var(--fs-body)/1 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ============================================================== the UI kit */
@@ -61,6 +121,7 @@ html, body {
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
+  min-height: var(--tap);
   background: var(--plate);
   border-top: 1px solid var(--plate-hi);
   border-left: 1px solid var(--plate-hi);
@@ -85,12 +146,12 @@ html, body {
 
 .ui-btn-body { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
 .ui-btn-label {
-  font-size: 12px;
+  font-size: var(--fs-body);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track);
   text-transform: uppercase;
 }
-.ui-btn-hint { color: var(--ink-dim); font-size: 10px; letter-spacing: 0.04em; }
+.ui-btn-hint { color: var(--ink-dim); font-size: var(--fs-micro); letter-spacing: var(--track-tight); }
 
 .ui-key {
   padding: 3px 6px;
@@ -99,8 +160,8 @@ html, body {
   border-radius: 2px;
   color: var(--ink-dim);
   font: inherit;
-  font-size: 9px;
-  letter-spacing: 0.08em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
 }
 
 /* --- plate: chevrons instead of a border, which is how the original does it */
@@ -113,9 +174,9 @@ html, body {
   border-top: 1px solid #47522a;
   border-bottom: 1px solid var(--plate-lo);
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--fs-sm);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track);
   text-transform: uppercase;
 }
 .ui-plate-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -144,11 +205,11 @@ html, body {
 
 /* --- readout */
 .ui-readout { display: flex; align-items: baseline; gap: 7px; padding: 2px 7px; }
-.ui-readout-value { color: var(--gold); font-size: 17px; font-weight: 700; }
+.ui-readout-value { color: var(--gold); font-size: var(--fs-xl); font-weight: 700; }
 .ui-readout-label {
   color: var(--ink-dim);
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track);
   text-transform: uppercase;
 }
 .ui-readout-value.pulse { animation: ui-pulse 0.32s ease-out; }
@@ -169,8 +230,8 @@ html, body {
   justify-content: space-between;
   margin-bottom: 4px;
   color: var(--ink-dim);
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track);
   text-transform: uppercase;
 }
 .ui-meter-text { color: var(--gold); }
@@ -182,8 +243,8 @@ html, body {
   margin: 12px 0 5px;
   padding: 0 7px;
   color: var(--ink-faint);
-  font-size: 9px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-wide);
   text-transform: uppercase;
 }
 .ui-heading::after {
@@ -195,9 +256,42 @@ html, body {
 }
 
 /* =============================================================== the stage */
+/*
+ * A grid rather than a flex row, because the three layouts are three different
+ * arrangements of the same two children and a grid can express all of them
+ * without the markup changing. `wide` puts the HUD in a column beside the
+ * viewport, `stacked` puts it in a row beneath, and `compact` takes it out of
+ * flow entirely and floats it in the corners -- see the layouts section.
+ */
 
-#stage { display: flex; height: 100%; }
-#screen { display: block; flex: 1; height: 100%; cursor: crosshair; }
+#stage {
+  display: grid;
+  height: 100%;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* The canvas's positioning context, and what the action bar is anchored to. */
+#viewport {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#screen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  /*
+   * Without this the browser claims every drag for its own scrolling and pinch
+   * for its own zoom, and the game never sees either. `user-scalable=no` has
+   * been ignored by Safari since iOS 10; this is what actually works.
+   */
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
 
 /* --------------------------------------------------------------- sidebar */
 /*
@@ -206,11 +300,11 @@ html, body {
  * going down.
  */
 #hud {
-  width: var(--sidebar-w);
-  flex: none;
   display: flex;
   flex-direction: column;
-  padding: 10px 6px 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: calc(10px + var(--safe-t)) 6px 8px calc(6px + var(--safe-l));
   background: linear-gradient(#232a13, #171d0d);
   border-right: 2px solid var(--edge);
   box-shadow: inset -1px 0 0 var(--plate-lo);
@@ -221,8 +315,8 @@ html, body {
 .hud-mission b {
   display: block;
   color: var(--gold);
-  font-size: 14px;
-  letter-spacing: 0.1em;
+  font-size: var(--fs-lg);
+  letter-spacing: var(--track-tight);
   text-transform: uppercase;
   line-height: 1.15;
 }
@@ -230,9 +324,9 @@ html, body {
   display: inline-block;
   margin-top: 6px;
   padding: 2px 6px;
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track);
   text-transform: uppercase;
 }
 .diff-rookie { background: #2f4a24; color: #bfe39a; }
@@ -245,9 +339,9 @@ html, body {
 .hud-objective {
   padding: 0 7px;
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--fs-sm);
   line-height: 1.45;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-tight);
   text-transform: uppercase;
 }
 
@@ -255,18 +349,24 @@ html, body {
   padding: 8px 7px 0;
   border-top: 1px solid var(--plate-lo);
   color: var(--ink-faint);
-  font-size: 10px;
+  font-size: var(--fs-micro);
   line-height: 1.8;
 }
 .hud-hint b { color: var(--ink-dim); font-weight: 700; }
 
 /* --------------------------------------------------------------- overlay */
+/*
+ * The sidebar offset used to be baked in here as `inset: 0 0 0 var(--sidebar-w)`,
+ * which quietly hard-coded one of the three layouts into the overlay geometry.
+ * It is now a plain full-bleed overlay, and only `wide` shifts it.
+ */
 #overlay {
   position: fixed;
-  inset: 0 0 0 var(--sidebar-w);
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: max(12px, var(--safe-t)) max(12px, var(--safe-r)) max(12px, var(--safe-b)) max(12px, var(--safe-l));
   background: rgba(8, 11, 5, 0.78);
   pointer-events: none;
   z-index: 5;
@@ -279,20 +379,20 @@ html, body {
 .briefing { text-align: center; padding: 0 30px; }
 .briefing-title {
   color: var(--gold);
-  font-size: 40px;
+  font-size: var(--fs-display);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--track);
   text-transform: uppercase;
   text-shadow: 0 3px 0 #5c5210;
 }
 .briefing-obj {
   margin-top: 14px;
   color: var(--ink);
-  font-size: 13px;
+  font-size: var(--fs-body);
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
-.briefing-line { margin-top: 10px; color: var(--ink-dim); font-size: 12px; font-style: italic; }
+.briefing-line { margin-top: 10px; color: var(--ink-dim); font-size: var(--fs-body); font-style: italic; }
 
 /* --- result */
 .result {
@@ -307,21 +407,21 @@ html, body {
   text-align: center;
 }
 .result-title {
-  font-size: 27px;
+  font-size: var(--fs-title);
   font-weight: 700;
-  letter-spacing: 0.13em;
+  letter-spacing: var(--track);
   text-transform: uppercase;
 }
 .result.win .result-title { color: var(--gold); text-shadow: 0 3px 0 #5c5210; }
 .result.lose .result-title { color: #e07050; text-shadow: 0 3px 0 #52180d; }
-.result-sub { margin-top: 10px; color: var(--ink-dim); font-size: 11px; letter-spacing: 0.08em; }
+.result-sub { margin-top: 10px; color: var(--ink-dim); font-size: var(--fs-sm); letter-spacing: var(--track-tight); }
 
 .result-roll { margin: 20px auto 0; max-width: 240px; }
 .result-roll-head {
   margin-bottom: 7px;
   color: var(--blood);
-  font-size: 9px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-wide);
   text-transform: uppercase;
 }
 .result-roll .ui-plate {
@@ -331,7 +431,7 @@ html, body {
   margin-bottom: 2px;
 }
 .result-roll .ui-plate .ui-chev { border-color: #5c2a20; }
-.result-perfect { margin-top: 18px; color: #a8c07a; font-size: 11px; font-style: italic; }
+.result-perfect { margin-top: 18px; color: #a8c07a; font-size: var(--fs-sm); font-style: italic; }
 
 .result-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 22px; }
 
@@ -349,7 +449,7 @@ html, body {
 
 #menu h1 {
   margin: 0;
-  font-size: 58px;
+  font-size: var(--fs-brand);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--gold);
@@ -360,11 +460,11 @@ html, body {
   margin: 14px 0 30px;
   text-align: center;
   color: var(--ink-dim);
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track);
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: var(--fs-sm);
 }
-.menu-foot { margin: 30px 0 0; text-align: center; color: var(--ink-faint); font-size: 11px; letter-spacing: 0.08em; }
+.menu-foot { margin: 30px 0 0; text-align: center; color: var(--ink-faint); font-size: var(--fs-sm); letter-spacing: var(--track-tight); }
 
 #menu-difficulty { display: flex; justify-content: center; gap: 5px; margin: 0 0 12px; }
 .diff {
@@ -376,9 +476,9 @@ html, body {
   border-bottom: 2px solid var(--plate-lo);
   color: var(--ink-dim);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--fs-body);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track);
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
@@ -389,7 +489,7 @@ html, body {
   margin: 0 0 24px;
   text-align: center;
   color: #a3b47c;
-  font-size: 11px;
+  font-size: var(--fs-sm);
   font-style: italic;
   min-height: 14px;
 }
@@ -409,12 +509,12 @@ html, body {
 }
 .theatre-name {
   color: var(--gold);
-  font-size: 13px;
+  font-size: var(--fs-body);
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
-.theatre-note { color: var(--ink-faint); font-size: 10px; letter-spacing: 0.08em; }
+.theatre-note { color: var(--ink-faint); font-size: var(--fs-micro); letter-spacing: var(--track-tight); }
 .theatre-rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--plate-hi), transparent); }
 
 .theatre-grid {
@@ -455,18 +555,18 @@ html, body {
 .m-num { font-size: 22px; font-weight: 700; color: #56703a; min-width: 30px; line-height: 1.1; }
 .mission:hover .m-num { color: var(--gold); }
 .m-body { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
-.m-name { font-size: 14px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
-.m-obj { color: var(--ink-dim); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
-.m-mech { color: #a3b47c; font-size: 11px; font-style: italic; line-height: 1.4; }
+.m-name { font-size: var(--fs-lg); font-weight: 700; letter-spacing: var(--track-tight); text-transform: uppercase; }
+.m-obj { color: var(--ink-dim); font-size: var(--fs-micro); letter-spacing: var(--track-tight); text-transform: uppercase; }
+.m-mech { color: #a3b47c; font-size: var(--fs-sm); font-style: italic; line-height: 1.4; }
 .m-levers { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
 .lever {
   padding: 2px 6px;
   background: rgba(0, 0, 0, 0.28);
   box-shadow: inset 0 0 0 1px #3b4d26;
   color: #9db97a;
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-style: normal;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-tight);
   text-transform: uppercase;
 }
 .m-meta {
@@ -475,8 +575,8 @@ html, body {
   align-items: flex-end;
   gap: 4px;
   color: var(--ink-faint);
-  font-size: 9px;
-  letter-spacing: 0.08em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -484,9 +584,890 @@ html, body {
 /* The theatre heading carries the terrain now, so the card need not repeat it. */
 .m-theme { display: none; }
 
-@media (max-width: 720px) {
-  :root { --sidebar-w: 150px; }
-  #menu h1 { font-size: 36px; }
-  .m-meta { display: none; }
-  .hud-hint { display: none; }
+/* The layouts section at the foot of this file replaces what used to be a
+   single `max-width: 720px` query whose whole strategy was `display: none`. */
+
+/* ============================================================ the meta-game */
+/*
+ * Rank, the roster and Boot Hill.
+ *
+ * Nothing here invents a new button or a new plate -- it decorates the kit's
+ * pieces. A grave and a living soldier are the same `plate` with different
+ * classes on it, deliberately, because they are the same man at different times.
+ */
+
+/* --- rank marks, shared by the sidebar, the panel and the hill */
+.ui-plate.vet .ui-plate-value { color: #f0d878; font-weight: 700; }
+.ui-plate.vet .ui-chev { border-color: #8a7326; }
+/* The one soldier the player named. Marked everywhere he appears. */
+.ui-plate.own .ui-plate-label::before {
+  content: '\2726';
+  margin-right: 5px;
+  color: var(--gold);
+  font-size: var(--fs-micro);
 }
+
+/* --- the par line in the sidebar */
+.hud-par { margin-top: 10px; }
+.hud-par[hidden] { display: none; }
+.hud-par .ui-plate { background: var(--well); }
+.hud-par.beating .ui-plate { box-shadow: inset 0 0 0 1px #6d8a3c; }
+.hud-par.beating .ui-plate-value { color: #b6e06a; }
+.hud-par.behind .ui-plate-value { color: #d08a52; }
+
+/* --- the squad roll on the briefing card */
+.briefing-squad {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 18px;
+}
+.briefing-man {
+  padding: 3px 8px;
+  background: var(--plate);
+  box-shadow: inset 0 1px 0 var(--plate-hi);
+  color: var(--ink-dim);
+  font-size: var(--fs-micro);
+  font-style: normal;
+  letter-spacing: var(--track-tight);
+}
+.briefing-man.vet { color: var(--gold); }
+.briefing-man.fresh { color: #8fb0d4; }
+.briefing-man.own { box-shadow: inset 0 0 0 1px var(--gold); }
+.briefing-hill {
+  margin-top: 14px;
+  color: #9a6a52;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+}
+
+/* --- records and promotions on the end panel */
+.result-records {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 16px;
+}
+.result-ribbon {
+  padding: 3px 9px;
+  background: #4a3d12;
+  color: var(--gold);
+  font-size: var(--fs-micro);
+  font-style: normal;
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+}
+.result-roll.promotions .ui-plate { background: #2f4020; }
+.result-roll.promotions .ui-plate .ui-chev { border-color: #6d8a3c; }
+.result-roll.promotions .ui-plate-value { color: #b6e06a; }
+.result-note {
+  margin-top: 10px;
+  color: var(--ink-faint);
+  font-size: var(--fs-micro);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* --- the way in, on the mission select */
+#menu-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; margin: 0 0 18px; }
+#menu-actions .ui-btn { width: auto; min-width: 200px; }
+/* Nothing is rendered into it while Boot Hill is off the front screen, and an
+   empty row should not still be spending its margin. */
+#menu-actions:empty { display: none; }
+
+/* --- the music switch
+ *
+ * Pinned to the corner, not in the flow: it belongs to the screen rather than to
+ * the list of missions, and it must not move when the list scrolls -- hence
+ * `fixed` inside a container that is itself the scroller. Round, because every
+ * other control in this game is a bevelled rectangle and this one is not a
+ * choice about the war.
+ */
+#music-toggle {
+  position: fixed;
+  top: calc(var(--safe-t) + 14px);
+  left: calc(var(--safe-l) + 14px);
+  z-index: 11;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  background: var(--plate);
+  border: 1px solid var(--plate-hi);
+  border-bottom-color: var(--plate-lo);
+  border-right-color: var(--plate-lo);
+  border-radius: 50%;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+#music-toggle:hover, #music-toggle:focus-visible { background: var(--plate-hi); outline: none; }
+#music-toggle:active { transform: translateY(1px); }
+#music-toggle svg { width: 22px; height: 22px; overflow: visible; }
+/* One rule each: the cone is a solid shape, the waves and the strike are lines,
+   and both take their colour from the button so the states need only set that. */
+#music-toggle .cone { fill: currentColor; }
+#music-toggle .wave, #music-toggle .slash {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+}
+/* Playing: lit gold, the one warm thing in the corner. */
+#music-toggle.on { color: var(--gold); border-top-color: #4a7a34; border-left-color: #4a7a34; }
+/* Held back by the browser's autoplay rules -- on, but not yet audible. The
+   pulse is the only honest way to say "this is waiting for you", and it stops
+   the moment the first click lets the track through. */
+#music-toggle.blocked { color: var(--ink-dim); animation: music-wait 1.6s ease-in-out infinite; }
+@keyframes music-wait {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #music-toggle.blocked { animation: none; opacity: 0.7; }
+}
+
+/* --- ribbons on a mission card */
+.m-ribbons { display: flex; gap: 3px; margin-top: 6px; }
+.ribbon {
+  width: 13px;
+  height: 6px;
+  background: var(--plate-lo);
+  box-shadow: inset 0 0 0 1px #000;
+  opacity: 0.5;
+}
+/* Earned ribbons light up in their difficulty's colour; the rest stay visible
+   and dark, because a gap you can see is a goal and a hidden one is not.
+   Spelled out per difficulty rather than leaning on the .diff-* tabs above:
+   those set a background too, and this rule is the later one. */
+.ribbon.on { opacity: 1; }
+.ribbon.on.diff-rookie { background: #6d9a4a; }
+.ribbon.on.diff-regular { background: #b3c24e; }
+.ribbon.on.diff-veteran { background: #e0a63c; }
+.ribbon.on.diff-elite { background: #d4503a; }
+.m-best {
+  margin-top: 5px;
+  color: #b0975c;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
+}
+.mission.cleared .m-num { color: #8a9a55; }
+
+/* ================================================================ Boot Hill */
+#hill {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 100%, #1b1f10 0%, transparent 70%),
+    linear-gradient(#0d1108, #060803);
+}
+#hill[hidden] { display: none; }
+#hill-inner { max-width: 980px; margin: 0 auto; padding: 40px 24px 56px; }
+
+.hill-head { text-align: center; margin-bottom: 10px; }
+.hill-head h2 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--ink);
+  text-shadow: 0 3px 0 #000;
+}
+.hill-sub {
+  margin: 8px 0 0;
+  color: var(--ink-faint);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+}
+
+/* The mound. The crosses are absolutely placed from boothill.ts; this only
+   provides the ground they stand on. */
+.hill-mound {
+  position: relative;
+  height: 210px;
+  margin: 22px 0 30px;
+  background:
+    radial-gradient(ellipse 70% 150% at 50% 130%, #2a3117 0%, #1a1f0e 55%, transparent 78%);
+  border-bottom: 1px solid #11150a;
+}
+.hill-cross {
+  position: absolute;
+  width: 9px;
+  height: 14px;
+  background: #9aa07a;
+  clip-path: polygon(
+    38% 0, 62% 0, 62% 28%, 100% 28%, 100% 48%, 62% 48%, 62% 100%, 38% 100%, 38% 48%, 0 48%, 0 28%, 38% 28%);
+  filter: drop-shadow(1px 2px 0 #000);
+}
+.hill-cross.vet { background: var(--gold); height: 18px; }
+.hill-cross.own { background: #e8e4d0; height: 19px; }
+.hill-empty {
+  position: absolute;
+  inset: auto 0 40% 0;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: var(--fs-body);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+}
+.hill-more {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  color: var(--ink-faint);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
+}
+
+.hill-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+.hill-col { min-width: 0; }
+.hill-list { display: flex; flex-direction: column; gap: 3px; max-height: 340px; overflow-y: auto; }
+
+/* Inside these lists a plate carries a second line, so it wraps. The right
+   chevron would land in the middle of the wrap, so it goes. */
+.hill-list .ui-plate { flex-wrap: wrap; align-items: center; }
+.hill-list .ui-chev.right { display: none; }
+.hill-where {
+  flex-basis: 100%;
+  margin: 3px 0 0 13px;
+  color: var(--ink-faint);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+}
+.hill-note {
+  margin: 10px 0 0;
+  color: var(--ink-faint);
+  font-size: var(--fs-micro);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.hill-rename {
+  padding: 2px 7px;
+  border: 0;
+  background: var(--plate-hi);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.hill-rename:hover { background: var(--gold); color: var(--plate-lo); }
+
+.hill-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; width: 100%; }
+.hill-input {
+  flex: 1;
+  min-width: 90px;
+  padding: 5px 7px;
+  border: 0;
+  background: var(--well);
+  box-shadow: inset 0 0 0 1px var(--plate-hi);
+  color: var(--gold);
+  font: inherit;
+  font-size: var(--fs-body);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+}
+.hill-input:focus { outline: 0; box-shadow: inset 0 0 0 1px var(--gold); }
+.hill-editor .ui-btn { width: auto; padding: 5px 9px; }
+.hill-err { flex-basis: 100%; color: #e07050; font-size: var(--fs-micro); letter-spacing: var(--track-tight); }
+
+.hill-actions { display: flex; justify-content: center; gap: 9px; margin-top: 32px; }
+.hill-actions .ui-btn { width: auto; min-width: 170px; }
+
+@media (max-width: 860px) {
+  .hill-cols { grid-template-columns: 1fr; }
+  .hill-mound { height: 170px; }
+}
+
+/* ================================================================ layer 4 */
+/* ============================================================ the layouts */
+/*
+ * Three arrangements of the same markup, chosen by `layout.ts` and published
+ * as `data-layout` on the root element.
+ *
+ *   wide     >= 900px and landscape. The sidebar, as the original had it.
+ *   compact  landscape, narrower. The HUD leaves the flow and floats in the
+ *            corners, because a 188px column out of 640px is a third of the
+ *            battlefield and a phone has none to spare.
+ *   stacked  portrait. Thumbs cannot reach the top of a tall screen, so the
+ *            HUD is a reserved bar at the bottom where they already are.
+ *
+ * The rule the whole section follows: on a small screen the game gets the
+ * pixels and the chrome gets out of the way, except where a thumb has to be
+ * able to land on something.
+ */
+
+/* --------------------------------------------------------------- wide */
+
+[data-layout="wide"] #overlay { inset: 0 0 0 var(--sidebar-w); }
+
+/* ------------------------------------------------------------ compact */
+
+[data-layout="compact"] {
+  --fs-micro: 12px;
+  --fs-sm: 13px;
+  --fs-body: 14px;
+  --fs-lg: 17px;
+  --fs-xl: 22px;
+  --fs-display: clamp(24px, 6vw, 40px);
+  --fs-title: clamp(20px, 5vw, 27px);
+  --fs-brand: clamp(30px, 8vw, 58px);
+  --tap: 48px;
+  /* Tracking that reads at 11px is a smear at 14px on a phone held at arm's
+     length, so the touch layouts tighten it as the type grows. */
+  --track-wide: 0.14em;
+  --track: 0.08em;
+  --track-tight: 0.04em;
+}
+
+[data-layout="compact"] #stage {
+  grid-template-columns: minmax(0, 1fr);
+}
+/*
+ * Out of the grid entirely and over the canvas. `pointer-events: none` on the
+ * shell with it restored per child is what stops an invisible HUD rectangle
+ * eating orders meant for the ground behind it -- the single most common way a
+ * floating game HUD goes wrong.
+ */
+[data-layout="compact"] #hud {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
+  gap: 6px;
+  padding: calc(6px + var(--safe-t)) calc(6px + var(--safe-r)) calc(6px + var(--safe-b)) calc(6px + var(--safe-l));
+  background: none;
+  border: 0;
+  box-shadow: none;
+  pointer-events: none;
+  z-index: 3;
+}
+[data-layout="compact"] #hud > * { pointer-events: auto; }
+
+[data-layout="compact"] .hud-body {
+  display: contents;
+}
+/* Anything floating over the battlefield needs its own ground to be read
+   against; the sidebar had the column for that and these have nothing. */
+[data-layout="compact"] .hud-mission,
+[data-layout="compact"] .hud-squad,
+[data-layout="compact"] .hud-supply,
+[data-layout="compact"] .hud-orders {
+  padding: 5px 8px;
+  background: rgba(12, 16, 8, 0.82);
+  box-shadow: inset 0 0 0 1px var(--plate-lo);
+}
+[data-layout="compact"] .hud-mission { grid-area: 1 / 1; justify-self: start; }
+[data-layout="compact"] .hud-supply { grid-area: 1 / 2; justify-self: end; }
+[data-layout="compact"] .hud-orders {
+  grid-area: 2 / 1 / auto / span 2;
+  align-self: start;
+  justify-self: center;
+  max-width: min(90%, 460px);
+  text-align: center;
+}
+[data-layout="compact"] .hud-squad { grid-area: 1 / 1; justify-self: start; margin-top: 34px; }
+
+/* The section headings are a sidebar device. Floating over the world they are
+   four more words between the player and the battlefield. */
+[data-layout="compact"] .ui-heading,
+[data-layout="stacked"] .ui-heading { display: none; }
+[data-layout="compact"] .hud-hint,
+[data-layout="stacked"] .hud-hint { display: none; }
+[data-layout="compact"] .hud-par,
+[data-layout="stacked"] .hud-par { display: none; }
+
+/* ------------------------------------------------------------ stacked */
+
+[data-layout="stacked"] {
+  --fs-micro: 12px;
+  --fs-sm: 13px;
+  --fs-body: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 24px;
+  --fs-display: clamp(26px, 8vw, 44px);
+  --fs-title: clamp(22px, 6.5vw, 27px);
+  --fs-brand: clamp(30px, 11vw, 58px);
+  --tap: 48px;
+  --track-wide: 0.14em;
+  --track: 0.08em;
+  --track-tight: 0.04em;
+}
+
+[data-layout="stacked"] #stage {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+[data-layout="stacked"] #viewport { grid-row: 1; }
+[data-layout="stacked"] #hud {
+  grid-row: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--bar-h);
+  padding: 8px calc(10px + var(--safe-r)) calc(8px + var(--safe-b)) calc(10px + var(--safe-l));
+  border-right: 0;
+  border-top: 2px solid var(--edge);
+  box-shadow: inset 0 1px 0 var(--plate-lo);
+}
+[data-layout="stacked"] .hud-body {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+[data-layout="stacked"] .hud-mission { flex: none; max-width: 34%; }
+[data-layout="stacked"] .hud-orders { flex: 1; min-width: 0; }
+[data-layout="stacked"] .hud-supply { flex: none; }
+/* One scrollable row rather than a column: the names stay, because a name
+   leaving a list is the whole point of the roster. */
+[data-layout="stacked"] .hud-roster {
+  flex-direction: row;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+[data-layout="stacked"] .hud-roster::-webkit-scrollbar { display: none; }
+[data-layout="stacked"] .hud-roster .ui-plate { flex: none; }
+
+/*
+ * Portrait shows about 195 world pixels across, which is narrower than
+ * anything the missions were tuned against. It is playable, and the off-screen
+ * indicators carry it, but it is worth saying once that turning the phone
+ * gives you more ground.
+ */
+.rotate-nudge {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  background: rgba(12, 16, 8, 0.9);
+  box-shadow: inset 0 0 0 1px var(--plate-hi);
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+  z-index: 6;
+}
+[data-layout="stacked"] .rotate-nudge { display: block; }
+.rotate-nudge { display: none; }
+
+/* ------------------------------------------------- touch, at any layout */
+/*
+ * Keyed off the input the player is actually using rather than the viewport,
+ * because these are statements about fingers, not about width.
+ */
+
+/* A keycap reading "Enter" beside a button nobody can press is pure noise. */
+[data-input="touch"] .ui-key { display: none; }
+/* A crosshair cursor on a device with no cursor. */
+[data-input="touch"] #screen { cursor: default; }
+[data-input="touch"] .ui-plate { min-height: var(--tap); }
+
+/* Hover states are a lie on a touchscreen: they latch on after a tap and stay
+   lit until something else is touched, which reads as a stuck selection. */
+@media (hover: none) {
+  .ui-btn:hover { background: var(--plate); }
+  .ui-btn.tone-good:hover { background: #2f5222; }
+  .ui-btn.tone-warn:hover { background: #4a2718; }
+  .diff:hover { background: var(--plate); color: var(--ink-dim); }
+  .diff.on:hover { background: var(--plate-hi); color: var(--gold); }
+  .mission:hover { background: linear-gradient(#232b14, #1a2010); transform: none; }
+  .mission:hover .m-num { color: #56703a; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================================== the action bar */
+/*
+ * Anchored inside #viewport, so it lands in the battlefield on a phone and
+ * inside the play area beside the sidebar on a desktop.
+ *
+ * The shell does not receive pointer events; only the buttons do. An invisible
+ * full-size rectangle over the canvas swallowing move orders is the single most
+ * common way a floating game HUD goes wrong, and it is silent when it happens.
+ */
+#controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+#controls[hidden] { display: none; }
+
+.controls-top {
+  position: absolute;
+  top: calc(8px + var(--safe-t));
+  left: calc(8px + var(--safe-l));
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* Bottom-right by default, and mirrored for a left-handed player -- who
+   otherwise has the whole bar under the wrong thumb, which is not a cosmetic
+   complaint. */
+.controls-cluster {
+  position: absolute;
+  right: calc(10px + var(--safe-r));
+  bottom: calc(10px + var(--safe-b));
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: auto;
+}
+#controls[data-hand="left"] .controls-cluster {
+  right: auto;
+  left: calc(10px + var(--safe-l));
+  flex-direction: row-reverse;
+}
+#controls[data-hand="left"] .controls-top {
+  left: auto;
+  right: calc(8px + var(--safe-r));
+}
+
+.ui-action {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(30, 37, 18, 0.9);
+  box-shadow: inset 0 0 0 2px var(--plate-hi), 0 3px 0 rgba(0, 0, 0, 0.5);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  touch-action: none;
+  transition: background 0.1s, transform 0.06s;
+}
+/* The one the thumb should find without looking. */
+.ui-action.primary { width: 76px; height: 76px; }
+.ui-action:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 0 0 2px var(--plate-hi), 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+.ui-action.on { background: rgba(76, 96, 36, 0.95); box-shadow: inset 0 0 0 2px var(--gold); }
+.ui-action.off { opacity: 0.4; cursor: default; }
+.ui-action.tone-good { background: rgba(47, 82, 34, 0.9); }
+.ui-action.tone-warn { background: rgba(74, 39, 24, 0.9); }
+.ui-action:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.ui-action[hidden] { display: none; }
+
+.ui-action-glyph { font-size: 20px; line-height: 1; }
+.ui-action.primary .ui-action-glyph { font-size: 26px; }
+.ui-action-label {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+}
+/* The keyboard shortcut, for the desktop where the bar is an alternative to a
+   chord rather than the only way in. */
+.ui-action-hint {
+  position: absolute;
+  top: calc(100% + 3px);
+  color: var(--ink-faint);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
+  white-space: nowrap;
+}
+#controls[data-mode="touch"] .ui-action-hint { display: none; }
+
+.ui-action-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  padding: 2px 4px;
+  border-radius: 10px;
+  background: var(--gold);
+  color: var(--plate-lo);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  font-style: normal;
+  text-align: center;
+}
+.ui-action-badge[hidden] { display: none; }
+
+/* The cooldown, drained as a wedge over the button. A dead press is explained
+   rather than ignored, which is the difference between a control that feels
+   broken and one that feels busy. */
+.ui-action-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The thumbstick nub. Touch only -- on a mouse the aim already follows the
+   cursor and a stick drawn under a pointer is clutter. */
+.ui-stick {
+  position: fixed;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  background: rgba(240, 216, 120, 0.5);
+  box-shadow: 0 0 0 2px rgba(240, 216, 120, 0.8);
+  pointer-events: none;
+  z-index: 7;
+}
+.ui-stick[hidden] { display: none; }
+
+/* An armed grenade is a mode, so it needs a visible way out. */
+.ui-cancel {
+  position: absolute;
+  left: 50%;
+  top: calc(10px + var(--safe-t));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 9px 14px;
+  background: rgba(74, 39, 24, 0.92);
+  box-shadow: inset 0 0 0 1px #74412a;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.ui-cancel[hidden] { display: none; }
+
+/* ============================================================== the sheets */
+
+#sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    max(12px, var(--safe-t)) max(12px, var(--safe-r))
+    max(12px, var(--safe-b)) max(12px, var(--safe-l));
+  background: rgba(6, 9, 3, 0.82);
+}
+#sheet[hidden] { display: none; }
+
+.sheet-card {
+  width: min(420px, 100%);
+  /* Scrolls inside the viewport rather than growing past it: the difference
+     between a settings list that works on a 390x844 phone and one whose last
+     two rows cannot be reached. */
+  max-height: 88vh;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 22px 20px 18px;
+  background: linear-gradient(#242c14, #171d0d);
+  border-top: 2px solid var(--plate-hi);
+  border-left: 2px solid var(--plate-hi);
+  border-right: 2px solid var(--edge);
+  border-bottom: 2px solid var(--edge);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+.sheet-title {
+  color: var(--gold);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  text-align: center;
+}
+.sheet-sub {
+  margin-top: 6px;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  text-align: center;
+  text-transform: uppercase;
+}
+.sheet-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 18px; }
+.sheet-note {
+  margin: 14px 0 0;
+  color: var(--ink-faint);
+  font-size: var(--fs-sm);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.sheet-rows { margin-top: 14px; }
+.sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--plate-lo);
+}
+.sheet-row:last-child { border-bottom: 0; }
+.sheet-row-text { flex: 1; min-width: 0; }
+.sheet-row-text b {
+  display: block;
+  font-size: var(--fs-body);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+}
+.sheet-row-text span {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-faint);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+}
+/* On a phone the label and its control stop fitting side by side long before
+   the text itself becomes the problem, so the row turns into two. */
+@media (max-width: 460px) {
+  .sheet-row { flex-direction: column; align-items: stretch; }
+}
+
+/* --- segmented control */
+.ui-segmented {
+  display: flex;
+  flex: none;
+  gap: 3px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+.ui-segmented::-webkit-scrollbar { display: none; }
+.ui-seg {
+  flex: none;
+  min-height: var(--tap);
+  padding: 8px 14px;
+  background: var(--plate);
+  border-top: 1px solid var(--plate-hi);
+  border-left: 1px solid var(--plate-hi);
+  border-right: 1px solid var(--plate-lo);
+  border-bottom: 2px solid var(--plate-lo);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: var(--fs-body);
+  font-weight: 700;
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+.ui-seg.on { background: var(--plate-hi); color: var(--gold); box-shadow: inset 0 2px 0 var(--gold); }
+.ui-seg:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+.ui-chip {
+  padding: 2px 7px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 1px #3b4d26;
+  color: #9db97a;
+  font-size: var(--fs-micro);
+  font-style: normal;
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------- the screens, made responsive */
+
+#menu-inner { padding: clamp(20px, 5vw, 48px) clamp(14px, 4vw, 24px) clamp(28px, 7vw, 64px); }
+#menu h1 { font-size: var(--fs-brand); }
+/* `min(100%, 290px)` rather than a bare 290px: a fixed track minimum overflows
+   the moment the viewport is narrower than one card plus its padding, and a
+   grid overflowing is the one thing a phone cannot scroll its way out of. */
+.theatre-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); }
+.mission { min-height: var(--tap); }
+#menu-difficulty { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+#menu-difficulty::-webkit-scrollbar { display: none; }
+.diff { flex: none; min-height: var(--tap); }
+
+.briefing { padding: 0 clamp(16px, 5vw, 30px); }
+.result {
+  max-height: 88vh;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: clamp(18px, 4vw, 26px);
+}
+.result-actions .ui-btn { justify-content: center; }
+.hill-head h2 { font-size: clamp(22px, 6vw, 34px); }
+#hill-inner { padding: clamp(20px, 5vw, 40px) clamp(14px, 4vw, 24px) 56px; }
+.hill-actions { flex-wrap: wrap; }
+.hill-actions .ui-btn { min-width: min(170px, 100%); }
+#menu-actions .ui-btn { min-width: min(200px, 100%); }
+
+/*
+ * The card metadata used to be hidden below 720px. The shape of a map and the
+ * doctrine of its garrison are *why you pick one mission over another*, so
+ * hiding them was a layout dodge rather than an editorial decision. Below the
+ * width where a right-hand column fits, it becomes a row under the title.
+ */
+@media (max-width: 560px) {
+  .mission { flex-wrap: wrap; }
+  .m-meta {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 4px;
+    padding-left: 44px;
+  }
+}
+
+/* ------------------------------------------------- the touch type floor */
+/*
+ * Keyed off the input rather than the layout, and separate from the layout
+ * blocks above on purpose.
+ *
+ * A tablet in landscape at 1024px is `wide` -- it has room for the sidebar and
+ * should have it -- but it is still a device operated with a thumb, and the
+ * audit caught the whole mission-select running at 10 and 11px there. The floor
+ * belongs to the finger, not to the width.
+ */
+[data-input="touch"] {
+  --fs-micro: 12px;
+  --fs-sm: 13px;
+  --track-wide: 0.14em;
+  --track: 0.08em;
+}
+
+/*
+ * `Cannon Fodder` is one unbreakable word at 13 characters, and monospace type
+ * with 0.18em of tracking needs 10.1x its own size in width to set it. At
+ * 11vw on a 360px phone that is 401px in a 332px hole, which the audit found
+ * as a document-level overflow -- the one thing this game cannot scroll its way
+ * out of, since the body does not scroll at all.
+ */
+[data-layout="stacked"] { --fs-brand: clamp(22px, 7.5vw, 58px); }
+[data-layout="compact"] { --fs-brand: clamp(26px, 6vw, 58px); }
+#menu h1 { letter-spacing: var(--track-wide); }

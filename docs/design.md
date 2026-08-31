@@ -50,6 +50,8 @@ tools/generate-levels.mjs -- writes the whole campaign into data/
 tools/shoot.mjs           -- drives the real game and screenshots it
 tools/playtest.mjs        -- drives the mission shell and asserts on it
 tools/measure.mjs         -- pixel statistics, for settling arguments
+tools/sheet.mjs           -- lays every baked sprite out on a grid
+tools/crop.mjs            -- crops and magnifies, for comparing against the original
 ```
 
 Dependency direction is one-way: `world.ts` holds state, the systems mutate it,
@@ -274,6 +276,47 @@ surfaces. On an arctic map that cap is most of why the snow reads as bright.
   repeating motif across a whole mission — wallpaper, corduroy, or a wall of
   near-identical boulders, depending on the sprite.
 
+### The men
+
+A soldier is thirteen pixels wide, which is not many, and the first version of
+this spent them the obvious way: a helmet rectangle over a face rectangle over a
+uniform-coloured torso, symmetrical, softly shaded in three bands. It read as a
+toy soldier. Three rules off the original fixed it.
+
+**Light comes from straight above, so a soldier is a bright hat on a black
+body.** The helmet crown is close to the brightest thing on screen, the face is
+a small hot orange patch under it, and everything below the collar is nearly
+black. The value range inside one 13-pixel sprite is most of the palette's. A
+figure shaded evenly in its own uniform colour has no focal point at all.
+
+**Nothing is symmetrical.** Kit hangs off one side, the shoulders differ by a
+pixel, the helmet's highlight sits off-centre. Bilateral symmetry is the single
+strongest signal that something was generated rather than drawn.
+
+**Detail is scattered pixels, not shading.** What reads at this size is three or
+four contrasting flecks — webbing, a pouch, a strap — against the dark mass.
+Smooth tonal bands across a five-pixel torso read as nothing whatsoever.
+
+Sprites are baked in four variants per unit type, indexed
+`[variant][facing][frame]` and chosen by actor id, so a man keeps his kit for
+as long as he lives. Six identical figures walking in step is the most toy-like
+thing a squad can do — and the same argument applies one level up, which is why
+`squad()` in the generator scatters the spawn instead of laying a 3x2 lattice,
+and why `spawnActor` gives each man a facing a step or two off his neighbour's.
+
+Shadows are the figure's own silhouette in solid black, offset down and right.
+Dithering it looked like the right call — it stops the shadow doubling the
+figure's visual mass — but a checkered copy of a sprite that already has thin
+legs produces a ragged fringe of dark spikes around the lower body, and six of
+those in a clearing look like spiders. A shadow has to be one clean shape or it
+stops reading as one. The same argument drove the sprite itself: the legs are
+short and thick and barely separated, and the shoulders are one solid block
+rather than a torso with a one-pixel column stuck on either side.
+
+Everything the atlas bakes can be looked at directly with `npm run sheet`, which
+is how the wrecked buildings got fixed — to see a ruin in the game you have to
+level one first, and to compare four damage stages you have to level four.
+
 ### Still per-tile, and rightly so
 
 - **Ruins.** Buildings are drawn from live state rather than baked, so they can
@@ -380,6 +423,11 @@ scarred (pocked walls, torn thatch), failing (a hole clean through, the roof
 caving), and wrecked. A wreck keeps smoking for `building.smokeDuration` seconds
 and then smoulders, so "this one is dealt with" reads from across the map.
 
+A wreck is drawn in **ash grey**, not in burnt browns. Brown is the family the
+thatch was already in, so a ruined hut read as a scruffier hut rather than as a
+destroyed one; grey says the fire has been and gone. Charcoal beams lie through
+it and a handful of embers keep some warmth, but the mass of it is cold.
+
 There are two sets. The jungle and desert build the round mud-walled hut: an
 enormous circular thatch roof seen from almost directly above, lit as a dome
 from the upper left, with a smoke hole punched off-centre on the lit slope and a
@@ -450,18 +498,18 @@ tuning is edit-and-reload. Notable knobs:
 
 ## Known limitations
 
-- No meta-game: no Boot Hill and no promotions. Soldiers are named and the
-  end-of-mission panel reads the casualties back, but a name is reissued next
-  mission — losing one still costs nothing, which is the largest remaining gap
-  from the original.
+- The roster does not split. A soldier is promoted, buried and remembered, but
+  the squad is still one herd — no Snake/Eagle/Panther.
 - Trees no longer sway. The treeline is one baked mass now, and per-instance wind
   was a property of there being one sprite per tree; the trade was worth it, but
   the map is stiller than it was.
-- Difficulty is chosen per play and not recorded; there is no "cleared on
-  Veteran" tracking.
+- A mission's par is one number per mission, not per difficulty: clearing it on
+  Elite and on Rookie compete for the same "brought home" record.
 - No squad splitting (Snake/Eagle/Panther).
 - No vehicles or turrets.
 - The player has no bazooka — grenades are the only explosive you carry.
 - Enemies manage range but do not seek cover.
 - Grenades cannot be cooked or bounced — they fly to the cursor and detonate.
-- Missions can be played in any order; there is no campaign progression or save.
+- Missions can still be played in any order. `Theatre.locked` remains unwired,
+  and deliberately so — see [the meta-game](todo/002.md) for why ribbons were
+  preferred to locks.

@@ -10,12 +10,27 @@ import { threshAt } from './palette.js';
 import { analyseTerrain } from './terrain.js';
 import { TILES, Tile } from './tiles.js';
 import { EnemyKind, Faction } from './types.js';
+import { squadCentre } from './world.js';
+import type { Aim } from './aim.js';
 import type { Camera } from './camera.js';
 import type { GameMap } from './map.js';
 import type { Atlas, Foliage, Sprite } from './sprites.js';
 import type { TerrainInfo } from './terrain.js';
-import type { Actor, Building, Enemy, Hostage } from './types.js';
+import type { Actor, Building, Enemy, Hostage, Vec2 } from './types.js';
 import type { World } from './world.js';
+
+/**
+ * Edge-arrow colours, per enemy kind.
+ *
+ * The same three the sprites use, because the type is the whole point of the
+ * arrow: a rifleman off the top of the screen is a nuisance and a sniper off
+ * the top of the screen is the thing about to kill someone.
+ */
+const ENEMY_INK: Record<EnemyKind, string> = {
+  [EnemyKind.Rifle]: '#ff6a48',
+  [EnemyKind.Sniper]: '#b8bcc4',
+  [EnemyKind.Bazooka]: '#d46ad4',
+};
 
 /**
  * Drawing, in one place.
@@ -304,7 +319,7 @@ export class Renderer {
     return Math.round(sway * w.amplitude * (0.65 + gust * 0.35));
   }
 
-  draw(world: World, camera: Camera, alpha: number, dtSinceLastFrame: number): void {
+  draw(world: World, camera: Camera, alpha: number, dtSinceLastFrame: number, aim?: Aim): void {
     this.time += dtSinceLastFrame;
     this.flushDecals(world);
 
@@ -389,7 +404,182 @@ export class Renderer {
     // battlefield, so nothing is allowed to dim it.
     this.drawPopups(world);
 
+    // 8. The aim, and what is off the edge of it. Both are drawn over the fog
+    // and sized in CSS pixels rather than world pixels, because they are a
+    // message to the player rather than a thing standing on the ground -- a
+    // reticle that halved in size when the player zoomed out would be useless
+    // at exactly the moment it is needed most.
+    if (aim) this.drawAim(world, aim, zoom);
+    this.drawOffscreen(world, camera, zoom, viewL, viewT, viewR, viewB);
+
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  /**
+   * The grenade reticle and the fire cone.
+   *
+   * The original expressed both as modifier keys and drew neither, which works
+   * when you have three mouse buttons and can see the cursor. Everything here
+   * exists because a thumb has neither: where it will land, who is throwing it,
+   * how far the blast reaches, and whether that blast has one of your own men
+   * inside it.
+   */
+  private drawAim(world: World, aim: Aim, zoom: number): void {
+    if (aim.mode === 'idle') return;
+    const ctx = this.ctx;
+    /** One CSS pixel, in world units. Keeps the chrome a constant real size. */
+    const px = 1 / zoom;
+
+    if (aim.mode === 'fire') {
+      const from = squadCentre(world);
+      if (!from) return;
+      const a = Math.atan2(aim.point.y - from.y, aim.point.x - from.x);
+      const spread = 0.22;
+      const reach = CONFIG.soldier.fireRange;
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = '#ffe9a0';
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.arc(from.x, from.y, reach, a - spread, a + spread);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      this.crosshair(aim.point, 7 * px, px, '#ffe9a0');
+      return;
+    }
+
+    if (!aim.placed) return;
+    const hot = aim.friendly || aim.blocked;
+    const ink = hot ? '#ff6a48' : aim.clamped ? '#d8a13c' : '#c8e070';
+
+    // The blast, to scale. Dithered rather than filled: an alpha disc is the
+    // one thing in this renderer that would read as belonging to another game.
+    this.ring(aim.point, CONFIG.grenade.blastRadius, px, ink, hot);
+
+    if (aim.thrower) {
+      // The arc, from the man who will actually throw -- who is also ringed, so
+      // "whoever is nearest" stops being invisible logic.
+      this.throwArc(aim.thrower.pos, aim.point, px, ink);
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = px;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.arc(aim.thrower.pos.x, aim.thrower.pos.y, 7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    this.crosshair(aim.point, 9 * px, px, ink);
+  }
+
+  /** A dotted parabola along the throw, sampled from the flight the sim uses. */
+  private throwArc(from: Vec2, to: Vec2, px: number, ink: string): void {
+    const ctx = this.ctx;
+    ctx.fillStyle = ink;
+    ctx.globalAlpha = 0.7;
+    const steps = 14;
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      const x = from.x + (to.x - from.x) * t;
+      const y = from.y + (to.y - from.y) * t - grenadeArc(t);
+      const s = Math.max(1, Math.round(1.5 * px));
+      ctx.fillRect(Math.round(x), Math.round(y), s, s);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /**
+   * A ring of hard dots. `urgent` doubles the density, which is what makes a
+   * blast that would catch your own squad read as a warning rather than as a
+   * slightly different colour -- and colour alone is not something to hang a
+   * squad on.
+   */
+  private ring(at: Vec2, radius: number, px: number, ink: string, urgent: boolean): void {
+    const ctx = this.ctx;
+    const step = urgent ? 0.12 : 0.24;
+    const size = Math.max(1, Math.round(px));
+    ctx.fillStyle = ink;
+    ctx.globalAlpha = urgent ? 0.95 : 0.7;
+    for (let a = 0; a < Math.PI * 2; a += step) {
+      ctx.fillRect(
+        Math.round(at.x + Math.cos(a) * radius),
+        Math.round(at.y + Math.sin(a) * radius),
+        size, size,
+      );
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  private crosshair(at: Vec2, arm: number, px: number, ink: string): void {
+    const ctx = this.ctx;
+    const w = Math.max(1, px);
+    const gap = arm * 0.4;
+    ctx.fillStyle = ink;
+    ctx.fillRect(Math.round(at.x - arm), Math.round(at.y), Math.round(arm - gap), w);
+    ctx.fillRect(Math.round(at.x + gap), Math.round(at.y), Math.round(arm - gap), w);
+    ctx.fillRect(Math.round(at.x), Math.round(at.y - arm), w, Math.round(arm - gap));
+    ctx.fillRect(Math.round(at.x), Math.round(at.y + gap), w, Math.round(arm - gap));
+  }
+
+  /**
+   * Arrows at the edge for threats and objectives that are off-screen.
+   *
+   * Not a nicety. A phone in landscape shows about 195 world pixels of height
+   * and a sniper's range is 190, so a sniper can engage from just outside the
+   * frame -- something that effectively cannot happen on a desktop. Without
+   * these the small-screen build is not merely different, it is unfair.
+   */
+  private drawOffscreen(
+    world: World, camera: Camera, zoom: number,
+    viewL: number, viewT: number, viewR: number, viewB: number,
+  ): void {
+    const ctx = this.ctx;
+    const px = 1 / zoom;
+    /** Inset from the true edge, so an arrow is not half off the screen. */
+    const pad = 14 * px;
+    const l = viewL + pad;
+    const t = viewT + pad;
+    const r = viewR - pad;
+    const b = viewB - pad;
+    const cx = (viewL + viewR) / 2;
+    const cy = (viewT + viewB) / 2;
+
+    const mark = (at: Vec2, ink: string, alpha: number): void => {
+      // Clamp the target to the edge box, and point the arrow along the line
+      // from the middle of the view -- which is where the squad is.
+      const x = Math.max(l, Math.min(r, at.x));
+      const y = Math.max(t, Math.min(b, at.y));
+      const a = Math.atan2(at.y - cy, at.x - cx);
+      const size = 7 * px;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = ink;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * size, y + Math.sin(a) * size);
+      ctx.lineTo(x + Math.cos(a + 2.5) * size, y + Math.sin(a + 2.5) * size);
+      ctx.lineTo(x + Math.cos(a - 2.5) * size, y + Math.sin(a - 2.5) * size);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    };
+
+    const outside = (p: Vec2): boolean => p.x < l || p.x > r || p.y < t || p.y > b;
+
+    // Threats: only the ones that can actually see a soldier, and only where
+    // the fog would have let you see them anyway. An arrow for an enemy you
+    // have no business knowing about would be a cheat, not an accommodation.
+    for (const e of world.enemies) {
+      if (!e.alive || !outside(e.pos)) continue;
+      if (!world.fog.isVisible(e.pos.x, e.pos.y)) continue;
+      const d = Math.hypot(e.pos.x - cx, e.pos.y - cy);
+      if (d > e.stats.fireRange * 1.35) continue;
+      mark(e.pos, ENEMY_INK[e.kind] ?? '#ff6a48', Math.max(0.35, 1 - d / 400));
+    }
+
+    // Objectives: the reason a 220-tile map is navigable at phone zoom at all.
+    for (const z of world.extraction) if (outside(z)) mark(z, '#8fd44a', 0.75);
+    for (const h of world.hostages) {
+      if (h.alive && !h.delivered && outside(h.pos)) mark(h.pos, '#8fb0d4', 0.75);
+    }
+    void camera;
   }
 
   private drawScenery(item: SceneryItem): void {
@@ -605,17 +795,13 @@ export class Renderer {
     g.globalCompositeOperation = 'source-in';
     g.fillStyle = '#000000';
     g.fillRect(0, 0, found.width, found.height);
-    // Three pixels in four, on a checker. Solid black is as visually heavy as
-    // the man casting it and the two merge into one blob; dithering keeps the
-    // edge hard -- no alpha anywhere -- while letting the ground read through.
-    const img = g.getImageData(0, 0, found.width, found.height);
-    const data = img.data;
-    for (let y = 0; y < found.height; y++) {
-      for (let x = 0; x < found.width; x++) {
-        if (((x * 3 + y) & 3) === 0) data[(y * found.width + x) * 4 + 3] = 0;
-      }
-    }
-    g.putImageData(img, 0, 0);
+    // Solid, and deliberately not dithered.
+    //
+    // Dithering it seemed like the right call -- it keeps the shadow from
+    // doubling the figure's visual mass -- but a checkered copy of a sprite that
+    // already has thin legs and thinner arms produces a ragged fringe of dark
+    // spikes all round the lower body, and six of those in a clearing look like
+    // spiders. A shadow has to be one clean shape or it stops reading as one.
     this.silhouettes.set(sprite, found);
     return found;
   }

@@ -50,8 +50,16 @@ export interface Soldier extends Actor {
    * a nameless casualty is a number, and a named one is Jools.
    */
   name: string;
-  /** How many missions this one has survived. Promotes them up the roster. */
+  /**
+   * How many missions this one has survived. Promotes them up the roster, and
+   * buys a small edge in the firing solution — see `veteranEdge` in troops.ts.
+   * `campaign.ts` derives the rank tier from it; nothing else may write it.
+   */
   rank: number;
+  /** True if the player spent their one rename on this soldier. */
+  own: boolean;
+  /** First mission for this one. The briefing flags them; the sidebar does not. */
+  fresh: boolean;
 }
 
 export enum EnemyState {

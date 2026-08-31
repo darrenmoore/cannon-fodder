@@ -36,6 +36,17 @@ function ensure(): boolean {
 /** Call from a user gesture so the context is allowed to start. */
 export const unlockAudio = (): void => { ensure(); };
 
+/**
+ * The shared context, for anything that needs to build its own graph -- the
+ * menu music hangs its bus straight off `destination` rather than off `master`,
+ * so turning the music down never touches how loud a rifle is.
+ *
+ * Returns null when audio is disabled or the browser has no WebAudio at all.
+ */
+export function audioContext(): AudioContext | null {
+  return ensure() ? ctx : null;
+}
+
 interface BurstOpts {
   duration: number;
   gain: number;

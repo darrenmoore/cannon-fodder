@@ -11,7 +11,11 @@ export class Camera {
   /** Top-left of the view, in world pixels. */
   x = 0;
   y = 0;
-  zoom: number = CONFIG.camera.zoom;
+  /**
+   * World pixels to device pixels. Owned by `layout.ts`, which recomputes it
+   * from the viewport; this is only what it is before the first measurement.
+   */
+  zoom: number = CONFIG.camera.zoom.start;
   /** Viewport size in world pixels (screen pixels / zoom). */
   viewW = 0;
   viewH = 0;
@@ -52,6 +56,16 @@ export class Camera {
   release(): void {
     this.manualUntil = this.time;
   }
+
+  /**
+   * True while the view has been taken off the squad by hand.
+   *
+   * The RECENTRE button is mounted from this rather than being permanent
+   * furniture: on a phone the action bar is over the battlefield, and a button
+   * that is only ever useful for a second and a half should not cost a corner
+   * of the map for the rest of the mission.
+   */
+  get isManual(): boolean { return this.time < this.manualUntil; }
 
   /** Screen-space pan from edge scrolling or a middle-drag, in world pixels. */
   pan(dx: number, dy: number, map: GameMap): void {

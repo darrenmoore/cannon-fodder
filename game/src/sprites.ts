@@ -240,21 +240,31 @@ function bakeSoldier(
   const sideways = Math.abs(dy) <= 0.3;
 
   // --- legs, first, so the body overlaps them
+  //
+  // Short, thick and barely separated. There is no room at this size for legs
+  // that read as legs, and trying gives you two thin dark spikes under the
+  // torso -- which, with a shadow behind them, is a spider. What is wanted is a
+  // base the figure stands on, with just enough asymmetry between the two to
+  // carry the walk cycle.
   const swing = [0, 1, 0, -1][frame];
-  rect(g, cx - 2, 11 + Math.max(0, swing), 2, 3 - Math.abs(swing), pal.body);
-  rect(g, cx + 1, 11 + Math.max(0, -swing), 2, 3 - Math.abs(swing), pal.body);
-  rect(g, cx - 2, 13, 2, 1, pal.boots);
-  rect(g, cx + 1, 13, 2, 1, pal.boots);
+  rect(g, cx - 2, 11, 2, 2 + Math.max(0, swing), pal.body);
+  rect(g, cx + 1, 11, 2, 2 + Math.max(0, -swing), pal.body);
+  rect(g, cx - 2, 12 + Math.max(0, swing), 2, 1, pal.boots);
+  rect(g, cx + 1, 12 + Math.max(0, -swing), 2, 1, pal.boots);
 
   // --- body: a dark mass, wider at the shoulders, and not the same on both
   //     sides. The right shoulder carries the weapon and sits a pixel higher.
-  rect(g, cx - 2, 7, 5, 5, pal.body);
-  rect(g, cx - 3, 8, 1, 3, pal.body);
-  rect(g, cx + 3, 7, 1, 4, pal.body);
+  // Shoulders as one solid block that tapers into the waist, not as a torso
+  // with a one-pixel column stuck on either side -- those columns read as thin
+  // arms, and thin arms on a 13px sprite read as legs on a spider.
+  rect(g, cx - 3, 7, 7, 2, pal.body);
+  rect(g, cx - 2, 9, 5, 3, pal.body);
+  // The right shoulder carries the weapon and sits a pixel proud of the left.
+  px(g, cx + 3, 9, pal.body);
   // A single lifted edge along the top of the shoulders: the only place light
   // reaches the body at all.
-  rect(g, cx - 2, 7, 4, 1, pal.bodyLight);
-  px(g, cx + 3, 7, pal.bodyLight);
+  rect(g, cx - 3, 7, 5, 1, pal.bodyLight);
+  px(g, cx + 2, 7, pal.bodyLight);
 
   // Kit. Scattered, asymmetric, and biased to the side this man carries it on.
   for (const s of spots) {
@@ -550,26 +560,45 @@ function bakeHut(stage: number): Sprite {
   const RX = 17, RY = 14;      // its radii
 
   if (stage >= 3) {
-    // Wrecked: the roof has gone entirely, leaving a burnt ring of wall.
-    for (let i = 0; i < 90; i++) {
+    // Wrecked.
+    //
+    // The whole point of this sprite is to say "dealt with" from across the map,
+    // and drawn in burnt browns it said "still a hut, but scruffier" -- the same
+    // family of colour as the thatch it used to be. Ash is grey, so the wreck
+    // goes grey: a pale bed of it where the roof came down, charcoal beams
+    // through it, and only a few embers left with any warmth in them.
+    for (let i = 0; i < 110; i++) {
       const a = rnd() * Math.PI * 2;
       const r = rnd() * 16;
-      px(g, CX + Math.cos(a) * r, 26 + Math.sin(a) * r * 0.55, rnd() < 0.5 ? '#1e1509' : '#312415');
+      px(g, CX + Math.cos(a) * r, 24 + Math.sin(a) * r * 0.6,
+        rnd() < 0.5 ? '#4a4a48' : rnd() < 0.6 ? '#63635f' : '#2e2e2c');
     }
-    // A broken ring of wall, taller on the far side, gapped where it fell in.
+    // The collapsed roof, as a mound of ash where the dome used to sit.
+    for (let y = -7; y <= 6; y++) {
+      for (let x = -13; x <= 13; x++) {
+        if ((x * x) / 169 + (y * y) / 49 > 1) continue;
+        if (rnd() < 0.24) continue;
+        const lit = -(x * 0.4 + y * 0.8) / 10;
+        px(g, CX + x, CY + y + 6,
+          lit > 0.4 ? '#8e8e88' : lit > 0.05 ? '#6e6e68' : rnd() < 0.3 ? '#3a3a38' : '#4e4e4a');
+      }
+    }
+    // A broken ring of wall, gapped where it fell in. Scorched, not burnt away.
     for (let a = 0; a < Math.PI * 2; a += 0.09) {
       const x = CX + Math.cos(a) * 12;
       const y = 24 + Math.sin(a) * 6;
       if (rnd() < 0.22) continue;
       const h = 3 + ((rnd() * 4) | 0);
-      rect(g, x, y - h, 1, h, rnd() < 0.5 ? '#6a5f4a' : '#514736');
-      px(g, x, y - h, '#332b1e');
+      rect(g, x, y - h, 1, h, rnd() < 0.5 ? '#5e5a50' : '#43403a');
+      px(g, x, y - h, '#26241f');
     }
-    // Charred roof beams collapsed across the middle.
-    for (let i = 0; i < 15; i++) px(g, 9 + i, 25 - ((i * 0.5) | 0), '#3a2c15');
-    for (let i = 0; i < 11; i++) px(g, 25 - i, 22 + ((i * 0.4) | 0), '#2c2110');
-    for (let i = 0; i < 30; i++) px(g, 6 + rnd() * 24, 18 + rnd() * 10, rnd() < 0.5 ? '#43350f' : '#5a4816');
-    addOutline(c, '#140d05');
+    // Charred roof beams laid through the ash, and a handful of embers.
+    for (let i = 0; i < 15; i++) px(g, 9 + i, 25 - ((i * 0.5) | 0), '#1c1a16');
+    for (let i = 0; i < 11; i++) px(g, 25 - i, 22 + ((i * 0.4) | 0), '#141310');
+    for (let i = 0; i < 7; i++) {
+      px(g, 8 + rnd() * 20, 20 + rnd() * 8, rnd() < 0.5 ? '#8a3410' : '#5c2008');
+    }
+    addOutline(c, '#141310');
     return c;
   }
 
@@ -701,17 +730,26 @@ function bakeCabin(stage: number): Sprite {
   const rnd = hashRnd(1471 + stage * 53);
 
   if (stage >= 3) {
-    // Burnt out: a charred footprint, a few standing posts, snow already
-    // starting to reclaim it.
-    for (let i = 0; i < 80; i++) {
-      px(g, 6 + rnd() * 26, 18 + rnd() * 12, rnd() < 0.5 ? '#14100c' : '#241d18');
+    // Burnt out: a bed of ash where the cabin stood, four charred corner posts
+    // still up, and snow already starting to take it back.
+    for (let y = 16; y < 30; y++) {
+      for (let x = 5; x < 33; x++) {
+        if (rnd() < 0.2) continue;
+        const lit = -((x - 19) * 0.3 + (y - 23) * 0.8) / 9;
+        px(g, x, y, lit > 0.35 ? '#7e8288' : lit > 0 ? '#5e6266' : rnd() < 0.3 ? '#2a2c2e' : '#42464a');
+      }
+    }
+    for (let i = 0; i < 60; i++) {
+      px(g, 5 + rnd() * 28, 17 + rnd() * 13, rnd() < 0.5 ? '#1a1a1c' : '#33373a');
     }
     for (const x of [7, 12, 24, 30]) {
       const h = 5 + ((rnd() * 6) | 0);
-      rect(g, x, 28 - h, 2, h, rnd() < 0.5 ? '#3a2a1c' : '#241a10');
+      rect(g, x, 28 - h, 2, h, rnd() < 0.5 ? '#2a2624' : '#171514');
       px(g, x, 28 - h, '#d2e6ee');
     }
-    for (let i = 0; i < 20; i++) px(g, 5 + rnd() * 28, 26 + rnd() * 5, '#8fa8b4');
+    // Snow drifting back over the cold edges of it.
+    for (let i = 0; i < 26; i++) px(g, 5 + rnd() * 28, 26 + rnd() * 5, '#a8c2ce');
+    for (let i = 0; i < 5; i++) px(g, 9 + rnd() * 20, 19 + rnd() * 8, '#7a2c0c');
     addOutline(c, '#0a0d10');
     return c;
   }
@@ -1080,6 +1118,9 @@ export function buildAtlas(): Atlas {
     muzzle: bakeMuzzleFlash(),
     icons: { grenade: bakeGrenadeIcon(), hostage: bakeHostageIcon() },
   };
+  // Debug handle, alongside `window.game`: lets tools/sheet.mjs lay every baked
+  // sprite out on a grid without the game having to be played to reach them.
+  (window as unknown as { __atlas: Atlas }).__atlas = cached;
   return cached;
 }
 

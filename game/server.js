@@ -20,6 +20,15 @@ const MIME = {
   '.map': 'text/plain; charset=utf-8',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml',
+  // Served with the right type or the browser declines to install the app.
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
+  // Menu music, dropped into public/music by whoever is running the game.
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.opus': 'audio/ogg',
+  '.m4a': 'audio/mp4',
+  '.wav': 'audio/wav',
 };
 
 // What this running process actually is. Render injects these at runtime, so

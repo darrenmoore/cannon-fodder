@@ -49,6 +49,79 @@ async function main() {
   check('every mission has a card', cards >= 8, `saw ${cards}`);
   if (SHOTS) await page.screenshot({ path: join(SHOTS, '01-menu.png') });
 
+  // --- the meta-game
+  //
+  // Seeded rather than played, because burying six men honestly would take
+  // longer than the rest of this file put together. Everything here lives on the
+  // menu, so it is reachable without a live mission -- and the campaign is put
+  // back to empty afterwards so the flow below still meets JOOLS.
+  await page.evaluate(() => localStorage.setItem('cf.campaign', JSON.stringify({
+    v: 1, issued: 8, renameUsed: false,
+    squad: [
+      { name: 'BOSS', missions: 7, own: true },
+      { name: 'JOOLS', missions: 4 },
+      { name: 'STOO', missions: 1 },
+    ],
+    fallen: [
+      { name: 'JOPS', missions: 5, mission: 'Chicken Run', difficulty: 'veteran' },
+      { name: 'GARY', missions: 0, mission: 'River Run', difficulty: 'elite' },
+    ],
+    records: { 'chicken-run': { bestHome: 5, bestTime: 161, clears: ['regular', 'elite'] } },
+  })));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('#menu-list .m-name', { timeout: 10000 });
+
+  const lit = await page.$$eval('#menu-list button[data-id="chicken-run"] .ribbon',
+    (els) => els.map((e) => e.classList.contains('on')));
+  check('a cleared mission shows a ribbon per difficulty cleared',
+    lit.length === 4 && lit[1] && lit[3] && !lit[0] && !lit[2], lit.join(','));
+  check('an uncleared mission still draws all four ribbon slots',
+    (await page.$$eval('#menu-list button[data-id="river-run"] .ribbon', (e) => e.length)) === 4);
+  check('the card shows the standing par',
+    (await page.$eval('#menu-list button[data-id="chicken-run"] .m-best', (e) => e.textContent))
+      === 'best 5 home · 2:41');
+
+  // Boot Hill is reached the way a player reaches it now -- from the pause
+  // sheet inside a mission -- rather than from a button on the front screen.
+  await page.evaluate(() => document.querySelector('#menu-list button[data-id="chicken-run"]').click());
+  await page.waitForFunction(() => !!window.game, null, { timeout: 10000 });
+  await page.waitForTimeout(300);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.sheet-card', { timeout: 5000 });
+  check('Esc pauses the mission into a sheet',
+    (await page.$$eval('.sheet-actions .ui-btn-label', (e) => e.map((b) => b.textContent))).includes('Boot Hill'));
+
+  await page.click('.sheet-actions .ui-btn:has-text("Boot Hill")');
+  await page.waitForSelector('#hill:not([hidden])', { timeout: 5000 });
+  check('Boot Hill raises a cross for every man buried',
+    (await page.$$eval('.hill-cross', (e) => e.length)) === 2);
+  check('a veteran gets a taller marker',
+    (await page.$$eval('.hill-cross.vet', (e) => e.length)) === 1);
+  check('the roster is topped back up to a full squad on the hill',
+    (await page.$$eval('.hill-col:nth-child(2) .ui-plate', (e) => e.length)) === 6);
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, '04-boothill.png'), fullPage: true });
+
+  await page.click('.hill-rename');
+  await page.fill('.hill-input', 'darren');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(250);
+  check('the one rename takes, and marks the man as yours',
+    await page.evaluate(() => {
+      const c = JSON.parse(localStorage.getItem('cf.campaign'));
+      return c.renameUsed && c.squad.some((t) => t.name === 'DARREN' && t.own);
+    }));
+  check('the rename is offered only once',
+    (await page.$$eval('.hill-rename', (e) => e.length)) === 0);
+
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(250);
+  check('Esc leaves the hill', await page.evaluate(() => document.getElementById('hill').hidden));
+
+  // Back to a blank campaign for the mission flow below.
+  await page.evaluate(() => localStorage.removeItem('cf.campaign'));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('#menu-list .m-name', { timeout: 10000 });
+
   const enter = async (id) => {
     await page.evaluate((wanted) => {
       document.querySelector(`#menu-list button[data-id="${wanted}"]`)?.click();
@@ -64,6 +137,38 @@ async function main() {
   const roster = await page.$$eval('.hud-roster .ui-plate-label', (els) => els.map((e) => e.textContent));
   check('the sidebar lists the squad by name', roster.length === 6 && roster[0] === 'JOOLS',
     roster.join(','));
+
+  // --- the mouse chord
+  //
+  // Left-while-right is the desktop grenade, and it is the one control no
+  // screenshot and no unit test can see: a mouse is a single pointer, so the
+  // second button arrives as a pointermove rather than a pointerdown, and the
+  // throw is silently lost if that is not handled.
+  {
+    const box = await page.locator('canvas').boundingBox();
+    const x = box.x + box.width / 2 + 40;
+    const y = box.y + box.height / 2 - 20;
+    const held = () => page.evaluate(() => window.game.world.grenadesHeld);
+    const before = await held();
+    await page.mouse.move(x, y);
+    await page.mouse.down({ button: 'right' });
+    await page.waitForTimeout(100);
+    check('holding right opens fire', await page.evaluate(() => window.game.input.firing));
+    await page.mouse.down({ button: 'left' });
+    await page.mouse.up({ button: 'left' });
+    await page.waitForTimeout(150);
+    check('left-while-right throws a grenade', (await held()) === before - 1);
+    check('the chord leaves the squad firing, not aiming',
+      await page.evaluate(() => window.game.input.aim.mode === 'fire'));
+    await page.mouse.up({ button: 'right' });
+    await page.waitForTimeout(120);
+    check('releasing right stops the fire', !(await page.evaluate(() => window.game.input.firing)));
+    await page.evaluate(() => { window.game.world.grenadeCooldown = 0; });
+    const stillHeld = await held();
+    await page.mouse.click(box.x + box.width / 2 - 60, box.y + box.height / 2 + 40);
+    await page.waitForTimeout(150);
+    check('a plain click afterwards is an order, not another grenade', (await held()) === stillHeld);
+  }
 
   // --- losing
   await page.evaluate(() => {
@@ -110,10 +215,12 @@ async function main() {
   const after = await page.evaluate(() => window.game.world.map.id);
   check('"next mission" goes straight into the following mission', after === 'river-run', after);
 
-  // --- and Esc still comes back to the list
+  // --- and the pause sheet still comes back to the list
   await page.keyboard.press('Escape');
+  await page.waitForSelector('.sheet-card', { timeout: 5000 });
+  await page.click('.sheet-actions .ui-btn:has-text("Mission list")');
   await page.waitForSelector('#menu-list .m-name', { timeout: 10000 });
-  check('Esc returns to the mission select', await page.$('#menu[hidden]') === null);
+  check('the pause sheet returns to the mission select', await page.$('#menu[hidden]') === null);
 
   // --- the last mission has nowhere to go next
   await enter('last-stand');

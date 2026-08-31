@@ -8,11 +8,12 @@
     "dev": "node build.mjs --watch",
     "build": "node build.mjs",
     "start": "node server.js",
-    "check": "tsc --noEmit && node tools/generate-levels.mjs --check && node test/map.test.mjs",
+    "check": "tsc --noEmit && node tools/generate-levels.mjs --check && node test/map.test.mjs && node test/campaign.test.mjs",
     "levels": "node tools/generate-levels.mjs",
     "shots": "node tools/shoot.mjs --fit",
     "playtest": "node tools/playtest.mjs",
-    "measure": "node tools/measure.mjs"
+    "measure": "node tools/measure.mjs",
+    "sheet": "node tools/sheet.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",

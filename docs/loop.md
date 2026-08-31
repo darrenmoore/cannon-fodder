@@ -157,6 +157,24 @@ lighter than the grass (the original's is darker), and that our snow was
 measurably false and the rest were measurably true, and there was no way to tell
 which without measuring.
 
+### 7 — the men
+
+*Owner:* "the troops and enemies need work — they look too perfect."
+
+Cropping both ours and the original's to the same magnification (`tools/crop.mjs`)
+made the answer obvious in one look. The original's soldier is a bright helmet
+crown over a hot orange face over a near-black body flecked with kit, entirely
+asymmetric. Ours was stacked, symmetric, evenly shaded rectangles.
+
+"Too perfect" turned out to be true at three separate levels, and fixing only the
+sprite would have left most of it:
+
+| Level | Was | Now |
+|---|---|---|
+| The sprite | symmetric stacked rectangles, evenly shaded | lit helmet, dark body, asymmetric kit flecks |
+| The roster | one sprite set, so six identical men | four baked variants, chosen by actor id |
+| The spawn | a 3x2 lattice, all facing south | scattered, each on its own facing |
+
 ## Where it stands
 
 Every gate green: `npm run check` (36 map assertions across 8 missions),

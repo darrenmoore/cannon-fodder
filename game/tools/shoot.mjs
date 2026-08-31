@@ -62,14 +62,16 @@ const LABELS = {
  * a coarse grid of candidate windows and keeps the fullest, so the camera lands
  * on the middle of the feature rather than on one stray tile of it.
  */
-function densest(rows, chars) {
+function densest(rows, chars, view) {
   const w = rows.reduce((m, r) => Math.max(m, r.length), 0);
   const h = rows.length;
   const set = new Set(chars.split(''));
-  // Roughly what actually fits on screen at zoom 3. A window much bigger than
+  // The window is what actually fits on screen, asked of the running game
+  // rather than assumed: zoom is derived from the viewport now, so hard-coding
+  // it went stale the moment the layout started choosing. A window bigger than
   // the viewport picks the map's centre of mass instead of the feature, which
   // is how "aim at the water" ends up framing an empty field.
-  const winW = Math.min(w, 23), winH = Math.min(h, 17);
+  const winW = Math.min(w, Math.max(8, Math.round(view.w))), winH = Math.min(h, Math.max(6, Math.round(view.h)));
   let best = null, bestN = 0;
   for (let y = 0; y + winH <= h; y += 2) {
     for (let x = 0; x + winW <= w; x += 2) {
@@ -136,9 +138,13 @@ async function main() {
     await page.waitForTimeout(400);
 
     const rows = artRows(await (await fetch(`${BASE}/api/maps/${map.id}`)).text());
+    const view = await page.evaluate(() => {
+      const g = window.game;
+      return { w: g.camera.viewW / g.world.map.tile, h: g.camera.viewH / g.world.map.tile };
+    });
     const spots = (SPOTS[map.id] ?? ['squad']).map((spec) => {
       if (spec === 'squad') return ['squad', null];
-      const at = densest(rows, spec);
+      const at = densest(rows, spec, view);
       return at ? [LABELS[spec] ?? spec, at] : null;
     }).filter(Boolean);
 
@@ -164,8 +170,20 @@ async function main() {
         } else {
           g.camera.zoom = zoom !== 1 ? zoom : window.__playZoom;
           g.camera.resize(screen.width, screen.height);
-          if (at) g.camera.lookAt({ x: at[0] * m.pixelWidth, y: at[1] * m.pixelHeight }, m);
-          else g.camera.release();
+          if (at) {
+            g.camera.lookAt({ x: at[0] * m.pixelWidth, y: at[1] * m.pixelHeight }, m);
+          } else {
+            // Aim at the squad rather than handing the camera back and waiting
+            // for the follow to ease in: after a --fit shot it starts from the
+            // middle of the map and does not arrive before the shutter.
+            const alive = g.world.soldiers.filter((s2) => s2.alive);
+            const n = alive.length || 1;
+            const at2 = {
+              x: alive.reduce((a2, s2) => a2 + s2.pos.x, 0) / n,
+              y: alive.reduce((a2, s2) => a2 + s2.pos.y, 0) / n,
+            };
+            g.camera.lookAt(at2, m);
+          }
         }
       }, { at, zoom: ZOOM });
       await page.waitForTimeout(250);

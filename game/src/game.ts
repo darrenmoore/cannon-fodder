@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { sfxLose, sfxWin, unlockAudio } from './audio.js';
+import { sfxLose, sfxWin } from './audio.js';
 import { stepBuildings } from './buildings.js';
 import { stepBullets, stepGrenades, throwGrenade } from './combat.js';
 import { stepEnemies } from './enemies.js';
@@ -12,6 +12,7 @@ import { classifyClick, orderAttack, orderDemolish, orderMove, stepSoldiers } fr
 import { createWorld, livingSoldiers, squadCentre } from './world.js';
 import { Faction, Phase } from './types.js';
 import type { Camera } from './camera.js';
+import type { Deployment } from './campaign.js';
 import type { DifficultyId } from './difficulty.js';
 import type { Input } from './input.js';
 import type { GameMap } from './map.js';
@@ -33,6 +34,12 @@ export class Game {
   exitRequested = false;
   /** Set when the player asks for the next mission from the end panel. */
   nextRequested = false;
+  /**
+   * Fired once, the instant a mission resolves either way. This is where the
+   * campaign gets written, so it must stay exactly-once: `resolvePhase` only
+   * transitions out of Playing once, and every later step returns early.
+   */
+  onResolved: ((world: World) => void) | null = null;
 
   constructor(
     private readonly map: GameMap,
@@ -40,12 +47,19 @@ export class Game {
     private readonly renderer: Renderer,
     readonly input: Input,
     private readonly difficulty: DifficultyId,
+    /**
+     * Asked for the squad on every start *and* every restart, rather than being
+     * handed a fixed list. Replaying a mission you have already won deploys the
+     * roster as it stands now — promotions kept, casualties still buried — which
+     * is the only reading that does not need the campaign to be rewound.
+     */
+    private readonly roster: () => Deployment[] = () => [],
   ) {
     this.world = this.newWorld();
   }
 
   private newWorld(): World {
-    const world = createWorld(this.map, this.difficulty);
+    const world = createWorld(this.map, this.difficulty, this.roster());
     this.renderer.clearDecals();
     const centre = squadCentre(world);
     if (centre) this.camera.centreOn(centre, this.map);
@@ -62,6 +76,11 @@ export class Game {
     w.phaseTime += dt;
 
     this.input.syncWorld(this.camera);
+    // The reticle is re-resolved against a squad that has moved since the last
+    // frame, so a grenade held while the herd walks stays clamped to a range
+    // its thrower can actually manage -- and the throw lands where the player
+    // was shown it would.
+    this.input.syncAim(w);
     this.handleCommands();
     this.moveCamera(dt);
 
@@ -79,7 +98,9 @@ export class Game {
     // Rebuilt before the AI runs, so separation queries see this step's layout.
     w.hash.rebuild(w.actors);
 
-    const manualAim = this.input.firing ? this.input.world : null;
+    // Aimed with a cursor on a mouse and a thumbstick on a phone; the
+    // simulation only ever sees the resolved point.
+    const manualAim = this.input.firing ? this.input.aim.point : null;
     stepSoldiers(w, dt, manualAim);
     stepEnemies(w, dt);
 
@@ -103,14 +124,13 @@ export class Game {
     if (w.phase !== before) {
       if (w.phase === Phase.Won) sfxWin();
       else if (w.phase === Phase.Lost) sfxLose();
+      this.onResolved?.(w);
     }
   }
 
   private handleCommands(): void {
     const w = this.world;
     for (const cmd of this.input.drain()) {
-      unlockAudio();
-
       if (cmd.type === 'exit') {
         this.exitRequested = true;
         continue;
@@ -119,36 +139,67 @@ export class Game {
         if (w.phase !== Phase.Playing) this.restart();
         continue;
       }
+      // Framing the squad is about the camera, not the mission, so it still
+      // works while the end panel is up and you are reading who died.
+      if (cmd.type === 'recentre') {
+        this.camera.release();
+        continue;
+      }
+
       // Once the mission is decided, the end panel owns the input. Clicking
       // the world should not quietly restart a mission you are still reading.
       if (w.phase !== Phase.Playing) continue;
 
       if (cmd.type === 'grenade') {
-        this.tryGrenade(cmd.world);
+        // The command only says *now*. Where it lands is wherever the reticle
+        // has been left, which the player has been steering and the renderer
+        // has been drawing -- so the throw goes exactly where it was shown.
+        this.tryGrenade(this.input.aim.point);
         continue;
       }
 
-      // A click on an enemy or a building is an attack order, not a move.
-      const hit = classifyClick(w, cmd.world);
+      if (cmd.type === 'select') {
+        // Raised by the action bar, and deliberately not acted on: the squad is
+        // still a single herd with no per-soldier selection behind it. Dropping
+        // it here rather than in `input.ts` keeps the input scheme complete for
+        // whenever splitting the squad does land.
+        continue;
+      }
+
+      // A click on an enemy or a building is an attack order, not a move. The
+      // slack comes from the layout, because a finger needs a much bigger
+      // target than a cursor to hit a seven-pixel enemy.
+      const hit = classifyClick(w, cmd.world, this.input.slack);
       if (hit.kind === 'enemy') orderAttack(w, hit.actor);
       else if (hit.kind === 'building') orderDemolish(w, hit.building);
       else orderMove(w, cmd.world);
     }
   }
 
-  /** Thrown by whichever soldier is nearest the cursor, if any are in range. */
+  /**
+   * Thrown by whichever soldier the reticle picked out.
+   *
+   * The thrower comes from the aim rather than being chosen again here, because
+   * the renderer has been highlighting him for as long as the reticle has been
+   * up. Recomputing it would let the throw come from someone the player was
+   * never shown -- and the two searches disagree the moment the nearest man is
+   * wading, since a soldier holding his rifle clear of the water cannot throw.
+   */
   private tryGrenade(at: { x: number; y: number }): void {
     const w = this.world;
     if (w.grenadesHeld <= 0 || w.grenadeCooldown > 0) return;
 
-    let thrower = null;
-    let bestD = Infinity;
-    for (const s of livingSoldiers(w)) {
-      const d = Math.hypot(s.pos.x - at.x, s.pos.y - at.y);
-      if (d < bestD) { bestD = d; thrower = s; }
+    let thrower = this.input.aim.thrower;
+    if (!thrower || !thrower.alive || thrower.wading) {
+      thrower = null;
+      let bestD = Infinity;
+      for (const s of livingSoldiers(w)) {
+        if (s.wading) continue;
+        const d = Math.hypot(s.pos.x - at.x, s.pos.y - at.y);
+        if (d < bestD) { bestD = d; thrower = s; }
+      }
     }
-    // Wading soldiers keep their hands full staying upright.
-    if (!thrower || thrower.wading) return;
+    if (!thrower) return;
 
     w.grenadesHeld--;
     w.grenadeCooldown = CONFIG.grenade.cooldown;
