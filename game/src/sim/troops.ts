@@ -3,10 +3,11 @@ import { RANKS, rankTier } from './campaign.js';
 import { sfxOrder } from '../shell/audio.js';
 import { buildingAt } from './buildings.js';
 import { fire } from './combat.js';
-import { hasLineOfFire, hasLineOfSight, nearestWalkable, tileAtWorld } from './map.js';
+import { raiseNotice } from './enemies.js';
+import { hasLineOfFire, hasLineOfSight, nearestWalkable, tileAt, tileAtWorld } from './map.js';
 import { buildFlowField, circleBlocked, flowTarget, hasWalkableLine } from './pathfind.js';
-import { assignSlots, formationSlots, moveWithCollision, soldierSteerOpts, steer, stumble, unstick } from './steering.js';
-import { TILES } from './tiles.js';
+import { assignSlots, bankFrom, formationSlots, moveWithCollision, soldierSteerOpts, steer, stumble, unstick } from './steering.js';
+import { Tile, TILES } from './tiles.js';
 import { SoldierState } from '../types.js';
 import type { Actor, Building, Soldier, Vec2 } from '../types.js';
 import type { World } from './world.js';
@@ -60,7 +61,7 @@ export function orderMove(world: World, rawGoal: Vec2): void {
   const goal = nearestWalkable(world.map, rawGoal);
   world.squadTarget = null;
   world.targetBuilding = null;
-  world.field = buildFlowField(world.map, goal);
+  world.field = buildFlowField(world.map, goal, true);
   world.orderGoal = goal;
   world.orderMarker = 0.6;
 
@@ -76,7 +77,7 @@ export function orderMove(world: World, rawGoal: Vec2): void {
 export function orderAttack(world: World, target: Actor): void {
   world.squadTarget = target;
   world.targetBuilding = null;
-  world.field = buildFlowField(world.map, target.pos);
+  world.field = buildFlowField(world.map, target.pos, true);
   world.orderGoal = { ...target.pos };
   world.orderMarker = 0.6;
   world.lastTargetPos = { ...target.pos };
@@ -98,7 +99,7 @@ export function orderDemolish(world: World, building: Building): void {
   world.squadTarget = null;
   world.targetBuilding = building;
   const approach = nearestWalkable(world.map, building.centre);
-  world.field = buildFlowField(world.map, approach);
+  world.field = buildFlowField(world.map, approach, true);
   world.orderGoal = { ...building.centre };
   world.orderMarker = 0.6;
 
@@ -182,6 +183,7 @@ function reslot(world: World, s: Soldier): void {
 
 export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null): void {
   const cfg = CONFIG.soldier;
+  footsteps(world, dt);
 
   // Keep the field pointed at a target that is running away.
   if (world.squadTarget) {
@@ -193,7 +195,7 @@ export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null
         ? Math.hypot(world.squadTarget.pos.x - world.lastTargetPos.x, world.squadTarget.pos.y - world.lastTargetPos.y)
         : Infinity;
       if (world.repathTimer <= 0 && moved > REPATH_DISTANCE) {
-        world.field = buildFlowField(world.map, world.squadTarget.pos);
+        world.field = buildFlowField(world.map, world.squadTarget.pos, true);
         world.orderGoal = { ...world.squadTarget.pos };
         world.lastTargetPos = { ...world.squadTarget.pos };
         assignFormation(world, world.squadTarget.pos);
@@ -212,7 +214,9 @@ export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null
     // Blown off his feet: no orders reach him until he is back on them.
     if (stumble(s, world.map, dt)) continue;
 
-    const moveTarget = chooseMoveTarget(world, s);
+    // Same rule as the garrison: a firing solution found from the middle of a
+    // river is not a reason to stop there, because he cannot fire from it.
+    const moveTarget = chooseMoveTarget(world, s) ?? bankFrom(world.map, s);
     steer(s, moveTarget, world.hash, world.map, soldierSteerOpts, dt);
     moveWithCollision(s, world.map, dt);
     unstick(s, world.map);
@@ -227,7 +231,11 @@ export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null
     }
 
     if (s.wading && Math.random() < 0.08 && Math.hypot(s.vel.x, s.vel.y) > 8) {
-      world.fx.splash(s.pos);
+      // Mud throws clods, not spray. `sim` decides *which*, because it is the
+      // side that knows what he is standing in; `fx` decides what that looks
+      // like, so no colour crosses the boundary.
+      const t = tileAt(world.map, Math.floor(s.pos.x / world.map.tile), Math.floor(s.pos.y / world.map.tile));
+      world.fx.splash(s.pos, t === Tile.Quicksand);
     }
 
     updateFiring(world, s, manualFireAt, cfg);
@@ -341,4 +349,44 @@ function nearestVisibleEnemy(world: World, s: Soldier): Actor | null {
     }
   }
   return best;
+}
+
+/**
+ * Walking makes a noise, and it is the quietest noise in the game.
+ *
+ * Nothing here used to: `raiseAlarm` had six callers -- gunfire, a round
+ * stopping on scenery, a death, an explosion, a wounded man, and first sight --
+ * and movement was not among them. So a squad was only ever *seen*, never
+ * heard, and creeping was worth nothing that hiding was not already worth.
+ *
+ * It is `raiseNotice`, never `raiseAlarm`, and that is the load-bearing part.
+ * A garrison that could be walked onto the player would change every existing
+ * mission and make open ground unusable; one that only turns its head gives the
+ * player the thing the brief asked for -- *"they might hear you, they might not
+ * walk your way, but they'll face the direction for a bit"* -- which is a
+ * warning, and a warning is what makes moving carefully a decision.
+ *
+ * Loudest from the fastest man rather than from the middle of the herd: one
+ * soldier sprinting across a gap is what gets the squad noticed, and the noise
+ * comes from him.
+ */
+function footsteps(world: World, dt: number): void {
+  world.stepNoise -= dt;
+  if (world.stepNoise > 0) return;
+  world.stepNoise = CONFIG.enemy.stepInterval;
+
+  let loudest: Soldier | null = null;
+  let best = 0;
+  for (const s of world.soldiers) {
+    if (!s.alive || s.wading) continue;
+    const speed = Math.hypot(s.vel.x, s.vel.y);
+    if (speed > best) { best = speed; loudest = s; }
+  }
+  if (!loudest) return;
+
+  // Scaled by how fast he is actually moving, so a man edging forward is
+  // quieter than one running -- which is the only control the player has over
+  // it, and it should therefore do something.
+  const share = Math.min(1, best / CONFIG.soldier.speed);
+  raiseNotice(world, loudest.pos, CONFIG.enemy.stepNoise * share);
 }

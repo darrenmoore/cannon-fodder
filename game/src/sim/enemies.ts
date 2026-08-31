@@ -1,8 +1,9 @@
 import { CONFIG } from '../config.js';
 import { fire, throwGrenade } from './combat.js';
-import { hasLineOfFire, hasLineOfSight } from './map.js';
+import { hasLineOfFire, hasLineOfSight, nearestWalkable } from './map.js';
+import { hunts } from './pressure.js';
 import { circleBlocked, findPath, hasWalkableLine } from './pathfind.js';
-import { moveWithCollision, steer, stumble, unstick } from './steering.js';
+import { bankFrom, moveWithCollision, steer, stumble, unstick } from './steering.js';
 import { EnemyState, Faction } from '../types.js';
 import type { SteerOpts } from './steering.js';
 import type { Actor, Enemy, Vec2 } from '../types.js';
@@ -35,7 +36,6 @@ const STUCK_SPEED = 6;
 /** How close counts as having reached the thing you went to look at. */
 const ARRIVED = 9;
 /** How far off his mark an idle man will drift while fidgeting. */
-const FIDGET_RANGE = 7;
 
 const steerOpts = (e: Enemy): SteerOpts => ({
   speed: e.stats.speed,
@@ -52,22 +52,82 @@ const steerOpts = (e: Enemy): SteerOpts => ({
  * Enemies already fighting are left alone -- they have better information than
  * the alert does.
  */
+/**
+ * A noise, and the two different things it does depending on how far off it is.
+ *
+ * Inside `radius` a man walks to it, which is what the alarm has always done.
+ * In the ring beyond it -- out to `noticeSpread` times as far -- he only turns
+ * his head. That ring is the warning: a garrison that looks your way is telling
+ * you it can hear you from there, and that closing the distance will be seen.
+ * Binary hearing gave the player one bit of information and no notice before
+ * it.
+ */
 export function raiseAlarm(world: World, at: Vec2, radius: number): void {
   if (radius <= 0) return;
   const r2 = radius * radius;
+  const notice = radius * CONFIG.enemy.noticeSpread;
+  const n2 = notice * notice;
   for (const e of world.enemies) {
     if (!e.alive) continue;
     if (e.state === EnemyState.Engage || e.state === EnemyState.Alert) continue;
     const dx = e.pos.x - at.x;
     const dy = e.pos.y - at.y;
-    if (dx * dx + dy * dy > r2) continue;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > n2) continue;
+
+    if (d2 > r2) { look(e, at); continue; }
 
     e.state = EnemyState.Investigate;
     e.investigate = { x: at.x, y: at.y };
+    e.glance = null;
     e.searchTime = 0;
     e.memory = CONFIG.enemy.alertMemory;
     e.path.length = 0;
   }
+}
+
+/**
+ * A noise that is only ever worth looking at -- footsteps, and nothing else so
+ * far. It can never send anybody anywhere, whatever the distance.
+ */
+export function raiseNotice(world: World, at: Vec2, radius: number): void {
+  if (radius <= 0) return;
+  const r2 = radius * radius;
+  for (const e of world.enemies) {
+    if (!e.alive) continue;
+    if (e.state !== EnemyState.Idle && e.state !== EnemyState.Patrol) continue;
+    const dx = e.pos.x - at.x;
+    const dy = e.pos.y - at.y;
+    if (dx * dx + dy * dy > r2) continue;
+    look(e, at);
+  }
+}
+
+/**
+ * Turn the head, start the clock, and do nothing else.
+ *
+ * Refreshed rather than queued: a squad walking past keeps him looking at where
+ * they are now, so the facing tracks them across his front instead of pointing
+ * at the first footfall for a second and a half.
+ */
+function look(e: Enemy, at: Vec2): void {
+  e.glance = { at: { x: at.x, y: at.y }, time: CONFIG.enemy.glanceHold };
+}
+
+/**
+ * A wounded man, screaming on a timer.
+ *
+ * He is the same alarm the death of a man is, except that it does not stop. The
+ * radius is smaller than a gunshot's, so he draws the men near him rather than
+ * the whole map -- and because `raiseAlarm` sends them to *his* position, the
+ * spot where you shot somebody becomes the spot everybody walks to.
+ */
+function stepWounded(world: World, e: Enemy, dt: number): void {
+  e.screamTimer -= dt;
+  if (e.screamTimer > 0) return;
+  e.screamTimer = CONFIG.enemy.screamInterval * (0.8 + Math.random() * 0.4);
+  raiseAlarm(world, e.pos, world.levers.hearing * CONFIG.enemy.woundAlarm);
+  world.fx.blood(e.pos);
 }
 
 export function stepEnemies(world: World, dt: number): void {
@@ -78,19 +138,45 @@ export function stepEnemies(world: World, dt: number): void {
     e.fireCooldown -= dt;
     e.grenadeCooldown -= dt;
 
+    // Down and calling for help. No acquire, no steering, no weapon -- but the
+    // noise is the point, so he is stepped rather than skipped.
+    if (e.wounded) { stepWounded(world, e, dt); continue; }
+
     // Blown off his feet. He keeps whatever he knew about you -- an explosion
     // is not amnesia -- but he cannot act on it until he lands.
     if (stumble(e, world.map, dt)) continue;
 
     acquire(world, e, dt);
 
+    /*
+     * A glance outranks the post, and nothing else.
+     *
+     * He stops, faces it, and holds -- so the facing survives, which is the
+     * whole mechanism. `e.angle` is written from velocity every step a man
+     * moves, so a glance that let him keep fidgeting would be wiped inside a
+     * second and the player would never see it. It is dropped the moment he has
+     * a real reason to act, because a man being shot at has finished looking.
+     */
+    if (e.glance) {
+      e.glance.time -= dt;
+      if (e.glance.time <= 0 || e.state === EnemyState.Engage || e.state === EnemyState.Alert) {
+        e.glance = null;
+      }
+    }
+    const glancing = e.glance !== null
+      && (e.state === EnemyState.Idle || e.state === EnemyState.Patrol);
+    if (glancing && e.glance) {
+      e.angle = Math.atan2(e.glance.at.y - e.pos.y, e.glance.at.x - e.pos.x);
+      e.goal = null;
+    }
+
     let moveTarget: Vec2 | null = null;
     switch (e.state) {
       case EnemyState.Idle:
-        moveTarget = siege(world, e) ?? idleFidget(e, dt);
+        moveTarget = glancing ? null : siege(world, e) ?? idleFidget(world, e, dt);
         break;
       case EnemyState.Patrol:
-        moveTarget = siege(world, e) ?? patrol(world, e, dt);
+        moveTarget = glancing ? null : siege(world, e) ?? patrol(world, e, dt);
         break;
       case EnemyState.Investigate:
         moveTarget = investigate(world, e, dt);
@@ -106,6 +192,10 @@ export function stepEnemies(world: World, dt: number): void {
         break;
     }
 
+    // Nobody treads water on purpose: a man who decided to hold position while
+    // out of his depth is sent to the nearest bank instead.
+    moveTarget ??= bankFrom(world.map, e);
+
     if (moveTarget) moveTarget = viaPath(world, e, moveTarget);
 
     steer(e, moveTarget, world.hash, world.map, steerOpts(e), dt);
@@ -117,7 +207,11 @@ export function stepEnemies(world: World, dt: number): void {
     if (moveTarget && speed < STUCK_SPEED) e.stuck += dt;
     else e.stuck = Math.max(0, e.stuck - dt * 2);
 
-    if (!moveTarget && speed < 2 && e.target && e.state === EnemyState.Engage) {
+    if (glancing && e.glance) {
+      // Held, against the momentum he arrived with. Written last so nothing
+      // below the switch can turn him back.
+      e.angle = Math.atan2(e.glance.at.y - e.pos.y, e.glance.at.x - e.pos.x);
+    } else if (!moveTarget && speed < 2 && e.target && e.state === EnemyState.Engage) {
       e.angle = Math.atan2(e.target.pos.y - e.pos.y, e.target.pos.x - e.pos.x);
     } else if (speed > 2) {
       e.angle = Math.atan2(e.vel.y, e.vel.x);
@@ -155,7 +249,7 @@ function acquire(world: World, e: Enemy, dt: number): void {
   // Lost them. A hunter goes looking; everyone else stands down.
   e.target = null;
   e.path.length = 0;
-  if (e.traits.hunter && world.lastKnown) {
+  if (hunts(world, e) && world.lastKnown) {
     e.state = EnemyState.Investigate;
     e.investigate = { ...world.lastKnown };
     e.searchTime = 0;
@@ -206,7 +300,25 @@ function siege(world: World, e: Enemy): Vec2 | null {
     }
     return null;
   }
-  return { x: keep.centre.x, y: keep.centre.y };
+
+  /*
+   * Walk to firing range, not to the middle of the building.
+   *
+   * The centre of a keep is a *solid* tile, so a route to it cannot be planned
+   * and the pathfinder handed back nothing -- which meant a man sent to besiege
+   * an outpost stood still at whatever distance he happened to be. Undefended
+   * and left for two hundred seconds, seventy-nine attackers did no damage to
+   * it at all, which is not a garrison holding out, it is a crowd.
+   *
+   * Approaching along his own bearing also spreads the ring: everyone stops
+   * where they arrived rather than converging on one walkable tile beside the
+   * door.
+   */
+  const stand = e.stats.fireRange * 0.8;
+  return nearestWalkable(world.map, {
+    x: keep.centre.x - (dx / dist) * stand,
+    y: keep.centre.y - (dy / dist) * stand,
+  });
 }
 
 /**
@@ -218,9 +330,39 @@ function siege(world: World, e: Enemy): Vec2 | null {
  * shift of weight, and for anyone not rooted to a firing position, the odd step
  * off the mark. He never leaves his post, so this changes how the map *reads*
  * without changing where anybody is.
+ *
+ * The range this drifts over is the whole of whether any of that lands. At the
+ * seven pixels it used to be -- under half a tile -- a fifteen-man garrison
+ * fidgeted continuously and was reported as "everyone stood still", which was a
+ * fair description of what could be seen. It is a difficulty lever now, so the
+ * harder tiers look more alive rather than less.
  */
-function idleFidget(e: Enemy, dt: number): Vec2 | null {
-  if (e.home && Math.hypot(e.home.x - e.pos.x, e.home.y - e.pos.y) > FIDGET_RANGE * 2) return e.home;
+function idleFidget(world: World, e: Enemy, dt: number): Vec2 | null {
+  // The leash, and the reason widening the range is safe: a man twice this far
+  // from his post is walked back to it, whatever he was drifting toward. So a
+  // sentry guarding something cannot wander off the thing he is guarding.
+  const range = CONFIG.enemy.fidgetRange * world.levers.wander;
+  if (e.home && Math.hypot(e.home.x - e.pos.x, e.home.y - e.pos.y) > range * 2) return e.home;
+
+  /*
+   * A step he is still taking is a step, and this used to be one frame long.
+   *
+   * The destination was returned on the single tick the timer expired and then
+   * `null` for the next one to three seconds -- so a man was given an impulse
+   * rather than somewhere to walk, decelerated immediately, and covered about a
+   * fifth of a pixel. Fifteen of them did that continuously and were reported,
+   * accurately, as standing still. Widening the range alone would not have
+   * helped: he was never going to reach any of it.
+   *
+   * So it holds its goal until he arrives, the way `patrol` already does. Idle
+   * and Patrol are exclusive -- `patrols` is false for everyone who reaches
+   * here -- so `e.goal` is free to mean the same thing in both.
+   */
+  if (e.goal) {
+    if (Math.hypot(e.goal.x - e.pos.x, e.goal.y - e.pos.y) > 3 && e.stuck < STUCK_TRIGGER) return e.goal;
+    e.goal = null;
+    e.stuck = 0;
+  }
 
   e.idleTimer -= dt;
   if (e.idleTimer > 0) return null;
@@ -237,8 +379,9 @@ function idleFidget(e: Enemy, dt: number): Vec2 | null {
   // Rooted men hold their firing position and only look; the rest may shuffle.
   if (e.rooted || !e.home || Math.random() < 0.45) return null;
   const a = Math.random() * Math.PI * 2;
-  const r = FIDGET_RANGE * (0.4 + Math.random() * 0.6);
-  return { x: e.home.x + Math.cos(a) * r, y: e.home.y + Math.sin(a) * r };
+  const r = range * (0.4 + Math.random() * 0.6);
+  e.goal = { x: e.home.x + Math.cos(a) * r, y: e.home.y + Math.sin(a) * r };
+  return e.goal;
 }
 
 function patrol(world: World, e: Enemy, dt: number): Vec2 | null {
@@ -263,7 +406,7 @@ function patrol(world: World, e: Enemy, dt: number): Vec2 | null {
  * being pursued rather than like walking past a statue.
  */
 function investigate(world: World, e: Enemy, dt: number): Vec2 | null {
-  if (e.traits.hunter && world.lastKnown && world.lastKnownAge < CONFIG.enemy.trailMemory) {
+  if (hunts(world, e) && world.lastKnown && world.lastKnownAge < CONFIG.enemy.trailMemory) {
     e.investigate = { ...world.lastKnown };
   }
   if (!e.investigate) {
@@ -408,7 +551,7 @@ function viaPath(world: World, e: Enemy, goal: Vec2): Vec2 {
   if (e.stuck < STUCK_TRIGGER) {
     if (e.path.length === 0) return goal;
   } else if (e.path.length === 0) {
-    e.path = findPath(world.map, e.pos, goal).slice(0, 40);
+    e.path = findPath(world.map, e.pos, goal, 3000, e.canSwim).slice(0, 40);
     e.stuck = 0;
     if (e.path.length === 0) return goal;
   }
@@ -418,7 +561,7 @@ function viaPath(world: World, e: Enemy, goal: Vec2): Vec2 {
   while (e.path.length > 0 && Math.hypot(e.path[0].x - e.pos.x, e.path[0].y - e.pos.y) < 7) {
     e.path.shift();
   }
-  if (e.path.length === 0 || hasWalkableLine(world.map, e.pos, goal, e.radius)) {
+  if (e.path.length === 0 || hasWalkableLine(world.map, e.pos, goal, e.radius, e.canSwim)) {
     e.path.length = 0;
     return goal;
   }

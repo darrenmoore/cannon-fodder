@@ -2,7 +2,7 @@ name: Chicken Run
 theme: jungle
 objective: eliminate
 doctrine: garrison
-order: 1
+order: 3
 mechanic: basics
 brief: Move as a herd, use the treeline, and let them come to you.
 tile: 16

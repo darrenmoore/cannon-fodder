@@ -7,8 +7,25 @@ import type { World } from './world.js';
  * and take out whatever is standing nearby, which is how the original let you
  * clear a cluster of enemies without spending a man. The detonation path lives
  * in combat.ts; this module only handles collection.
+ *
+ * Supply boxes are collected the same way and are otherwise the opposite thing:
+ * they are the objective rather than a reward, they do not explode, and losing
+ * one to a blast ends the mission. See `Supply`.
  */
 export function stepPickups(world: World): void {
+  for (const box of world.supplies) {
+    if (!box.alive || box.collected) continue;
+    for (const s of world.soldiers) {
+      if (!s.alive) continue;
+      if (Math.hypot(s.pos.x - box.pos.x, s.pos.y - box.pos.y) > s.radius + CONFIG.supply.radius) continue;
+      box.collected = true;
+      world.fx.sparkle(box.pos, '#9bf07a');
+      world.fx.popup({ x: box.pos.x, y: box.pos.y - 10 }, 'RECOVERED', '#9bf07a', 'hostage');
+      sfxPickup();
+      break;
+    }
+  }
+
   for (const crate of world.crates) {
     if (!crate.alive) continue;
     for (const s of world.soldiers) {

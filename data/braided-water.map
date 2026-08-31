@@ -1,0 +1,91 @@
+name: Braided Water
+theme: jungle
+objective: collect
+doctrine: patrol
+order: 25
+mechanic: channels and crossings
+brief: Five crates scattered across the delta. Every one of them is over water.
+tile: 16
+---
+TTTTT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.T.T.
+TTTT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....
+TTTTTT.T.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....T
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..T
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT......TTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTT.TT.T............TTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTT............TTTTTT
+TTTTTTTTTTTTTTTTTTTT......T.T.........TT..T..TTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTT...............TTTTTT
+TTTTTTTT..........................TT..TT............,~~~~~,.....TTTTTTTTTTTTTTTT..................TTTTTT
+TTTTTTTTT.........................TT.TTTTTT.........,~~~~~,...........TTTTT.......................TTTTTT
+TTTTTTTT........#................TTT..TT..TT........,~~~~~,......................."...............TTTTTT
+TTTTTTTT......###.#........"..........TTTTTT.......,~~~~~,......................."""..............TTTTTT
+TTTTTTTT......####........""".........TT.."T.......,~~~~~,......................""""".............TTTTTT
+TTTTTTTT.......#.#.p.....""""".........T"T.".....E.,~~~~~,......................."""".............TTTTTT
+TTTTTTTT.......#..........""""...........""".......,~~~~~c.......................""""E.............TTTTT
+TTTTTTTT...................."..........."".........,~~~~~,T.TTT............T.T...""""".............TTTTT
+TTTTTTTT.T...............E.........................,~~~~~T.TTTT...........TTT.T....................TTTTT
+TTTTTTTTT.T...k....................................,~~~~~TTTTTT............T.T.............E.......TTTTT
+TTTTTTTT.TT........................................,~~~~~,...T............TTT......................TTTTT
+TTTTTTTTT..T..""...................................,~~~~~,................T.T......................TTTTT
+TTTTTTTTTT.T.""""..................................,~~~~~,..........................................TTTT
+TTTTTTTT..T...""".................................k,~~~~~,..........................................TTTT
+TTTTTTT..T.....".....E.............................,~~~~~,.......................k....o.............TTTT
+TTTTTTT........p...................................,~~~~~,..........................................TTTT
+TTTTTTT................"""........................E====S=..............TT..T......................T.TTTT
+TTTTTTT...............""""".......................=======..............T.TTT.......................TTTTT
+TTTTTTT................"""........................,~~~~~,.............TTTT.T.......................TTTTT
+TTTTTTTT................"........................,~~~~~,.................TT........................TTTTT
+TTTTTTTT.........................................,~~~~~,..................T........................TTTTT
+TTTTTTTT........................................,~~~~~,..................,,........................TTTTT
+TTTTTTTT.......................................,~~~~~,......."""......,,,~~,,,,...................TTTTTT
+~~~TTTTT......................................,~~~~~,........"""....,,~~~WW~~~~=..................TTTTTT
+WWW~~~T,.....................................,~~~~~,........."""...,~~WWWWWWWWW==,................TTTTTT
+WWWWWW~~,.................".................,~~~~~,...........""..,~WWWWWWWWWWW==~,..............TTTTTTT
+WWWWWWWW~,...............""""..""".........,~~~~~,..............,,~WWWWWWWWWWWW==W~,,............TTTTTTT
+WWWWWWWWW~,............"""""".."""".......,~~~~~,..............,~~WWWWWWWWWWWWW==WW~~,...........TTTTTTT
+WWWWWWWWWW~,...........""""""..""""".....,~~~~~,..............,~WWWWWWWWW~~WWWW==WWWW~,,........TTTTTTTT
+~~~WWWWWWWW~,............"""...."""......,~~~~~,.............,~WWWWWWW~~~,,~~~~==WWWWW~~,,......TTTTTTTT
+TTT~~~WWWWWW~,.........."""""...""".....,~~~~~,.............,~WWWWWW~~,,,..,,,,==WWWWWWW~~,,....TTTTTTTT
+TTTTTT~~WWWWW~,,.......""""..""""""....,~~~~~,............,,~WWWWWW~,,.........==~WWWWWWWW~~,,,,TTTTTTTT
+TTTTTT,,~WWWWW~~,.......""...."""....",~~~~~,...........,,~~WWWWWW~,............=,~WWWWWWWWW~~~~~~~~~~~~
+TTTTT...,~WWWWWW~,.............."...",,~~~~~,,........,,~~WWWWWW~~,...............,~~WWWWWWWWWWWWWWWWWWW
+TTTTT....,~WWWWWW~,..............,,,,~~~~~~~~~,,,,,==,~~WWWWWWW~,,.................,,~WWWWWWWWWWWWWWWWWW
+TTTTT.....,~WWWWWW~,,.........,,,~~~~WW~~~~~WW~~~~~==~WWWWWWWW~,.....................,~~WWWWWWWWWWWWWWWW
+TTTT.......,~WWWWWW~~,==,,,,,,~~~WWWWWW~~~~~WWWWWWW==WWWWWWWW~,.......................,,~~WWWWWWWWWWWWWW
+TTTT........,~WWWWWWW~==~~~~~~WWWWWWWWW~~~~~WWWWWWW==WWWWWWW~T..........................,,~~WWWWWWWWWWWW
+TTTT.........,~~WWWWWW==WWWWWWWWWWWWWWW~~~~~WWWWWWW==WWWWW~~,T............................,,~~~~~~~~~~~~
+TTTT..........,,~WWWWW==WWWWWWWWWWWWWWWW~~~~~WWWWWW==WWW~~TTTT..............................,,,,TTTTTTTT
+TTTT............,~WWWW==WWWWWWWWWWWWW~~~~~~~~~WWWWW==W~~,,T.T...................................TTTTTTTT
+TTTT.""""".......,~WWW==WWWWWWWWW~~~~,,,,~~~~~~~~~~==~T,.TTTT.T..................................TTTTTTT
+TTTT".""""........,~~W==WWWWWW~~~,,,,....,~~~~~,,,,==,.TTT.TTTTT.................................TTTTTTT
+TTTT.."""""........,,~==~~~~~~,,,.........,~~~~~,.........TTT....................................TTTTTTT
+TTTTT."""""..........,==,,,,,,.............,~~~~~,......T..T.T...................................TTTTTTT
+TTTTT.""""".................................,~~~~~,..............................................TTTTTTT
+TTTTT""""""..................................,~~~~~,............................................TTTTTTTT
+TTTTT"..."....................................=======...........................................TTTTTTTT
+.TTTT..........................................=======..........................................TTTTTTTT
+..TTTT..........................T...............,~~~~~,.........................................TTTTTTTT
+TTTTTT........................TTTTT..............,~~~~~,.......................................TTTTTTTTT
+TTTTTT..............p........T..T.................,~~~~~,.......................................TTTTTTTT
+TTTTTT.........................T..T................,~~~~~,....................................TTTTTTTTTT
+TTTTTT........................TTT...................,~~~~~,..T.................................TTTTTTTTT
+TTTTTT............................T.................,~~~~~,T.TT.................................TTTTTT.T
+TTTTTT..................o............................,~~~~~TT...................................TTTTTT..
+TTTTTTT..............................................,~~~~~,....................................TTTTTTTT
+TTTTTTT......E........................................,~~~~~,...................................TTTTTTTT
+TTTTTT..............k..#..............................,~~~~~,...................................TTTTTTTT
+TTTTTT...............#.#..........................k...,~~~~~,....................."""............TTTTTTT
+TTTTTTTT.............###..............................,~~~~~,...................."""""...........TTTTTTT
+TTTTTT.........TB...".................................,~~~~~,....................""."..E........TTTTTTTT
+TTTTT...P.....TT....""................................E~~~~~,........................T........."""TTTTTT
+TTTT...........TT.""E................................,~~~~~,........................TTTT......."""TTTTTT
+TTTT...........T.."""................................,~~~~~,......................T..TTT....."""".TTTTTT
+TTTT.P.......P.T"..""""""............................,~~~~~,.......................TT.TT.T...""""".TTTTT
+TTTT...........TTTTTTTT.""...........................,~~~~~TTT...................TTTTTTTT.....TTTTTTTTTT
+TTTT....P......TTTTTTTTTTTT..........................,~~~~~TT.....................TTTTTTTTTTTTTTTTTTTTTT
+TTTT..........cTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.........,~~~~~,T.T......TTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTT
+TTTT.P.........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....,~~~~~TT.T.TTTTTTTTTTTTTTTTTTTTTTTT.T.TTTTTTTTTTTTT
+TTTTT......P..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~,T.TTTTTTTTTTTTTTTTTTTTTTTT.TTT.TTTTTTTTTTTTT
+TTTTTT.......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~T.T.TTTTTTTTTTTTTTTTTTTTTTT.TTTT.TTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~,.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~,.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

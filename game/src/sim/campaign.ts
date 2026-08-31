@@ -156,6 +156,29 @@ export interface Aftermath {
  * than throwing. A corrupt save should cost you your progress, not the game —
  * and the only thing worse than losing a roster is a blank screen where it was.
  */
+/**
+ * What a difficulty written by an older build means now.
+ *
+ * `Regular` was dropped between four rungs and three, and saves in the wild
+ * carry it -- in `clears`, which the star rating reads, and on every grave. It
+ * becomes **Rookie**, on the reasoning that removed it: the complaint was that
+ * the two were too similar to tell apart, so the lower of them is the honest
+ * reading of a clear that might have been either.
+ *
+ * This is a coercion inside the existing load path and *not* a version bump on
+ * purpose. `loadCampaign` answers a version mismatch by returning `empty()` --
+ * so bumping to migrate would throw away every player's squad, their records
+ * and their Boot Hill, which is a considerably worse outcome than a star being
+ * one rung generous.
+ */
+const RETIRED: Record<string, DifficultyId> = { regular: 'rookie' };
+
+const asDifficulty = (v: unknown): DifficultyId | null => {
+  if (typeof v !== 'string') return null;
+  if (isDifficultyId(v)) return v;
+  return RETIRED[v] ?? null;
+};
+
 export function loadCampaign(): CampaignState {
   let raw: string | null = null;
   try {
@@ -184,7 +207,7 @@ export function loadCampaign(): CampaignState {
           name: g.name,
           missions: Math.max(0, Math.floor(g.missions) || 0),
           mission: typeof g.mission === 'string' ? g.mission : 'unknown',
-          difficulty: isDifficultyId(g.difficulty) ? g.difficulty : 'regular',
+          difficulty: asDifficulty(g.difficulty) ?? 'rookie',
           own: !!g.own,
         }))
       : [];
@@ -195,7 +218,11 @@ export function loadCampaign(): CampaignState {
       records[id] = {
         bestHome: Math.max(0, Math.floor(r.bestHome) || 0),
         bestTime: Number.isFinite(r.bestTime) && r.bestTime > 0 ? r.bestTime : Infinity,
-        clears: Array.isArray(r.clears) ? r.clears.filter(isDifficultyId) : [],
+        // Mapped, then de-duplicated: a save holding both `regular` and
+        // `rookie` must not end up with rookie twice and claim two stars.
+        clears: Array.isArray(r.clears)
+          ? [...new Set(r.clears.map(asDifficulty).filter((d): d is DifficultyId => d !== null))]
+          : [],
       };
     }
 

@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { bigTextSprite } from './bigfont.js';
 import { grenadeArc } from '../sim/combat.js';
 import { lerp } from '../loop.js';
 import { tileAt } from '../sim/map.js';
@@ -9,7 +10,7 @@ import { textSprite } from './pixelfont.js';
 import { threshAt } from './palette.js';
 import { analyseTerrain } from './terrain.js';
 import { TILES, Tile } from '../sim/tiles.js';
-import { EnemyKind, Faction } from '../types.js';
+import { EnemyKind, Faction, Phase } from '../types.js';
 import { rankTier } from '../sim/campaign.js';
 import { squadCentre } from '../sim/world.js';
 import type { Aim } from '../shell/aim.js';
@@ -31,6 +32,7 @@ const ENEMY_INK: Record<EnemyKind, string> = {
   [EnemyKind.Rifle]: '#ff6a48',
   [EnemyKind.Sniper]: '#b8bcc4',
   [EnemyKind.Bazooka]: '#d46ad4',
+  [EnemyKind.Officer]: '#ffd24a',
 };
 
 /**
@@ -98,11 +100,17 @@ const tileHash = (x: number, y: number): number => {
 const FIGURE_SHADOW = { x: 2, y: 3 };
 
 /** How deep a figure stands in each liquid, and what the surface looks like. */
-type WadeKind = 'none' | 'water' | 'mud';
-const WADE: Record<'water' | 'mud', { visible: number; line: string; foam: string }> = {
+type WadeKind = 'none' | 'water' | 'mud' | 'deep';
+const WADE: Record<'water' | 'mud' | 'deep', { visible: number; line: string; foam: string }> = {
   // Sprite is 15px tall; 7 leaves head and shoulders, 10 leaves him waist-deep.
   water: { visible: 7, line: '#2f6d92', foam: '#9fd8ef' },
   mud: { visible: 10, line: '#6b5c30', foam: '#a89355' },
+  // Swimming: six pixels, so head and shoulders with his chin at the surface.
+  // Five read as a man who had already drowned. Deliberately the same three
+  // lines as wading rather than a new arrangement -- the depth and the darker
+  // water are the difference, and a man this low being slow and unable to
+  // shoot should be legible from the silhouette without a second idiom.
+  deep: { visible: 6, line: '#173a55', foam: '#7fc4e0' },
 };
 
 /** Fraction of a death spent buckling before the body is on the ground. */
@@ -157,6 +165,10 @@ export class Renderer {
   private fogMask!: HTMLCanvasElement;
   private fogCtx!: CanvasRenderingContext2D;
   private time = 0;
+  /** Seconds since the mission was won, or -1 when nobody is celebrating. */
+  private cheerTime = -1;
+  /** Which survivor does the jumping; picked once per celebration. */
+  private jumperId = -1;
 
   constructor(private readonly ctx: CanvasRenderingContext2D) {}
 
@@ -355,6 +367,18 @@ export class Renderer {
     this.time += dtSinceLastFrame;
     this.flushDecals(world);
 
+    // Won, and still on the field: the survivors turn out of the screen and
+    // celebrate until the results arrive. Negative means nobody is cheering.
+    this.cheerTime = world.phase === Phase.Won ? world.phaseTime : -1;
+    if (this.cheerTime >= 0 && this.jumperId < 0) {
+      // The longest-serving survivor does the jumping -- lowest id, which is
+      // the man at the top of the roster.
+      const living = world.soldiers.filter((s) => s.alive);
+      this.jumperId = living.length ? Math.min(...living.map((s) => s.id)) : -1;
+    } else if (this.cheerTime < 0) {
+      this.jumperId = -1;
+    }
+
     const ctx = this.ctx;
     const zoom = camera.zoom;
     const ox = camera.offsetX;
@@ -425,6 +449,7 @@ export class Renderer {
 
     // 5. Everything that belongs on top of the world.
     this.drawCrates(world);
+    this.drawSupplies(world);
     this.drawMines(world);
     this.drawTargetMarkers(world, alpha);
     this.drawBullets(world);
@@ -448,6 +473,66 @@ export class Renderer {
     this.drawOffscreen(world, camera, zoom, viewL, viewT, viewR, viewB);
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // 9. The end of the phase, over everything, in screen space.
+    this.drawPhaseBanner(world);
+  }
+
+  /*
+   * The fade out used to be step 10 here, a black `fillRect` over the canvas.
+   *
+   * It has moved to `ui/blackout.ts`, and had to. The sidebar is DOM, outside
+   * the canvas, so the battlefield went dark and six names and a grenade count
+   * stayed lit beside it -- which reads as a rendering fault rather than as an
+   * ending. Nothing painted in here can cover the chrome. The timing is
+   * unchanged and still comes from `CONFIG.banner`; only the surface moved.
+   */
+
+  /**
+   * PHASE COMPLETE, flying up and settling.
+   *
+   * Over the battlefield, not over a panel. That is the whole shape of the
+   * moment in `docs/original-images/elements/phase-complete.jpg`: the grass is
+   * still there behind the lettering, the men are still standing on it, and for
+   * a second and a half the game is finished but not yet a menu. A DOM card on
+   * the frame the mission resolves skips all of that.
+   *
+   * Driven entirely from `phase` and `phaseTime`, so there is no banner state
+   * to keep in sync with anything -- a restart resets the world and the banner
+   * resets with it, for free.
+   *
+   * Sized in *screen* pixels rather than world pixels, and at an integer scale.
+   * A banner that shrank when the player zoomed out would be reading the wrong
+   * units, and a fractional scale on a hand-plotted serif turns its 2px stems
+   * into a grey smear.
+   */
+  private drawPhaseBanner(world: World): void {
+    if (world.phase === Phase.Playing) return;
+    const lines = world.phase === Phase.Won ? ['PHASE', 'COMPLETE'] : ['MISSION', 'FAILED'];
+
+    const ctx = this.ctx;
+    const { width, height } = ctx.canvas;
+    const sprites = lines.map((line) => bigTextSprite(line));
+    const widest = Math.max(...sprites.map((s) => s.width));
+    const scale = Math.max(1, Math.floor((width * CONFIG.banner.fill) / widest));
+
+    const lineGap = 2 * scale;
+    const totalH = sprites.reduce((h, s) => h + s.height * scale, 0) + lineGap * (sprites.length - 1);
+
+    // Eased out, so it arrives fast and stops rather than drifting in. It
+    // starts wholly below the frame: the rise is what makes it an event.
+    const t = Math.min(1, world.phaseTime / CONFIG.banner.rise);
+    const eased = 1 - (1 - t) ** 3;
+    const restY = Math.round((height - totalH) / 2);
+    const y0 = Math.round(restY + (height - restY) * (1 - eased));
+
+    let y = y0;
+    for (const sprite of sprites) {
+      const w = sprite.width * scale;
+      const h = sprite.height * scale;
+      ctx.drawImage(sprite, Math.round((width - w) / 2), y, w, h);
+      y += h + lineGap;
+    }
   }
 
   /**
@@ -642,10 +727,16 @@ export class Renderer {
 
   /** Which baked set a building draws from. Huts follow the mission's theme. */
   private buildingSet(kind: Building['kind'], huts: Sprite[]): Sprite[] {
+    // A bunker has no damage stages, so its one sprite answers for all four --
+    // including the wreck slot, which it can never reach.
     return kind === 'factory' ? this.atlas.factory
       : kind === 'outpost' ? this.atlas.outpost
-        : huts;
+        : kind === 'bunker' ? this.bunkerSet
+          : huts;
   }
+
+  /** One sprite in all four slots -- a bunker has no damage stages. */
+  private readonly bunkerSet: Sprite[] = [this.atlas.bunker, this.atlas.bunker, this.atlas.bunker, this.atlas.bunker];
 
   private drawScenery(item: SceneryItem, live?: Building): void {
     const ctx = this.ctx;
@@ -683,7 +774,12 @@ export class Renderer {
       }
       // Damage bar, once it has taken a real hit. The sprite carries most of
        // the message; this just gives you the exact number.
-      if (b.standing && b.hp < b.maxHp) {
+      //
+      // A building nothing can level still draws one, permanently full. That is
+      // the point: an empty space where a bar should be reads as "you have not
+      // hit it", and a full bar that never moves reads as "you have, and it did
+      // not matter" -- which is the true statement.
+      if (b.standing && (b.hp < b.maxHp || b.indestructible)) {
         const w = b.w * 16 - 4;
         const x = Math.round(b.x0 * 16 + 2);
         const y = Math.round(item.y - 4);
@@ -771,7 +867,9 @@ export class Renderer {
     const set = a.faction === Faction.Player ? this.atlas.player
       : (a as Enemy).kind === EnemyKind.Sniper ? this.atlas.sniper
         : (a as Enemy).kind === EnemyKind.Bazooka ? this.atlas.bazooka
-          : this.atlas.enemy;
+          : (a as Enemy).kind === EnemyKind.Officer ? this.atlas.officer
+            : (a as Enemy).traits?.camo ? this.atlas.camo
+              : this.atlas.enemy;
     // Which of the baked men this one is. Keyed to the actor's id, so he keeps
     // the same kit for as long as he is alive and gets it back on a restart.
     return set[a.id % set.length];
@@ -780,12 +878,17 @@ export class Renderer {
   private drawActor(a: Actor, alpha: number): void {
     const x = lerp(a.prev.x, a.pos.x, alpha);
     const y = lerp(a.prev.y, a.pos.y, alpha);
+    const celebrating = this.cheerTime >= 0 && a.alive && a.faction === Faction.Player;
     const moving = Math.hypot(a.vel.x, a.vel.y) > 4;
-    const frame = moving ? Math.floor(a.walkPhase / 3.2) % WALK_FRAMES : 0;
+    // Cheering runs the walk cycle on the clock rather than on distance, which
+    // is what turns a man standing still into a man moving his arms about.
+    const frame = celebrating ? Math.floor(this.cheerTime * 9) % WALK_FRAMES
+      : moving ? Math.floor(a.walkPhase / 3.2) % WALK_FRAMES : 0;
     const sprite = this.spritesFor(a)[facingIndex(a.angle)][frame];
 
     if (!a.alive) { this.drawCollapse(a, sprite, x, y); return; }
-    this.drawFigure(sprite, x, y, this.wadeAt(a));
+    if (a.wounded) { this.drawWounded(a, x, y); return; }
+    this.drawFigure(sprite, x, y - (celebrating ? this.hopHeight(a) : 0), this.wadeAt(a));
     this.rankPips(a, x, y);
   }
 
@@ -858,9 +961,52 @@ export class Renderer {
     ctx.drawImage(body, Math.round(x - body.width / 2), Math.round(y - body.height + 4));
   }
 
+  /**
+   * How far off the ground a celebrating man is.
+   *
+   * Everybody bobs an inch, out of step with each other so it reads as six men
+   * rather than as one animation played six times -- and one of them, the man
+   * who has been alive longest, jumps properly. The original picks somebody to
+   * leap about while the rest wave, and it is the single detail that makes the
+   * moment look like relief instead of a pose.
+   */
+  private hopHeight(a: Actor): number {
+    const t = this.cheerTime;
+    if (a.id === this.jumperId) {
+      // A real jump, and a pause on the ground between them.
+      const cycle = (t * 1.7) % 1;
+      return cycle > 0.55 ? 0 : Math.round(Math.sin((cycle / 0.55) * Math.PI) * 6);
+    }
+    return Math.sin(t * 7 + a.id * 1.3) > 0.4 ? 1 : 0;
+  }
+
+  /**
+   * A man down but not dead.
+   *
+   * The hard part is not drawing him, it is telling him apart from a corpse --
+   * and there are corpses everywhere by the time this matters. So he is the
+   * same body sprite and the difference is that he *moves*: a one-pixel shift
+   * on a slow, per-man cycle. Nothing else on a battlefield full of bodies
+   * twitches, and the eye finds movement before it finds anything else.
+   *
+   * A marker floating over him would have been easier and would have been a
+   * label on the world rather than a thing in it.
+   */
+  private drawWounded(a: Actor, x: number, y: number): void {
+    const body = this.atlas.corpseEnemy;
+    // Keyed on his id so two men lying together are not in step.
+    const twitch = Math.sin(this.time * 3.1 + a.id * 1.7) > 0.72 ? 1 : 0;
+    this.ctx.drawImage(
+      body,
+      Math.round(x - body.width / 2) + twitch,
+      Math.round(y - body.height + 4),
+    );
+  }
+
   /** Which liquid, if any, this actor is standing in. */
   private wadeAt(a: Actor): WadeKind {
     if (!a.wading) return 'none';
+    if (a.swimming) return 'deep';
     return tileAt(this.map, Math.floor(a.pos.x / this.map.tile), Math.floor(a.pos.y / this.map.tile)) === Tile.Quicksand
       ? 'mud'
       : 'water';
@@ -986,6 +1132,27 @@ export class Renderer {
     return found;
   }
 
+  /**
+   * Supply boxes, for a `collect` mission.
+   *
+   * Drawn with a hard rectangular shadow and no alpha, unlike `drawCrates`
+   * above -- the soft ellipse there predates the visual laws and is on the
+   * standing list of breaches, and copying it to make a new object match would
+   * be spreading the bug rather than matching a style.
+   */
+  private drawSupplies(world: World): void {
+    const ctx = this.ctx;
+    const sprite = this.atlas.supply;
+    for (const box of world.supplies) {
+      if (!box.alive || box.collected) continue;
+      const x = Math.round(box.pos.x - sprite.width / 2);
+      const y = Math.round(box.pos.y - sprite.height + 3);
+      ctx.fillStyle = '#1b2a12';
+      ctx.fillRect(x + 1, Math.round(box.pos.y) + 1, sprite.width - 2, 2);
+      ctx.drawImage(sprite, x, y);
+    }
+  }
+
   private drawCrates(world: World): void {
     const ctx = this.ctx;
     for (const c of world.crates) {
@@ -1053,15 +1220,22 @@ export class Renderer {
     const ctx = this.ctx;
     const pulse = 0.4 + Math.sin(this.time * 2.4) * 0.2;
     for (const z of world.extraction) {
+      // The drawn ring is the *real* one: a zone on a tent counts from the
+      // tent's edge, so a circle drawn at the bare radius would be a picture of
+      // a rule the game is not playing by. How this ring is drawn is still on
+      // /pixel-check's worklist -- arc, alpha and a hairline stroke are all
+      // three things the hardware could not do -- but it should at least be
+      // honest while it is wrong.
+      const r = z.pad + CONFIG.extraction.radius;
       ctx.globalAlpha = pulse;
       ctx.strokeStyle = '#8fe0ff';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(z.x, z.y, CONFIG.extraction.radius, 0, Math.PI * 2);
+      ctx.arc(z.x, z.y, r, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = pulse * 0.4;
       ctx.beginPath();
-      ctx.arc(z.x, z.y, CONFIG.extraction.radius * 0.6, 0, Math.PI * 2);
+      ctx.arc(z.x, z.y, r * 0.6, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }

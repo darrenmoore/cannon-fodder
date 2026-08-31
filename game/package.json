@@ -1,19 +1,21 @@
 {
-  "name": "cannon-fodder-prototype",
+  "name": "boots-and-bullets",
   "version": "0.1.0",
   "private": true,
-  "description": "A browser prototype of Sensible Software's Cannon Fodder (1993)",
+  "description": "Boots & Bullets -- a browser game cut to the pattern of Sensible Software's Cannon Fodder (1993)",
   "type": "module",
   "scripts": {
     "dev": "node build.mjs --watch",
     "build": "node build.mjs",
     "start": "node server.js",
-    "check": "tsc --noEmit && node tools/generate-levels.mjs --check && node test/map.test.mjs && node test/campaign.test.mjs",
+    "check": "tsc --noEmit && node tools/generate-levels.mjs --check && node test/map.test.mjs && node test/campaign.test.mjs && node test/docs.test.mjs && node tools/check-links.mjs",
     "levels": "node tools/generate-levels.mjs",
     "shots": "node tools/shoot.mjs --fit",
+    "moments": "node tools/moment.mjs",
     "playtest": "node tools/playtest.mjs",
     "measure": "node tools/measure.mjs",
-    "sheet": "node tools/sheet.mjs"
+    "sheet": "node tools/sheet.mjs",
+    "pixelate": "node tools/pixelate.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",

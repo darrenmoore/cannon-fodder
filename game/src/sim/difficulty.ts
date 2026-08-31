@@ -9,7 +9,7 @@
  * is what stops Veteran on one map feeling like Veteran on the next.
  */
 
-export type DifficultyId = 'rookie' | 'regular' | 'veteran' | 'elite';
+export type DifficultyId = 'rookie' | 'veteran' | 'elite';
 
 export interface Levers {
   /** Enemy aim error multiplier. Below 1 is tighter grouping. */
@@ -41,6 +41,26 @@ export interface Levers {
   rushers: number;
   /** Fraction carrying grenades to flush you out of cover. */
   grenadiers: number;
+  /**
+   * Fraction dressed for the ground rather than for a uniform.
+   *
+   * A camo trooper is no tougher than any other -- the whole of him is that you
+   * do not see him until he moves. He is drawn in dark jungle greens, well below
+   * the grass in tone, which is also what keeps him telling apart from your own
+   * men: theirs is a lighter green with a lime kit, and they carry rank pips.
+   */
+  camo: number;
+  /**
+   * How far an idle man drifts from his post, against `CONFIG.enemy.fidgetRange`.
+   *
+   * Not a threat lever -- a *legibility* one. A garrison that shifts its weight
+   * reads as men holding ground; one that does not reads as scenery, and the
+   * player learns nothing from looking at it. So even Rookie wanders, and the
+   * harder tiers only wander wider. It stays safe on a map where somebody is
+   * guarding something because the fidget is drawn around each man's `home` and
+   * he is walked back the moment he is twice the range from it.
+   */
+  wander: number;
   /** How far off-axis they approach. 0 walks straight down your sights. */
   flank: number;
 
@@ -70,32 +90,24 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
     levers: {
       spread: 1.4, fireInterval: 1.4, aggro: 1.05, reaction: 1.3, speed: 0.95, fireRange: 0.95,
       extraEnemies: 0, spawnInterval: 1.7, maxSpawned: 2,
-      hearing: 95, hunters: 0.15, rushers: 0, grenadiers: 0, flank: 0,
+      hearing: 95, hunters: 0.15, rushers: 0, grenadiers: 0, flank: 0, camo: 0, wander: 0.85,
       vision: 0,
       grenades: 4,
-    },
-  },
-  regular: {
-    id: 'regular',
-    name: 'Regular',
-    blurb: 'Gunfire carries. Some will come looking, and they do not walk straight at you.',
-    levers: {
-      spread: 1, fireInterval: 1, aggro: 1, reaction: 1, speed: 1, fireRange: 1,
-      extraEnemies: 0, spawnInterval: 1, maxSpawned: 3,
-      hearing: 130, hunters: 0.25, rushers: 0.1, grenadiers: 0, flank: 0.3,
-      vision: 0,
-      grenades: 2,
     },
   },
   veteran: {
     id: 'veteran',
     name: 'Veteran',
-    blurb: 'Fog of war. They hunt you across the map, flank hard, and the huts keep feeding.',
+    blurb: 'They hunt you across the map, flank hard, and the huts keep feeding. No fog.',
     levers: {
       spread: 0.7, fireInterval: 0.76, aggro: 1.25, reaction: 0.68, speed: 1.12, fireRange: 1.12,
       extraEnemies: 0.25, spawnInterval: 0.66, maxSpawned: 4,
-      hearing: 220, hunters: 0.55, rushers: 0.3, grenadiers: 0.12, flank: 0.55,
-      vision: 215,
+      hearing: 220, hunters: 0.55, rushers: 0.3, grenadiers: 0.12, flank: 0.55, camo: 0.32, wander: 1.15,
+      // Fog belongs to Elite alone now. Veteran is the middle of a three-rung
+      // ladder and it earns its place by how they fight, not by taking the map
+      // away -- the two used to be tangled together, so the only way to face a
+      // garrison that hunted you was to also face a mission you could not see.
+      vision: 0,
       grenades: 2,
     },
   },
@@ -106,14 +118,21 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
     levers: {
       spread: 0.48, fireInterval: 0.58, aggro: 1.5, reaction: 0.42, speed: 1.26, fireRange: 1.22,
       extraEnemies: 0.5, spawnInterval: 0.45, maxSpawned: 6,
-      hearing: 320, hunters: 0.85, rushers: 0.5, grenadiers: 0.28, flank: 0.8,
+      hearing: 320, hunters: 0.85, rushers: 0.5, grenadiers: 0.28, flank: 0.8, camo: 0.5, wander: 1.3,
       vision: 160,
       grenades: 2,
     },
   },
 };
 
-export const DIFFICULTY_ORDER: DifficultyId[] = ['rookie', 'regular', 'veteran', 'elite'];
+/*
+ * Three rungs, and the order is load-bearing twice over: the menu reads it, and
+ * so does the star rating -- one star for clearing on Rookie, two for Veteran,
+ * three for Elite. There were four, and the complaint that removed one was that
+ * Regular "feels like Rookie level". Two rungs that cannot be told apart are
+ * one rung and a wasted choice.
+ */
+export const DIFFICULTY_ORDER: DifficultyId[] = ['rookie', 'veteran', 'elite'];
 
 export const isDifficultyId = (v: string): v is DifficultyId =>
   (DIFFICULTY_ORDER as string[]).includes(v);
@@ -186,6 +205,7 @@ export function resolveLevers(difficulty: DifficultyId, doctrine: DoctrineId): L
   out.hunters = Math.min(1, out.hunters);
   out.rushers = Math.min(1, out.rushers);
   out.grenadiers = Math.min(1, out.grenadiers);
+  out.camo = Math.min(1, out.camo);
   out.flank = Math.min(1, out.flank);
   out.maxSpawned = Math.max(1, Math.round(out.maxSpawned));
   return out;

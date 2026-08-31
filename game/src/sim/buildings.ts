@@ -113,14 +113,48 @@ export function stepWaves(world: World, dt: number): void {
   const standing = spawners.filter((b) => b.standing);
   if (standing.length === 0 || spawners.length === 0) return;
 
-  const size = Math.max(1, Math.round(world.levers.maxSpawned * (standing.length / spawners.length)));
-  // They were *sent*, so they do not wait to be provoked: every man walks at
-  // where the squad is, not at where somebody last heard a noise.
-  const target = squadCentre(world);
+  /*
+   * Bigger every time, and starting at a number that is already a fight.
+   *
+   * The old size was `maxSpawned` scaled by how many huts were still standing,
+   * which meant a mission that got *easier* as it went on and could be switched
+   * off by levelling the buildings -- so wave one was the peak and the rest was
+   * arithmetic. Wave spawners are indestructible now (see `createWorld`), so
+   * there is nothing to switch off and the only shape left is the ramp.
+   *
+   * Difficulty multiplies through, rather than the ramp replacing it: Elite's
+   * `maxSpawned` is what makes its fifth wave a different event from Rookie's.
+   */
+  const { first, growth, sizeFrom, sizeRange } = CONFIG.wave;
+  const step = 1 + (world.wavesSent - 1) * growth;
+  const scale = Math.min(sizeRange[1], Math.max(sizeRange[0], world.levers.maxSpawned / sizeFrom));
+  const size = Math.max(1, Math.round(first * step * scale));
+
+  /*
+   * And they come for what you are defending, not for you.
+   *
+   * Waves used to be spawned straight into `Investigate` aimed at the squad,
+   * which walked every man at wherever the players' men happened to be -- so a
+   * squad that stood off to one side pulled the whole assault away from the
+   * outpost it was supposed to be protecting, and the objective became a
+   * spectator. Where a mission has something to hold, they are spawned `Idle`
+   * instead, which is the state `siege` acts on: they walk at the keep and
+   * shoot it, and `acquire` still turns them onto any soldier who gets in the
+   * way. Where there is nothing to hold, the squad is the objective and the old
+   * behaviour is the right one.
+   */
+  const keep = world.buildings.find((b) => b.role === 'protect' && b.standing);
+  const target = keep ? keep.centre : squadCentre(world);
+
+  // Spread across the doorways rather than emptying one at a time, so a wave
+  // arrives from several sides instead of forming a queue at the nearest hut.
+  const order = standing.map((b, i) => ({ b, k: (i + world.wavesSent) % standing.length }))
+    .sort((p, q) => p.k - q.k)
+    .map((p) => p.b);
 
   let sent = 0;
   for (let i = 0; i < size; i++) {
-    const b = standing[i % standing.length];
+    const b = order[i % order.length];
     const door = findDoorway(world, b, true);
     // No hidden way out of this hut means this man does not come. Camping on
     // top of the huts is supposed to be worth something, and a trooper
@@ -130,9 +164,15 @@ export function stepWaves(world: World, dt: number): void {
 
     const counter = { nextId: world.nextId };
     const enemy = makeEnemy(counter, door, EnemyKind.Rifle, null, world.levers, b.id);
-    enemy.state = EnemyState.Investigate;
-    enemy.investigate = target ? { ...target } : { ...door };
-    enemy.memory = CONFIG.enemy.alertMemory;
+    if (keep) {
+      // `siege` owns him from here: walk at the keep, stop at firing range,
+      // shoot it. He is not investigating anything -- he was told where to go.
+      enemy.state = EnemyState.Idle;
+    } else {
+      enemy.state = EnemyState.Investigate;
+      enemy.investigate = target ? { ...target } : { ...door };
+      enemy.memory = CONFIG.enemy.alertMemory;
+    }
     world.nextId = counter.nextId;
     world.enemies.push(enemy);
     world.actors.push(enemy);
@@ -180,10 +220,45 @@ function seenBySquad(world: World, p: Vec2): boolean {
 }
 
 /** Rifle rounds chip; explosives do real damage. Returns true if it collapsed. */
-export function damageBuilding(world: World, b: Building, amount: number): boolean {
+/**
+ * Hurts a building, and says which kind of hurt it was.
+ *
+ * `at` and `from` are where the round stopped and where it came from; with them
+ * a scratch can throw chips back along its own path instead of flashing the
+ * whole building white. The flash is reserved for a hit that moved the bar
+ * enough to see, which is what makes the two readable as different events
+ * rather than as one event with an invisible magnitude.
+ */
+export function damageBuilding(
+  world: World,
+  b: Building,
+  amount: number,
+  at: Vec2 | null = null,
+  from: Vec2 | null = null,
+): boolean {
   if (!b.standing) return false;
+
+  /*
+   * An indestructible building still *reacts*. It flashes, it spalls, and its
+   * bar is drawn -- it just never runs out. Swallowing the hit silently would
+   * be the bug that was reported in the first place ("they can be shot but the
+   * power bar never goes down"), only deliberate; the player has to be able to
+   * tell "my rounds are not landing" from "my rounds do not matter here".
+   */
+  if (b.indestructible) {
+    b.flash = Math.max(b.flash, 0.4);
+    if (at) world.fx.spall(at, from ?? b.centre);
+    return false;
+  }
+
   b.hp -= amount;
-  b.flash = 1;
+
+  const scratch = amount < b.maxHp * CONFIG.building.scratchFraction;
+  if (scratch && at) world.fx.spall(at, from ?? b.centre);
+  // A scratch still lights the building, faintly -- enough to place the hit,
+  // not enough to claim it landed.
+  b.flash = scratch ? 0.25 : 1;
+
   if (b.hp > 0) return false;
   collapse(world, b);
   return true;

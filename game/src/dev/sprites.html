@@ -1,0 +1,175 @@
+<!doctype html>
+<!--
+  The sprite gallery's shell. Copied into public/ by build.mjs under --watch and
+  nowhere else, so a production build has no such page rather than a hidden one.
+
+  Deliberately plain, and deliberately not styled like the game: this is
+  scaffolding, and a tool that looks like the thing it is inspecting is a tool
+  you will eventually mistake for the thing it is inspecting. The one rule it
+  does keep is the important one -- nothing here is allowed to smooth a pixel.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>sprites — Boots &amp; Bullets</title>
+    <style>
+      :root {
+        --ink: #d8d8d0;
+        --dim: #8a8a80;
+        --bg: #1b1b18;
+        --panel: #24241f;
+        --line: #3a3a32;
+        --hot: #e0c060;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        display: grid;
+        grid-template-columns: 200px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+      a { color: var(--hot); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      /* --- the rail */
+      #rail {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 14px 12px;
+        background: var(--panel);
+        border-right: 1px solid var(--line);
+      }
+      #rail h1 { font-size: 13px; margin: 0 0 12px; letter-spacing: 0.08em; }
+      #rail label { display: block; color: var(--dim); margin: 14px 0 4px; font-size: 11px; }
+      #search, #scale {
+        width: 100%;
+        background: #15150f;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        padding: 4px 6px;
+        font: inherit;
+      }
+      #beds { display: flex; flex-wrap: wrap; gap: 4px; }
+      .swatch {
+        background: #15150f;
+        color: var(--dim);
+        border: 1px solid var(--line);
+        padding: 2px 6px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .swatch.on { color: #15150f; background: var(--hot); border-color: var(--hot); }
+      .count { color: var(--dim); }
+      .total { color: var(--dim); margin-top: 16px; }
+
+      /* --- the tabs */
+      #content { min-width: 0; }
+      #tabs {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        padding: 10px 20px 0;
+        background: var(--bg);
+        border-bottom: 1px solid var(--line);
+      }
+      .tab {
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+        background: none;
+        color: var(--dim);
+        border: 1px solid transparent;
+        border-bottom: none;
+        padding: 6px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .tab:hover { color: var(--ink); }
+      /* An empty tab is dimmer but still a button: clicking it says where the
+         thing you are about to draw is meant to go. */
+      .tab.bare { opacity: 0.45; }
+      .tab.on {
+        color: var(--hot);
+        background: var(--panel);
+        border-color: var(--line);
+        opacity: 1;
+      }
+
+      /* --- the sheet */
+      #main { padding: 16px 20px 120px; }
+      h2 {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--dim);
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 4px;
+        margin: 24px 0 12px;
+      }
+      /*
+        Cells take the width of what is in them rather than a column of a fixed
+        grid. A hut is 36px wide and comes as four stages of damage, and the
+        only arrangement in which damage means anything is side by side -- on a
+        260px column that wraps into a vertical stack and stops being a
+        sequence. A man is 13px and gets a small cell. Both are right.
+      */
+      .grid { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+      .cell {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 8px;
+        max-width: 100%;
+      }
+      .cell-id { display: block; font-size: 11px; margin-bottom: 6px; word-break: break-all; }
+      .cell-note { color: var(--dim); font-size: 11px; margin-top: 6px; }
+      /*
+        The one line that matters on this page. Every canvas here is a game
+        sprite blown up by an integer, and a browser that resamples it is
+        showing something the game cannot draw.
+      */
+      canvas { image-rendering: pixelated; display: block; }
+      .strip { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
+      .empty { color: var(--dim); }
+
+      /* --- one sprite */
+      .detail { max-width: 1000px; }
+      .back { display: inline-block; margin-bottom: 16px; }
+      .detail-head h1 { font-size: 18px; margin: 0 0 6px; word-break: break-all; }
+      .meta { color: var(--dim); margin-bottom: 20px; }
+      .meta.bad { color: #ff8060; }
+      .bed-grid { display: flex; flex-wrap: wrap; gap: 18px; }
+      .bed-box { background: #15150f; border: 1px solid var(--line); padding: 8px; }
+      .bed-name { color: var(--dim); font-size: 11px; margin-top: 6px; text-align: center; }
+      .zooms { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+      .zoom-label { color: var(--dim); font-size: 11px; text-align: center; margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <aside id="rail">
+      <h1>SPRITES</h1>
+      <label for="search">filter</label>
+      <input id="search" type="search" placeholder="hut, palm, sniper…" autocomplete="off" />
+      <label for="scale">zoom</label>
+      <select id="scale"></select>
+      <label>ground</label>
+      <div id="beds"></div>
+    </aside>
+    <div id="content">
+      <nav id="tabs"></nav>
+      <main id="main"></main>
+    </div>
+    <script type="module" src="/sprites.js"></script>
+  </body>
+</html>

@@ -1,4 +1,6 @@
-import { isSolidAt } from './map.js';
+import { CONFIG } from '../config.js';
+import { isSolidAt, tileAt } from './map.js';
+import { TILES } from './tiles.js';
 import type { GameMap } from './map.js';
 import type { Vec2 } from '../types.js';
 
@@ -9,6 +11,8 @@ import type { Vec2 } from '../types.js';
  */
 export interface FlowField {
   goal: Vec2;
+  /** Whether this field was built for someone who can cross deep water. */
+  swims: boolean;
   /** Cost-to-goal per tile; Infinity where unreachable. */
   dist: Float64Array;
   /** Index of the next tile on the way to the goal, or -1. */
@@ -16,6 +20,23 @@ export interface FlowField {
   width: number;
   height: number;
 }
+
+/**
+ * Is this tile in the way, for someone who moves like this?
+ *
+ * The one place the swimming rule is expressed. `isSolidAt` is unchanged and
+ * still says "you cannot put anything here"; this says "you cannot walk here",
+ * and those two stopped being the same question the moment deep water became
+ * crossable. Everything that *places* something keeps asking the first one.
+ */
+export const blocksMovement = (map: GameMap, tx: number, ty: number, swims: boolean): boolean => {
+  if (!isSolidAt(map, tx, ty)) return false;
+  return !(swims && TILES[tileAt(map, tx, ty)].swim);
+};
+
+/** Multiplier on a tile's search cost; water is a shortcut you pay for. */
+const stepCost = (map: GameMap, tx: number, ty: number): number =>
+  (TILES[tileAt(map, tx, ty)].swim ? CONFIG.swim.cost : 1);
 
 // 8-way neighbours. Diagonals cost sqrt(2) and are only used when both
 // orthogonal partners are open, so units never clip a tree corner.
@@ -75,7 +96,7 @@ class Heap {
   }
 }
 
-export function buildFlowField(map: GameMap, goal: Vec2): FlowField {
+export function buildFlowField(map: GameMap, goal: Vec2, swims = false): FlowField {
   const { width, height } = map;
   const dist = new Float64Array(width * height).fill(Infinity);
   const next = new Int32Array(width * height).fill(-1);
@@ -98,12 +119,15 @@ export function buildFlowField(map: GameMap, goal: Vec2): FlowField {
       const nx = cx + dx;
       const ny = cy + dy;
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-      if (isSolidAt(map, nx, ny)) continue;
+      if (blocksMovement(map, nx, ny, swims)) continue;
       // No cutting diagonally past a corner.
-      if (dx !== 0 && dy !== 0 && (isSolidAt(map, cx + dx, cy) || isSolidAt(map, cx, cy + dy))) continue;
+      if (dx !== 0 && dy !== 0
+        && (blocksMovement(map, cx + dx, cy, swims) || blocksMovement(map, cx, cy + dy, swims))) continue;
 
       const ni = ny * width + nx;
-      const nd = cd + cost;
+      // Water costs several times its length, so a bridge a short way off is
+      // still the route and only a long detour is worth getting wet for.
+      const nd = cd + cost * stepCost(map, nx, ny);
       if (nd < dist[ni] - 1e-9) {
         dist[ni] = nd;
         next[ni] = cur;   // the field flows backwards, toward the goal
@@ -112,7 +136,7 @@ export function buildFlowField(map: GameMap, goal: Vec2): FlowField {
     }
   }
 
-  return { goal: { x: goal.x, y: goal.y }, dist, next, width, height };
+  return { goal: { x: goal.x, y: goal.y }, swims, dist, next, width, height };
 }
 
 const tileIndex = (map: GameMap, p: Vec2): number => {
@@ -128,7 +152,7 @@ const tileIndex = (map: GameMap, p: Vec2): number => {
  * like it is snapped to a tile grid -- and falls back to the field otherwise.
  */
 export function flowTarget(field: FlowField, map: GameMap, p: Vec2, radius: number): Vec2 | null {
-  if (hasWalkableLine(map, p, field.goal, radius)) return field.goal;
+  if (hasWalkableLine(map, p, field.goal, radius, field.swims)) return field.goal;
 
   const i = tileIndex(map, p);
   if (i < 0 || !Number.isFinite(field.dist[i])) return null;
@@ -141,36 +165,36 @@ export function flowTarget(field: FlowField, map: GameMap, p: Vec2, radius: numb
     const nx = node % field.width;
     const ny = (node - nx) / field.width;
     const c = { x: (nx + 0.5) * map.tile, y: (ny + 0.5) * map.tile };
-    if (step === 0 || hasWalkableLine(map, p, c, radius)) best = c;
+    if (step === 0 || hasWalkableLine(map, p, c, radius, field.swims)) best = c;
     node = field.next[node];
   }
   return best;
 }
 
 /** Samples a circle of the given radius along the segment; false if it clips solid terrain. */
-export function hasWalkableLine(map: GameMap, a: Vec2, b: Vec2, radius: number): boolean {
+export function hasWalkableLine(map: GameMap, a: Vec2, b: Vec2, radius: number, swims = false): boolean {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const len = Math.hypot(dx, dy);
-  if (len < 0.0001) return !circleBlocked(map, a.x, a.y, radius);
+  if (len < 0.0001) return !circleBlocked(map, a.x, a.y, radius, swims);
 
   const stepCount = Math.ceil(len / (map.tile * 0.5));
   for (let s = 0; s <= stepCount; s++) {
     const t = s / stepCount;
-    if (circleBlocked(map, a.x + dx * t, a.y + dy * t, radius)) return false;
+    if (circleBlocked(map, a.x + dx * t, a.y + dy * t, radius, swims)) return false;
   }
   return true;
 }
 
 /** True if a circle at (x, y) overlaps any solid tile. */
-export function circleBlocked(map: GameMap, x: number, y: number, radius: number): boolean {
+export function circleBlocked(map: GameMap, x: number, y: number, radius: number, swims = false): boolean {
   const minTx = Math.floor((x - radius) / map.tile);
   const maxTx = Math.floor((x + radius) / map.tile);
   const minTy = Math.floor((y - radius) / map.tile);
   const maxTy = Math.floor((y + radius) / map.tile);
   for (let ty = minTy; ty <= maxTy; ty++) {
     for (let tx = minTx; tx <= maxTx; tx++) {
-      if (!isSolidAt(map, tx, ty)) continue;
+      if (!blocksMovement(map, tx, ty, swims)) continue;
       // Closest point on the tile box to the circle centre.
       const cx = Math.max(tx * map.tile, Math.min(x, (tx + 1) * map.tile));
       const cy = Math.max(ty * map.tile, Math.min(y, (ty + 1) * map.tile));
@@ -186,7 +210,7 @@ export function circleBlocked(map: GameMap, x: number, y: number, radius: number
  * A* between two world points, used by enemies that get wedged on scenery.
  * Enemies steer directly most of the time; this is the escape hatch.
  */
-export function findPath(map: GameMap, from: Vec2, to: Vec2, limit = 3000): Vec2[] {
+export function findPath(map: GameMap, from: Vec2, to: Vec2, limit = 3000, swims = false): Vec2[] {
   const { width, height } = map;
   const startI = tileIndex(map, from);
   const goalI = tileIndex(map, to);
@@ -224,10 +248,11 @@ export function findPath(map: GameMap, from: Vec2, to: Vec2, limit = 3000): Vec2
       const nx = cx + dx;
       const ny = cy + dy;
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-      if (isSolidAt(map, nx, ny)) continue;
-      if (dx !== 0 && dy !== 0 && (isSolidAt(map, cx + dx, cy) || isSolidAt(map, cx, cy + dy))) continue;
+      if (blocksMovement(map, nx, ny, swims)) continue;
+      if (dx !== 0 && dy !== 0
+        && (blocksMovement(map, cx + dx, cy, swims) || blocksMovement(map, cx, cy + dy, swims))) continue;
       const ni = ny * width + nx;
-      const tentative = gScore[cur] + cost;
+      const tentative = gScore[cur] + cost * stepCost(map, nx, ny);
       if (tentative < gScore[ni] - 1e-9) {
         gScore[ni] = tentative;
         cameFrom[ni] = cur;

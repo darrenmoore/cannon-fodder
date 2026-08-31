@@ -16,7 +16,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Cannon Fodder</title>
+    <title>Boots &amp; Bullets</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/style.css" />
     <!--
@@ -46,12 +46,22 @@
       </div>
     </div>
 
+    <!--
+      Every transition in this game passes through black, and the black has to
+      cover the *screen* rather than the battlefield. The fade used to be
+      painted on the canvas, which left the sidebar lit over the top of it: the
+      map went out and six names and a grenade count stayed on, which reads as a
+      rendering fault rather than as an ending. This sits over the stage and
+      under the overlay, so the results panel and the briefing arrive on it.
+    -->
+    <div id="blackout"></div>
+
     <div id="overlay" hidden><div id="overlay-card"></div></div>
     <div id="sheet" hidden></div>
 
     <div id="menu" hidden>
       <div id="menu-inner">
-        <h1>Cannon&nbsp;Fodder</h1>
+        <h1>Boots&nbsp;&amp;&nbsp;Bullets</h1>
         <p class="menu-sub">War has never been so much fun. Pick a mission.</p>
         <div id="menu-actions"></div>
         <div id="menu-difficulty"></div>

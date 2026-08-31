@@ -1,7 +1,7 @@
-# Cannon Fodder — prototype
+# Boots & Bullets
 
-A browser prototype of Sensible Software's *Cannon Fodder* (1993): a top-down,
-mouse-driven squad shooter. Herd six fragile soldiers across a scrolling map,
+A browser game cut to the pattern of Sensible Software's *Cannon Fodder*
+(1993): a top-down, mouse-driven squad shooter. Herd six fragile soldiers across a scrolling map,
 click to move, click an enemy to engage, and try not to lose all of them.
 
 Eight missions across jungle, desert and arctic, each built around one new idea,
@@ -63,7 +63,7 @@ people — a mission id, a difficulty, a bucket:
 | `win/…` and `loss/…` | how far anybody actually gets |
 | `session/<bucket>` | how long a visit lasted, in coarse bands |
 
-[`src/analytics.ts`](game/src/analytics.ts) sends them, and the whole module
+[`src/analytics.ts`](game/src/shell/analytics.ts) sends them, and the whole module
 no-ops when the script is absent — an ad blocker, or localhost, where GoatCounter
 deliberately counts nothing so development does not pollute the numbers. The
 numbers therefore undercount, which is the accepted price of a counter that can

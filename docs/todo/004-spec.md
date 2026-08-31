@@ -216,7 +216,7 @@ squad it declares.
 
 ---
 
-## Batch G — mission mechanics as data
+## Batch G — mission mechanics as data — **DONE**
 
 The brief's real request: *"make sure these elements are coded in so they are
 flexible, perhaps in the map level stuff, meaning we can generate different
@@ -294,7 +294,7 @@ Difficulty carries this mostly through *size*, not schedule (`CONFIG.wave.pace`)
 applying `spawnInterval` whole would have landed all five Elite waves inside the
 first third of a 120-second mission and left the rest of the clock silent.
 
-### G4. A covert objective — *and a mission for it*
+### G4. A covert objective — **DONE**
 
 `objective: covert` — reach the extraction with **no kills**. Firing is allowed;
 killing fails the mission the moment it happens.
@@ -310,7 +310,44 @@ briefing says so before the player finds out the hard way; the new missions
 generate reproducibly from their seeds; and the completability flood fill proves
 a route to the extraction that never has to pass through a garrison.
 
-### G5. Swimming — *decided*
+**Verified.** `objective: covert` wins like `reach` and is failed by a count
+rather than an event -- `w.kills > 0` -- so a man killed by a mine, a barrel or
+his own side's grenade compromises the approach as thoroughly as one shot
+deliberately. Driven in a browser: one body ends it on the spot with the squad
+all six alive, and the panel says *"a covert approach is over the moment it
+makes a body"* rather than claiming a wipe-out. The rule is stated twice before
+a shot is fired -- on the mission card and in the briefing -- and the sidebar
+carries the running verdict the whole way.
+
+**The mission is *Softly Softly*** (order 10, jungle, seed 664218), and it is
+built the opposite way round from every other map here: the lane is drawn first
+and the garrison placed into whatever pockets it leaves, eleven tiles clear of
+both the lane and the ground the squad spawns on. Eleven is not arbitrary -- a
+rifleman's aggro radius is 132px and his range 88px, so a man at his post cannot
+see the route, let alone reach it. There are no snipers on it for the same
+reason: a sniper reaches 190px and would make the lane a shooting gallery from
+outside his own clearance. The two huts are pushed out past `spawnAggroRange`,
+so waking them is the player's own idea.
+
+**Both the generator and `npm run check` prove the claim independently of the
+construction that made it**: the ordinary walkable flood fill with one extra
+refusal -- no tile within eight of a sentry, which is that same aggro radius
+over a 16px tile -- has to still reach the extraction, and has to still contain
+every squad spawn. It caught a real failure the first time: measuring clearance
+from the lane's centre line ignored that `squad()` scatters six men over a
+radius-four pad, and one of them started inside a garrison.
+
+Two attempts at the terrain. The first was an open bowl, which made the no-kill
+rule a punishment rather than a way to play; the map is now tall grass wall to
+wall with the sentries standing in cleared pockets. Grass hides you without
+stopping a bullet, so on this one mission cover is somewhere to *not be seen*
+rather than somewhere to shoot from -- and a sentry you can see and walk around
+is the point, where one hidden in the same cover would be an ambush.
+
+The one-man mission asked for in the same decision, **Lone Wolf**, shipped with
+Batch I's `squad:` header.
+
+### G5. Swimming — **DONE**
 
 **Everyone swims.** Deep water stops being a wall and becomes a bad idea: slow,
 unable to shoot, and drawn low in the water the way wading already draws a man
@@ -340,6 +377,36 @@ that a mission can be completed on foot — is still what we want proven.
 swimming, and is visibly in it; enemies do the same; hostages and spawns never
 enter it; and `npm run check` still proves every mission completable.
 
+**Verified.** Deep water keeps `solid: true` and gains `swim: true`; the one new
+rule is `blocksMovement(map, tx, ty, swims)` in pathfind.ts, and every query
+that *places* something still asks `isSolidAt`. Swimming is expressed as a
+deeper kind of wading, which is what makes "cannot fire" free -- the rule that a
+wading man holds his rifle clear of the water already existed in four places.
+
+Driven in a browser on River Run: the squad crosses a seven-tile channel it used
+to be walled out of, all six reach the far bank, nobody is left floating, and
+not one round is fired while anybody is swimming. An enemy told to investigate
+the far side swims it too. A hostage put on the wrong side of the water walks
+round rather than into it, and nothing a building produced ever appeared in the
+river. A tile of water costs the route planner four tiles of land
+(`CONFIG.swim.cost`), measured over 270 water tiles of a live field, so a squad
+sent over a bridge that is right there still walks the bridge -- 0 swimming
+steps -- while a squad with no bridge nearby swims.
+
+**One bug this uncovered, which had nothing to do with water and everything to
+do with it.** Every "hold position" in the game is decided without asking what
+the ground is: an enemy that has closed to its preferred range stops, a soldier
+with a firing solution stops. Deep water does not block a line of fire, so both
+now trigger *mid-river*, where the man cannot actually shoot. The first enemy
+tested swam out and then floated in the channel for the rest of the mission.
+`bankFrom` fixes it: a swimmer is never given "nowhere", he is given the nearest
+dry land, probing the way he was already going first so he finishes the crossing
+instead of turning round in it.
+
+River Run is unchanged as a file and should be replayed on the strength of this:
+its bridges were chokepoints because the river was a wall, and they are now the
+fast way over with a slow, defenceless alternative beside them.
+
 ---
 
 ## Batch H — presentation
@@ -360,6 +427,22 @@ elements, fixed here rather than at the moment a round gets hard:
   judged until a human has agreed one captured frame is the right frame.
 - **Boundary.** As `/gauntlet`'s default. Six rounds, revert anything the critic
   does not call an improvement, stop when the ranked list is exhausted.
+
+**Round zero is done.** `tools/moment.mjs` (`npm run moments`) photographs
+eleven moments, one per gap, by freezing the simulation and advancing it an
+exact number of steps -- so frame 4 of an explosion is frame 4 on every run.
+Every frame asserts what it captured and says so beside the image. The full
+account, and the two harness faults it caught in itself, are in
+[loop.md](../loop.md#run-2--the-presentation-batch).
+
+It also found that **gap 6 cannot be closed inside this boundary**: the gap is
+sand against water in the desert palette, and neither desert mission has a drop
+of water on it. Closing it needs a desert map with a shoreline, which is a
+mission-design change, not a presentation one.
+
+The loop itself does not start until a human has agreed one captured frame is
+the right frame. That is run 1's rule and no session gets to waive it for
+itself.
 
 **A correction to the pixel laws, from `elements/target.jpg`.** The original's
 aim marker is a *circle* — a red ring with four spokes. So circles are not the
@@ -394,7 +477,7 @@ each governs:
    navy, at the shoreline where the contrast should be strongest.
 7. **The bazooka man carries a rifle** as far as the eye can tell.
 
-### H1. Phase complete
+### H1. Phase complete — **DONE**
 
 Reference: `docs/original-images/elements/phase-complete.jpg`. The banner flies
 up from the bottom and settles centre screen; the surviving squad turns to face
@@ -404,6 +487,22 @@ already has the machinery.
 
 **Done when:** winning plays the banner and the celebration, a click moves on,
 and nothing about it can be missed by a player who looked away for a second.
+
+**Done**, across rounds 1-3 of the presentation loop and the pass after it. The
+banner is a plotted display serif (`render/bigfont.ts`) drawn over the live
+battlefield in screen space, flying up on an ease-out, with the results panel
+held back for `CONFIG.banner.hold` so the moment exists at all. Every survivor
+turns to face the camera and stops -- the one moment in the game where the squad
+looks out of the screen rather than at the ground it is crossing -- everybody
+bobs out of step with everybody else, and the longest-serving survivor jumps.
+Then the whole screen fades to black and the results arrive on it, because every
+transition in the original passes through black.
+
+The fade is the one place the no-alpha rule is deliberately spent: a whole-screen
+fade to black is a thing the reference does itself, and there is no edge in it
+for the eye to catch as soft.
+
+Not done: a fanfare. `music.ts` has the machinery and `sfxWin` already fires.
 
 ### H2. Next mission, and black
 
@@ -426,13 +525,29 @@ rockets alike. The throw itself gets an arc worth watching.
 **Done when:** the same explosion reads at every scale it is used at, and a
 thrown grenade is legible from the moment it leaves the hand.
 
-### H5. Missing men and machines
+### H5. Missing men and machines — *camo done, bazooka open*
 
 Camo enemies (green, hard to see against grass, no tougher than a rifleman);
 the bazooka man made to read as one. Vehicles and a helicopter are named in the
 brief and are a batch of their own — noted, not specced.
 
-### H6. Wounded — enemies only
+**Camo is done.** A trait rolled off a new difficulty lever rather than a new map
+marker, so no mission file changes and the amount of it is a difficulty decision:
+none on Rookie, half the riflemen on Elite. Riflemen only -- a sniper is already
+hidden by not moving, and a man with a silver tube on his shoulder is not hiding
+from anybody. Verified: identical stats to a plain rifleman, never on a
+specialist.
+
+The palette is pitched at *tree shadow*, deliberately below the grass rather than
+at it. Matching the grass would have made him invisible rather than hard to see,
+and matching it loosely would have made him look like one of your own -- the
+squad is green too. Theirs is a lighter green with a lime kit and rank pips over
+their heads.
+
+**The bazooka man is still open.** He is gap 7 of the presentation loop and has a
+capture frame (`men`) waiting for it.
+
+### H6. Wounded — enemies only — **DONE**
 
 Occasionally an *enemy* is hit and not killed: down, bleeding, screaming,
 needing a second round. Still counts toward the objective while alive. Your own
@@ -445,6 +560,28 @@ death alarm: leaving one alive keeps drawing his friends to you.
 **Done when:** it happens rarely enough to be an event, never on the player's
 own men without the same rule, and a wounded man cannot be forgotten about and
 leave a mission uncompletable.
+
+**Verified.** A killing hit wounds instead of killing about one time in seven
+(`CONFIG.enemy.woundChance`), measured at 17.7% over three hundred rounds. He
+lies where he fell, cannot move or shoot, still counts against the objective, and
+screams every couple of seconds -- an alarm at 70% of a gunshot's reach aimed at
+*his* position, so the place you shot somebody becomes the place everybody walks
+to. Four idle men within earshot all came looking, all of them to his spot. Only
+a second hit makes it a kill.
+
+**Never on your own.** Two hundred rounds through the same soldier: two hundred
+deaths, zero woundings. The one-hit bargain is enforced in `damage` rather than
+by convention.
+
+He cannot strand a mission, because he cannot move: he stays exactly where he was
+shot, on ground the player has already reached. And he is told apart from the
+corpses around him by *movement* -- a one-pixel twitch on a per-man cycle --
+rather than by a marker over his head, which would have been a label on the world
+instead of a thing in it.
+
+**One thing this does to G4 for free:** a wounding is not a kill, so putting a
+sentry down does not end a covert run. Leaving him screaming is how it ends
+anyway.
 
 ---
 
@@ -503,3 +640,34 @@ run.
 The skills this leans on are checked in: `/spec` wrote this document, `/gauntlet`
 runs H, `/grill` is one round of its judgement on demand, and `/playtest` grows
 the test level in Batch I.
+
+---
+
+## Read ahead: what [100](100-improvements.md) does to Batch H
+
+005 is not being built yet, but it lands on the same chrome H does, and three of
+its lines change how H should be built rather than what it is.
+
+**H2's black screen is a destination, not a moment.** 005 routes both *Play now*
+and *Level select* through it from the intro. Build it as a screen that can be
+shown with a mission on it and faded in from anywhere, not as a step welded into
+the between-missions sequence. Fade to black is confirmed as the transition.
+
+**H3 stops at the font.** 005 restyles the settings screen and re-lays the menu
+buttons, so H3 should set the family and the tokens and leave the layout alone.
+Restyling chrome that is about to be rebuilt is the one obvious way to waste a
+round.
+
+**Do not polish Boot Hill.** 005 removes it. H1's results panel and the briefing
+sit next to it -- the briefing has a "N on Boot Hill" line and the sidebar has
+the way in -- so anything H does there is thrown away. Open question for 005's
+spec: whether the *fallen* go with it or only the screen does, because the
+campaign records them and the roster depends on them not coming back.
+
+**G4 and G5 are untouched by any of it**, which is why they stay next.
+
+One thing 005 will need that this batch could leave ready: its intro is a live
+CPU-vs-CPU mission used as wallpaper, so it wants a map that is not a mission --
+no squad, no objective, never in the list. Batch I gave `dev: true` exactly one
+extra kind of map (`server.js` reads it as a boolean); a third kind will want
+that widened rather than another boolean beside it.

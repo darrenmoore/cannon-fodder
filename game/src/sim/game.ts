@@ -7,6 +7,7 @@ import { stepHostages } from './hostages.js';
 import { stepMines } from './mines.js';
 import { resolvePhase } from './objectives.js';
 import { stepPickups } from './pickups.js';
+import { applyPressure, stepPressure } from './pressure.js';
 import { resolveOverlaps } from './steering.js';
 import { classifyClick, orderAttack, orderDemolish, orderMove, stepSoldiers } from './troops.js';
 import { createWorld, livingSoldiers, squadCentre } from './world.js';
@@ -98,6 +99,11 @@ export class Game {
     w.orderMarker = Math.max(0, w.orderMarker - dt);
     w.grenadeCooldown = Math.max(0, w.grenadeCooldown - dt);
 
+    // Both before the AI runs: the pressure decides what this step's levers
+    // are, and every system below reads them rather than the base.
+    stepPressure(w, dt);
+    applyPressure(w);
+
     // Rebuilt before the AI runs, so separation queries see this step's layout.
     w.hash.rebuild(w.actors);
 
@@ -129,7 +135,18 @@ export class Game {
     const before = w.phase;
     resolvePhase(w, dt);
     if (w.phase !== before) {
-      if (w.phase === Phase.Won) sfxWin();
+      if (w.phase === Phase.Won) {
+        sfxWin();
+        // They turn and face you. It is the only moment in the game where the
+        // squad looks out of the screen instead of at the ground they are
+        // crossing, and it costs one line because the simulation stops stepping
+        // soldiers the instant the mission resolves -- so nothing overwrites it.
+        for (const s of livingSoldiers(w)) {
+          s.angle = Math.PI / 2;
+          s.vel.x = 0;
+          s.vel.y = 0;
+        }
+      }
       else if (w.phase === Phase.Lost) sfxLose();
       this.onResolved?.(w);
     }

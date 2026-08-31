@@ -8,11 +8,11 @@ import { SpatialHash } from './steering.js';
 import { EnemyKind, EnemyState, Faction, Phase, SoldierState } from '../types.js';
 import type { Deployment } from './campaign.js';
 import type { DifficultyId, Levers } from './difficulty.js';
-import type { GameMap } from './map.js';
+import type { GameMap, Zone } from './map.js';
 import type { FlowField } from './pathfind.js';
 import type {
   Actor, Building, Bullet, Crate, Enemy, EnemyStats, EnemyTraits, Grenade, Hostage, Mine,
-  Soldier, Vec2,
+  Soldier, Supply, Vec2,
 } from '../types.js';
 
 /**
@@ -25,6 +25,20 @@ export interface World {
   /** Difficulty profile with this mission's doctrine folded in. */
   levers: Levers;
   fog: Fog;
+  /**
+   * What difficulty and doctrine chose. Fixed for the mission, and what the
+   * menu describes -- `levers` is this with in-mission pressure folded in, and
+   * is what the systems read.
+   */
+  baseLevers: Levers;
+  /** Counts down to the next footfall the garrison can hear. */
+  stepNoise: number;
+  /** Kills made without leaving the spot. Hidden; see `sim/pressure.ts`. */
+  pressure: number;
+  /** The spot, for as long as they are on it. */
+  campAnchor: Vec2 | null;
+  /** Seconds the squad has held it. Kills only count once this passes `settle`. */
+  stillFor: number;
   /** Last position any enemy actually saw a soldier at, shared across them all. */
   lastKnown: Vec2 | null;
   lastKnownAge: number;
@@ -37,8 +51,10 @@ export interface World {
   crates: Crate[];
   mines: Mine[];
   hostages: Hostage[];
+  /** Objective items for a `collect` mission. See `Supply`. */
+  supplies: Supply[];
   buildings: Building[];
-  extraction: Vec2[];
+  extraction: Zone[];
   fx: Fx;
   hash: SpatialHash;
 
@@ -67,6 +83,16 @@ export interface World {
   enemyTotal: number;
   /** Counts down for `survive` missions. */
   timeLeft: number;
+  /**
+   * Seconds accumulated for a `hold` mission, and whether the zone is occupied
+   * right now.
+   *
+   * Held rather than derived from `time` because the clock only runs while
+   * somebody is standing in the zone -- which is the whole difference between
+   * `hold` and `survive`, and the reason leaving resumes rather than resets.
+   */
+  heldFor: number;
+  inZone: boolean;
   /** Waves already sent. Only ever advances; `map.waves.count` caps it. */
   wavesSent: number;
   /** Seconds until the next wave leaves the huts. */
@@ -88,6 +114,7 @@ const BASE_STATS: Record<EnemyKind, EnemyStats> = {
     preferredRange: CONFIG.enemy.preferredRange,
   },
   [EnemyKind.Sniper]: { ...CONFIG.sniper },
+  [EnemyKind.Officer]: { ...CONFIG.officer },
   [EnemyKind.Bazooka]: {
     speed: CONFIG.bazooka.speed,
     fireRange: CONFIG.bazooka.fireRange,
@@ -123,6 +150,9 @@ function rollTraits(levers: Levers, kind: EnemyKind): EnemyTraits {
     grenadier: mobile && Math.random() < levers.grenadiers,
     flank: mobile ? levers.flank * (0.5 + Math.random()) * 46 : 0,
     flankSide: Math.random() < 0.5 ? -1 : 1,
+    // Riflemen only. A sniper is already hidden by not moving, and a man with a
+    // silver tube on his shoulder is not hiding from anybody.
+    camo: mobile && Math.random() < levers.camo,
   };
 }
 
@@ -154,6 +184,10 @@ const spawnActor = (counter: { nextId: number }, pos: Vec2, faction: Faction, ra
   fireCooldown: 0,
   walkPhase: 0,
   wading: false,
+  canSwim: true,
+  swimming: false,
+  wounded: false,
+  screamTimer: 0,
   sliding: false,
   stagger: 0,
   deathTime: -1,
@@ -188,6 +222,7 @@ export function makeEnemy(
     stuck: 0,
     traits,
     investigate: null,
+    glance: null,
     searchTime: 0,
     idleTimer: Math.random() * 2,
     grenades: traits.grenadier ? CONFIG.enemy.grenadeCount : 0,
@@ -237,6 +272,7 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     ...map.enemySpawns.map((p) => makeEnemy(counter, p, EnemyKind.Rifle, nearestNode(p), levers)),
     ...map.sniperSpawns.map((p) => makeEnemy(counter, p, EnemyKind.Sniper, null, levers)),
     ...map.bazookaSpawns.map((p) => makeEnemy(counter, p, EnemyKind.Bazooka, null, levers)),
+    ...map.officers.map((p) => makeEnemy(counter, p, EnemyKind.Officer, null, levers)),
   ];
 
   // Higher difficulties thicken the garrison by doubling up on existing posts,
@@ -253,7 +289,23 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
   const buildings: Building[] = map.buildings.map((b, i) => {
     // An outpost is built to be held, so it takes as much killing as a factory.
     const hp = b.kind === 'hut' ? CONFIG.building.hutHp : CONFIG.building.factoryHp;
+    /*
+     * Two buildings in this game cannot be taken away, for opposite reasons.
+     *
+     * A **bunker** is a position the mission asks you to hold, and a position
+     * that can be demolished is a demolition puzzle wearing a defence
+     * objective's clothes.
+     *
+     * A **wave map's spawner** is the tap the schedule comes out of, and
+     * levelling it used to turn the tap down -- which read as the answer to
+     * every wave mission and made the back half of them trivial. Waves ramp
+     * now, and a ramp you can switch off is not a ramp. The huts still take
+     * fire, still flash, still show a bar; the bar simply never empties, which
+     * is the honest signal that this is not the way through.
+     */
+    const indestructible = b.kind === 'bunker' || (map.waves !== null && b.role === 'spawner');
     return {
+      indestructible,
       damageStage: 0,
       ruinAge: 0,
       id: i,
@@ -290,6 +342,11 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     difficulty,
     levers,
     fog: new Fog(map, levers.vision),
+    baseLevers: { ...levers },
+    stepNoise: 0,
+    pressure: 0,
+    campAnchor: null,
+    stillFor: 0,
     lastKnown: null,
     lastKnownAge: 0,
     soldiers,
@@ -303,6 +360,7 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     ],
     mines: map.mines.map((p) => ({ pos: { ...p }, alive: true, fuse: -1, triggered: false })),
     hostages,
+    supplies: map.supplies.map((p) => ({ pos: { ...p }, alive: true, collected: false })),
     buildings,
     extraction: map.extraction.map((p) => ({ ...p })),
     fx: new Fx(),
@@ -323,6 +381,8 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     kills: 0,
     enemyTotal: enemies.length,
     timeLeft: map.duration,
+    heldFor: 0,
+    inZone: false,
     wavesSent: 0,
     waveTimer: map.waves ? CONFIG.wave.lead : 0,
     status: '',

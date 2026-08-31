@@ -1,0 +1,68 @@
+name: Not a Sound
+theme: jungle
+objective: rescue
+doctrine: garrison
+order: 15
+mechanic: a rescue nobody hears
+brief: Walk three prisoners home through the grass. One body and it is over.
+nokill: true
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTT"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTT"TT"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT""""T"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT......""TTTTTTT"T""TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..."....."""..."TTTT"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.....""""..""""...""."""""""""""""."TTTTTTTTTTTTTTTTTTTTTTTTT....T.TTTTT
+TTTTTTTTTTTTTTTT....."""""TTTT........"""""""""""""......"""""""""""""""."...TTTTTTTTTTTTTTTT".......TTTTTTT
+TTTTT..TT............""""""""........"""""""""""""""...."""""""""""""""""........TTTTTTTTTT"T.T.....TT.TTTTT
+TTT.T...T...........""""""""........"""""""""""""""""..."""""""""""""""""".........""..."TT.........T..TTTTT
+TTTT...TT..........."""""""""......"""""""""""""""""""...."""""""""""""""""............................TTTTT
+TT.T..TT............"""""""""....."""""""""""""""""""""....""""""""""""""""............................TTTTT
+TTTTTTTT.............""""""""...."""""...TT.T"""""""""""....""""""""""""""...............E.......E.....TTTTT
+TTTTTTTT.............""""""""".""""""....TTT.T."""""""""""."""""""""""""""..E..........................TTTTT
+TTTTTTTT.....".""...."""""""""""""""........T."...""."""""""""".."""""".....................E..........TTTTT
+TTTTTTTTT....""""""".""""""""""""""..""....."""".."...""""""T"TT"""""""................................TTTTT
+TTTTTTTTT...."""""""""""""""""""""...".TT....""""".""T.""""""TTT""""............E...................T.TTTTTT
+TTTTTTTTT..""""""""""""""""""""""....TT".T...""""".TT""T"""""""".."..........E.....................TT..TTTTT
+TTTTTTTTT.""""."""""""""""""""".....TT"TTT..""""""."T."T"T"""""".................""".............T.TTTTTTTTT
+TTTTTTTTT."....""""""""""""""""......TTT"T"""""""".T"TTTT""""""""............."""""""""".."".....TTTTTTTTTTT
+TTTTTTTTT""...""""""""""""""""""......TTTT""""""".TTTTTT.."""""""........"..."""""""""""""""".....TTTTTTTTTT
+TTTTTTTTT""".""""""""""""""""""""....T.T"""""""""TTTT.T...""""""""."...."""""""""""""""."""""".....T..TTTTTT
+TTTTTTTTT."""""""""""""""""""""""........"""""""""T"TT.T....""""""""".""""""""""""""""..T""""....T..TTTTTTTT
+TTTTTTTT"."""""""""""""""""""".""........"""""""""""""......""""""""""""""""""""""""""""..TTT...TTT.TTTTTTTT
+TTTT........."""""""""""""""..............""""""""""""""...""""""""""""""""""""""""""""T.T"".T....TTTTTTTTTT
+TTT.....P.....""""..."""""""..............""""""""""""""..""""""""""""""""""""""""""T"""T"T..""...TTTTTTTTTT
+TT.P.......P...."....."..""......T..TT...T"""""""""""""""""""""""""""""""""""""""""""""TTTTTT."T"T.TTTTTTTTT
+TT........................"........T..TTTTT."""""""""""""""""""""""""""""""""""".""""T"T"TTT"TT.".".TTTTTTTT
+TT..........AA...................T.TTTTTTTTT"""""""""""""""""""""""""""""""""""..."".""TT.T""."...""T"TTTTTT
+TT.P........AA...................TTT.TT.TTT"""""""""""""""""""""""""""""""""""""......"T"""TTT"...""""TTTTTT
+TT........................TTT.....TTT.T.T."T"""""""""""""""""""""""".""""""""""""......"T""""T....""""TTTTTT
+TT.......P............TT.T."T.....TTTT...".T""""""""""".""""""""""".....""""""""""..."""""."".......""TTTTTT
+TT...................""TTTTT"T....TT.T....""."""""""""..."""""""""""."..""""""""".""""".............."TTTTTT
+TTTP..................TTTTTT................"""""""""...."".."""""""""""""""""""""""""...............TTTTTTT
+TTTT........T........."""TTTTT............."""""""""...........""""""..."""""""""""""""""""....H.H...TTTTTTT
+TTTTTTTT"T"..........TT"T"""T.............."""""""""............""""...."""""""""""""""""""...........TTTTTT
+TTTTTTTT"TT"".....TT.TT""T"...E...E........."""""""...."""......."""T..""""""""""""""""""""".........TTTTTTT
+TTTTTTT"TTTTT".TTT.TTTTT""..................""""""..."""""........."T...""".""""""""""""""""...H.....TTTTTTT
+TTTTTTT.T"TT""".T.T.TT"T""".......E.....""""""""""..""""""....E...TTTTTT""...""""""""""""""".........TTT.TT.
+TTTTTTTT."TT".T.TTTTTT"T"".............."""""""""""""""""""......""TTTT""...".""""""""""""""".......TTTTT.TT
+TTTTTTT."""T"TT...TT.T"T""..........".."""""""""""""""T"."""......".TTTT..."""""""""""""""""""TT.T..TTTTT.."
+TTTTTTT.""""".""..TTT"T.""""""....."""""""""""""""""T""T.."......T."TT"T..."""""""""""""""".TTT.T....TT""T..
+TTTTTTT""""".....ETT..T""""""""....""""T"""""""""".T"T..T.....E.E..."TT".."""""""""""""""""...".T....TTT""TT
+TTTTTTT.""".....T.TT.T."""""""""....""""""""""""""T"".............""""...""""""""""""""""""".T......"TTTTTTT
+TTTTTT...............T""""""""".......""TTTT""""T."TTTTT..........""......"""""""""""..""""".........TTTTTTT
+TTTTTT...........E..."""""""""""..."TT"TT.T"T""".T.TTTTT.TT......"""......."""""""""...""""""......."TTTTTTT
+TTTTTTT........E......""""""""""..."TTTTT"TTT"""""".T.T.TTT......"""........""""""""..""""""""......"TTTTTTT
+TTTTTTTT.............""""""""""".....TTT".""T."""".""TT"T....................".."""."."""""""........TTTTTTT
+TTTTTT..T...........""""""T"""........TTT.T.."""""TT"""........................."""""""""."""."".....TTTTTTT
+TTTTTT.T............""""".TTTTT.....T..TTTT"..""""""".T"......................."""""""""...""""".....TTTTTTT
+TTTTT.T.TT..........."TTTTTTTTTTTTTTTT.T.T.".."..""".."........................"""."......"""""...TTTTTTTTTT
+TTTTT.T............TTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.......................""TTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTT..T........TTTTTT..TTTTTTTTT".T.TTTTTTTTTTTTTTTTTTTTTTT..............."TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTT...TTTTTTTTT."TTTTTTTTTTTTTTTTTTTTTTTTTTTT........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTT.T.TTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

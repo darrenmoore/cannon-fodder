@@ -87,7 +87,6 @@ export class Input {
    * the mission: it was aimed at a panel, not at the map behind it. The gesture
    * layer cannot know that, so the shell says so.
    */
-  private swallowOrder = false;
   /** Heading from the FIRE thumbstick, or null when aiming with a cursor. */
   private stickDir: Vec2 | null = null;
 
@@ -219,7 +218,6 @@ export class Input {
     if (this.aim.arming) return;
     // The chord landed on the release; this tap must not also order the squad.
     if (kind === 'mouse' && this.rightDown) return;
-    if (this.swallowOrder) { this.swallowOrder = false; return; }
     this.queue.push({ type: 'order', world: this.toWorldPoint(at, kind, 0), queue: false });
   }
 
@@ -227,7 +225,6 @@ export class Input {
     // Appending a waypoint instead of replacing the order. Ice missions ask for
     // short moves, and a slippery surface is a bad place to need fast taps.
     if (this.aim.arming || settings().rules !== 'modern') return;
-    if (this.swallowOrder) { this.swallowOrder = false; return; }
     this.queue.push({ type: 'order', world: this.toWorldPoint(at, 'touch', 0), queue: true });
   }
 
@@ -330,9 +327,6 @@ export class Input {
     this.chorded = true;
     this.queue.push({ type: 'grenade' });
   }
-
-  /** The next order-producing press is discarded. See `swallowOrder`. */
-  swallowNextOrder(): void { this.swallowOrder = true; }
 
   recentre(): void { this.queue.push({ type: 'recentre' }); }
   select(soldier: number | 'all'): void { this.queue.push({ type: 'select', soldier }); }

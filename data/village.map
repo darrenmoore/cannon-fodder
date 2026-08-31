@@ -2,7 +2,7 @@ name: Village
 theme: jungle
 objective: demolish
 doctrine: hunters
-order: 6
+order: 8
 mechanic: enemy buildings
 brief: Huts keep sending out troopers. Grenades bring them down, rifles will not.
 tile: 16

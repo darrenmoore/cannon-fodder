@@ -1,0 +1,81 @@
+name: The Walled Town
+theme: desert
+objective: assassinate
+doctrine: patrol
+order: 14
+mechanic: streets, and one man in them
+brief: He is somewhere in the middle. Nothing else on this map has to die.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...T
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT...
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT............T..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....TTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTT................TTTT....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...TTT....TTTTTT
+TTTTTTTTT.................................TTTT.......................TTTTTTTTTTTTTTTT....T.TTTTTT.TTTTTT
+TTTTTTT...................................TTT..T..........................TTTTTTTT.........T.TT...TTTTTT
+TT..TTT.....................................TTT...................................................TTTTTT
+....TTT..........................................................................TTTT.............TTTTTT
+TT.TTTT.........................................................................T.TT..............TTTTTT
+T.TTTTT........................................................................TT.T.T.............TTTTTT
+TTTTTTT.........................................................................TTTTTTTT..........TTTTTT
+TTTTTTT........................................"""..............................TTTTT.T...........TTTTTT
+TTTTTTT........................................"""...............................T...T............TTTTTT
+TTTTTTT.........................................""..............................T..T..............TTTTTT
+TTTTTTT................................"......"....................................T..............TTTTTT
+TTTTTTT".............................."++++++++++++++++++++++...+++++++++++++++++++++.............TTTTTT
+TTTTTTT"...............................+............................................+.............TTTTTT
+TTTTTTT"...............................+............................................+.............TTTTTT
+TTTTTTT""..............................+..________________S_________________________+.............TTTTTT
+TTTTTT"""..............................+..__________________________________________+..............TTTTT
+TTTTTT"................................+..__...........__......E.....__...........__+..............TTTTT
+TTTTTT..........................T.T....+..__...........__............__...........__+..............TTTTT
+TTTTTT.........................T..T....+..__..hhh......__..hhh.......__..hhh......E_+..............TTTTT
+TTTTTT........................T.TT.....+..__..hhh......__.Ehhh.......__..hhh......__+..............TTTTT
+TTTTT..........................TTTTT...+..__..hhh......__..hhh.......__..hhh......__+...............TTTT
+TTTTT.........................TTTT.....+..__...........__............__...........__+..............TTTTT
+TTTTT...........................T......+..__...........__............__........E..__+.............TTTTTT
+TTTTT..................................+..__...........__............__...........__+..............TTTTT
+TTTT...................................+..__...........__............__...........__+...........T..TTTTT
+TTTT...................................+..__...........__............__...........__+...........T.TTTTTT
+TTTT..P..P.............................+..__...E.....E.__............__..........._B+...........TTT.TTTT
+TTTT..........P........................+..__...........__............__...........__+...........TT.TTTTT
+TTTTP.....................................__...........__............__...........__+..............TTTTT
+TTTT........P.............................__________________________________________+.............TTTTTT
+TTTT......................................__________________________________________+..............TTTTT
+TTTT...................................+..__...........__........E...__...........__+.............TTTTTT
+TTTT.......P....................c......+..__...E.......__............__...........__+.............TTTTTT
+TTTTT.................c................+..__..hhh..E...E_..hhh.......__..hhh......__+.............TTTTTT
+TTTTT..................................+..__..hhh......__..hhh.......__..hhh......__+.............TTTTTT
+TTTTTT..TT.......................T.....+..__..hhh......__..hhh.......__..hhh......__+............TTTTTTT
+TTTTTT..T.TT..........T.....TTTTT.TT...+..__......E....__............__...........__+............TTTTTTT
+TTTTTTTTTTT.TT......T..TT...TT..TTT.TT.+..__...........__............__...........__+............TTTTTTT
+TTTTTT..TTT.T......TTTTT...T.TTTTTTTTT.+..__..........._E............__..........E__+............TTTTTTT
+TTTTTTTTTT..T......TTTT......TTTTTTTT..+..__..E........__.....E......__...........__+............TTTTTTT
+TTTTTTT.TTT.T......"TT."T...T..TTTTTT..+..__.......C...__............__...........__+...........TTTTTTTT
+TTTTTTT.T........."T"""""T.....TTTTTTT.+..__...........__............__...........__+...........TTTTTTTT
+TTTTTTT..T.........T""T".....TT.TTTTTT.+..__...........__............__...........__+...........TTTTTTTT
+TTTTTTT.............."."......TT.TTTTTT+..__...........__............__...E.......__+...........TTTTTTTT
+TTTTTTT........................TT.TTTTT+..________________________________________..+............TTTTTTT
+T.TTT.T.........................T.T..TT+..________________________________________..+............TTTTTTT
+TTT.TT...........................T.....++++++++++++++++++++++...+++++++++++++++++++++............TTTTTTT
+TTT...T............................................T.TTT.........................................TTTTTTT
+TTTTTTT...............................................T..........................................TTTTTTT
+TTTTT.T.........................................................................................TTTTTTTT
+TTTTTTT......................................................................................T.TTTTTTTTT
+TTTTTTT.....................................................................................T.TTTTTTTTTT
+TTTTTTT..........................................................TTT.........................TTTTTTTTTTT
+TTTTTTT..........................................................TT..T......................T.TTTTTTTTTT
+TTTTTTT...........................................................TTT........................TTTTTTTTTTT
+TTTTTTT..........................................................T..T..........................TTTTTTTTT
+TTTTTTT............T............................................T..T..TTTTT..................T..TTTTTTTT
+TTTTTTT...........TT............................................TTTTTTTTTTTTTTTT..............T.TTTTTTTT
+TTTTTTTTTTTTTTTTTTTT..T......................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.............TTTTTTTT
+TTTTTTTTTTTTTTTTTT...TTTT...............".TTTTTTTTT.TT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..........TTTTTTTT
+TTTTTTTTTTTTTTTTTT.T.T..TTTTT.......".TTTTTTTTTTTTTT....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTT.T.....TTTTTTTTTTTTTTTTTTTTTTTTTT.T..T.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTT.T.T..TTTTTTTTTTTTTTTTTTTTT.TTTTT....T.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTT.T.TTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.T.TTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

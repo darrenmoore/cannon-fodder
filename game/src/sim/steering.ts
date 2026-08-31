@@ -13,6 +13,11 @@ import type { Actor, Vec2 } from '../types.js';
  *
  * Terrain modulates all of it: quicksand and water slow you to a crawl, roads
  * speed you up, and ice cuts your acceleration so you slide through turns.
+ *
+ * Deep water is the exception to "never end a step inside scenery": it is solid
+ * to everything that decides *where* to put a thing, and passable to an actor
+ * who swims. Every collision query here therefore asks with `actor.canSwim`,
+ * and every query outside this file that is choosing a destination does not.
  */
 
 const cellKey = (cx: number, cy: number): number => (cx * 73856093) ^ (cy * 19349663);
@@ -122,7 +127,10 @@ export function steer(
   }
 
   const terrain = defAtWorld(map, actor.pos.x, actor.pos.y);
+  // Swimming is a deeper kind of wading, so everything that already refused to
+  // let a wading man shoot or throw refuses it for a swimming one too.
   actor.wading = terrain.wade;
+  actor.swimming = terrain.swim;
   actor.sliding = terrain.slippery;
 
   const speed = opts.speed * terrain.speed;
@@ -145,12 +153,12 @@ export function moveWithCollision(actor: Actor, map: GameMap, dt: number): void 
 
   if (stepX !== 0) {
     const nx = actor.pos.x + stepX;
-    if (circleBlocked(map, nx, actor.pos.y, actor.radius)) actor.vel.x = 0;
+    if (circleBlocked(map, nx, actor.pos.y, actor.radius, actor.canSwim)) actor.vel.x = 0;
     else actor.pos.x = nx;
   }
   if (stepY !== 0) {
     const ny = actor.pos.y + stepY;
-    if (circleBlocked(map, actor.pos.x, ny, actor.radius)) actor.vel.y = 0;
+    if (circleBlocked(map, actor.pos.x, ny, actor.radius, actor.canSwim)) actor.vel.y = 0;
     else actor.pos.y = ny;
   }
 
@@ -193,21 +201,21 @@ export function resolveOverlaps(actors: Actor[], hash: SpatialHash, map: GameMap
         const overlap = minDist - Math.sqrt(d2);
         const half = overlap * 0.5;
 
-        const aOk = !circleBlocked(map, a.pos.x - ux * half, a.pos.y - uy * half, a.radius);
-        const bOk = !circleBlocked(map, b.pos.x + ux * half, b.pos.y + uy * half, b.radius);
+        const aOk = !circleBlocked(map, a.pos.x - ux * half, a.pos.y - uy * half, a.radius, a.canSwim);
+        const bOk = !circleBlocked(map, b.pos.x + ux * half, b.pos.y + uy * half, b.radius, b.canSwim);
 
         if (aOk && bOk) {
           a.pos.x -= ux * half; a.pos.y -= uy * half;
           b.pos.x += ux * half; b.pos.y += uy * half;
         } else if (bOk) {
           // A is pinned against scenery, so B absorbs the whole correction.
-          if (!circleBlocked(map, b.pos.x + ux * overlap, b.pos.y + uy * overlap, b.radius)) {
+          if (!circleBlocked(map, b.pos.x + ux * overlap, b.pos.y + uy * overlap, b.radius, b.canSwim)) {
             b.pos.x += ux * overlap; b.pos.y += uy * overlap;
           } else {
             b.pos.x += ux * half; b.pos.y += uy * half;
           }
         } else if (aOk) {
-          if (!circleBlocked(map, a.pos.x - ux * overlap, a.pos.y - uy * overlap, a.radius)) {
+          if (!circleBlocked(map, a.pos.x - ux * overlap, a.pos.y - uy * overlap, a.radius, a.canSwim)) {
             a.pos.x -= ux * overlap; a.pos.y -= uy * overlap;
           } else {
             a.pos.x -= ux * half; a.pos.y -= uy * half;
@@ -252,14 +260,16 @@ export function stumble(actor: Actor, map: GameMap, dt: number): boolean {
 }
 
 export function unstick(actor: Actor, map: GameMap): void {
-  if (!circleBlocked(map, actor.pos.x, actor.pos.y, actor.radius)) return;
+  // A swimmer is not stuck; he is swimming. Asking this question without his
+  // capability would fish him out of the river every single step.
+  if (!circleBlocked(map, actor.pos.x, actor.pos.y, actor.radius, actor.canSwim)) return;
 
   for (let r = 1; r <= 6; r++) {
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2;
       const nx = actor.pos.x + Math.cos(angle) * r;
       const ny = actor.pos.y + Math.sin(angle) * r;
-      if (!circleBlocked(map, nx, ny, actor.radius)) {
+      if (!circleBlocked(map, nx, ny, actor.radius, actor.canSwim)) {
         actor.pos.x = nx;
         actor.pos.y = ny;
         actor.vel.x = 0;
@@ -276,6 +286,38 @@ export function unstick(actor: Actor, map: GameMap): void {
     actor.vel.x = 0;
     actor.vel.y = 0;
   }
+}
+
+/**
+ * Somewhere to be, for a man who has decided to be nowhere while in the river.
+ *
+ * Every "hold position" in the game is a decision made without asking what the
+ * ground is: an enemy that has closed to its preferred range stops, a soldier
+ * with a firing solution stops. Deep water does not block a line of fire, so
+ * both of those can now trigger in the middle of a river -- where the man
+ * cannot actually shoot, because he is wading. He would float there until the
+ * mission ended.
+ *
+ * So a swimmer is never given "nowhere". He is given the nearest dry land,
+ * probing the way he was already going first so he finishes the crossing
+ * instead of turning round in the current. Note the queries here deliberately
+ * leave `swims` off: to this function deep water is solid again, which is
+ * exactly what makes the first unblocked point ahead of him a bank.
+ */
+export function bankFrom(map: GameMap, actor: Actor): Vec2 | null {
+  if (!actor.swimming) return null;
+
+  const speed = Math.hypot(actor.vel.x, actor.vel.y);
+  if (speed > 1) {
+    const ux = actor.vel.x / speed;
+    const uy = actor.vel.y / speed;
+    for (let d = 1; d <= 12; d++) {
+      const x = actor.pos.x + ux * d * map.tile;
+      const y = actor.pos.y + uy * d * map.tile;
+      if (!circleBlocked(map, x, y, actor.radius)) return { x, y };
+    }
+  }
+  return nearestWalkable(map, actor.pos);
 }
 
 /** Ring of arrival slots around a point, so a herd spreads out on arrival. */

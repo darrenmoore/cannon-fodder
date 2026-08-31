@@ -11,8 +11,8 @@ the mechanics this is reproducing.
 - **TypeScript**, bundled by **esbuild**. Two dev dependencies, no runtime ones.
 - **Node's built-in `http`** for the server — no Express, ~90 lines.
 - **No art or audio files.** Sprites are plotted into offscreen canvases at boot
-  ([`sprites.ts`](../game/src/sprites.ts)); sound is synthesised with WebAudio
-  ([`audio.ts`](../game/src/audio.ts)).
+  ([`sprites.ts`](../game/src/render/sprites/index.ts)); sound is synthesised with WebAudio
+  ([`audio.ts`](../game/src/shell/audio.ts)).
 
 ## Module map
 
@@ -83,7 +83,7 @@ Nothing imports `game.ts` except `main.ts`.
 ### 1. Herd movement — one field, not six pathfinders
 
 A move order builds **one Dijkstra flow field** over the walkable tiles
-([`buildFlowField`](../game/src/pathfind.ts)), and every soldier samples it. Six
+([`buildFlowField`](../game/src/sim/pathfind.ts)), and every soldier samples it. Six
 men crossing the map costs one search, not six, and they naturally funnel around
 obstacles together instead of each finding a private route.
 
@@ -102,7 +102,7 @@ Two refinements keep it from looking like grid-following:
 
 These two constraints fight each other: a separation push can shove a soldier
 into a tree, and a wall resolution can shove two soldiers into each other. The
-fix is a fixed order per step, in [`game.ts`](../game/src/game.ts):
+fix is a fixed order per step, in [`game.ts`](../game/src/sim/game.ts):
 
 1. `steer` — seek the target, blended with a **soft** separation push from
    neighbours found via a spatial hash. This is a suggestion, for looseness.
@@ -128,7 +128,7 @@ behave identically on a 60Hz and a 144Hz display, while motion stays smooth.
 
 ## Terrain as data
 
-[`tiles.ts`](../game/src/tiles.ts) is the whole terrain model. Every tile carries
+[`tiles.ts`](../game/src/sim/tiles.ts) is the whole terrain model. Every tile carries
 **three separate blocking flags** rather than one `solid` bit:
 
 | Flag | Example that needs it |
@@ -146,7 +146,7 @@ flag, which is what keeps the two consistent.
 
 ## Missions and objectives
 
-[`objectives.ts`](../game/src/objectives.ts) turns "is the mission over?" into
+[`objectives.ts`](../game/src/sim/objectives.ts) turns "is the mission over?" into
 one function per objective kind, each returning a HUD status line and a win flag.
 `game.ts` calls `resolvePhase` once per step and does not know the rules.
 
@@ -156,7 +156,15 @@ hook, which is how `rescue` fails the instant a hostage dies.
 
 ## Buildings, hostages and mines
 
-- **Buildings** ([`buildings.ts`](../game/src/buildings.ts)) group contiguous
+- **Objectives** are a header, not a code path per mission. `covert` is the odd
+  one: it wins like `reach` and is failed by `w.kills > 0`, counted rather than
+  hooked, so a man killed by a mine or by his own side ends the approach exactly
+  as a deliberate shot does. Its mission is generated the opposite way round
+  from every other -- route first, garrison into the pockets that leaves -- and
+  both `npm run levels` and `npm run check` re-prove, on the finished grid, that
+  a way to the extraction exists that never comes within a sentry's own aggro
+  radius.
+- **Buildings** ([`buildings.ts`](../game/src/sim/buildings.ts)) group contiguous
   hut/factory tiles at parse time. Rifle rounds do 1 damage against 60+ HP;
   explosives do 45. A standing building emits a trooper every few seconds while
   the squad is within range, capped so a village cannot spiral. When it
@@ -168,16 +176,29 @@ hook, which is how `rescue` fails the instant a hostage dies.
   the attacks off. The proximity trickle is switched off on those maps, since
   leaving it running underneath would fill in the lulls that make a wave read as
   a wave.
-- **Hostages** ([`hostages.ts`](../game/src/hostages.ts)) deliberately do *not*
+- **Swimming** is a movement rule rather than a terrain property. Deep water
+  stays `solid`, because that flag is what spawn placement, patrol picking,
+  formation slots, hostage movement and the completability test all read; it
+  also carries `swim`, and `blocksMovement` in `pathfind.ts` is the only thing
+  that looks at both. So everything that decides *where to put* a man still
+  treats the river as a wall, and only a man deliberately crossing it goes in --
+  slowly, up to his neck, and unable to fire, because swimming is expressed as a
+  deeper kind of wading and the "rifle held clear of the water" rule already
+  existed. Water costs the route planner four tiles of land, which is what keeps
+  a nearby bridge the fast way over rather than a decoration. Anything that
+  would hold position while swimming is sent to the nearest bank instead: a line
+  of fire crosses deep water, so "close to preferred range and stop" would
+  otherwise leave a man treading water he cannot shoot from.
+- **Hostages** ([`hostages.ts`](../game/src/sim/hostages.ts)) deliberately do *not*
   pathfind: they trail their nearest escort with simple seek-and-slide. Anything
   cleverer reads as another squad member rather than someone being led out.
-- **Mines** ([`mines.ts`](../game/src/mines.ts)) are invisible until triggered,
+- **Mines** ([`mines.ts`](../game/src/sim/mines.ts)) are invisible until triggered,
   then run a short fuse. Blasts prime neighbouring mines with a small stagger, so
   a chain reads as a ripple rather than one bang.
 
 ## Enemy AI
 
-A four-state machine in [`enemies.ts`](../game/src/enemies.ts), shared by all
+A four-state machine in [`enemies.ts`](../game/src/sim/enemies.ts), shared by all
 three enemy kinds:
 
 ```
@@ -201,7 +222,7 @@ One character per tile is a good *authoring* format and a hopeless *drawing*
 format. A tile that knows only "I am grass" can be painted only as a square of
 grass, and a grid of squares is exactly what the original does not look like.
 
-So none of the richness is authored. [`terrain.ts`](../game/src/terrain.ts) runs
+So none of the richness is authored. [`terrain.ts`](../game/src/render/terrain.ts) runs
 once per map load and derives, for every tile:
 
 | Field | What it is | What it buys |
@@ -236,13 +257,13 @@ Layers, in order:
 
 ### The ground bake
 
-[`ground.ts`](../game/src/ground.ts) writes pixels straight into an `ImageData`
+[`ground.ts`](../game/src/render/ground.ts) writes pixels straight into an `ImageData`
 buffer. A 220x44 mission is 2.5 million pixels: far too many to touch every
 frame, and completely fine to touch once. Three ideas do most of the work.
 
 **Ramps, not colours.** Every surface is four to six tones and a noise field
 picks a position along it, so tone drifts across a field instead of sitting
-flat. The ramps live in [`palette.ts`](../game/src/palette.ts).
+flat. The ramps live in [`palette.ts`](../game/src/render/palette.ts).
 
 **Ordered dither.** The fractional position between two ramp entries is resolved
 against a Bayer threshold, so the two tones interleave at pixel scale. The
@@ -263,7 +284,7 @@ tile-shaped — planking, fence rails, quicksand ripples, ice cracks, wheel ruts
 
 ### The canopy bake
 
-[`canopy.ts`](../game/src/canopy.ts) bakes the treeline, tall grass and rock
+[`canopy.ts`](../game/src/render/canopy.ts) bakes the treeline, tall grass and rock
 outcrops into a single full-map layer with alpha, drawn **over** the actors.
 
 That is not a compromise. Trees and rock are solid, so nothing can stand inside
@@ -378,7 +399,7 @@ more accurate. What actually changes how a mission plays is *which* levers move
 their range, whether they flank, whether the huts keep feeding, and whether you
 can see the map at all.
 
-So [`difficulty.ts`](../game/src/difficulty.ts) defines a whole **profile** of
+So [`difficulty.ts`](../game/src/sim/difficulty.ts) defines a whole **profile** of
 ~16 levers per setting, and each mission's `doctrine` header then bends that
 profile in its own direction. Veteran on a garrison map and Veteran on a hunters
 map are genuinely different fights.
@@ -411,7 +432,7 @@ legible before you commit rather than a mystery number.
 
 ### Alerts: the thing that makes them feel alive
 
-`raiseAlarm` in [`enemies.ts`](../game/src/enemies.ts) wakes every enemy within
+`raiseAlarm` in [`enemies.ts`](../game/src/sim/enemies.ts) wakes every enemy within
 earshot and sends them to look, via a new `Investigate` state. It fires on:
 
 - your gunfire (radius = `hearing`) -- **shooting is now a decision**
@@ -425,7 +446,7 @@ being pursued.
 
 ## Fog of war
 
-[`fog.ts`](../game/src/fog.ts) keeps two tile masks: what the squad can see now,
+[`fog.ts`](../game/src/render/fog.ts) keeps two tile masks: what the squad can see now,
 and what it has ever seen. Enemies outside the visible mask are not drawn, so on
 Veteran and Elite you are fighting something you have to find first.
 
@@ -444,7 +465,7 @@ where to soften it.
 ## Buildings, visually
 
 A building carries a `damageStage` derived from its HP, and
-[`sprites.ts`](../game/src/sprites.ts) bakes four states of each: intact,
+[`sprites.ts`](../game/src/render/sprites/buildings.ts) bakes four states of each: intact,
 scarred (pocked walls, torn thatch), failing (a hole clean through, the roof
 caving), and wrecked. A wreck keeps smoking for `building.smokeDuration` seconds
 and then smoulders, so "this one is dealt with" reads from across the map.

@@ -162,12 +162,71 @@ export const CONFIG = {
      * one is the decoy -- shoot a tree over there, and they go over there.
      */
     deathAlarm: 0.55,
+    /**
+     * Chance that a killing hit puts an enemy down rather than out.
+     *
+     * Deliberately low. The original's men die in one shot and so do yours; a
+     * wounded man is meant to be an event you remember, not a second health bar
+     * bolted onto every trooper. At one in seven you see one every few
+     * firefights, which is often enough to be a mechanic and rare enough to
+     * still be a surprise.
+     */
+    woundChance: 0.14,
+    /** Seconds between a wounded man's screams. */
+    screamInterval: 2.6,
+    /**
+     * How far a scream carries, against `hearing`.
+     *
+     * Quieter than the death it replaces, and much longer-lived: a man you shot
+     * and left keeps calling his friends to the spot every couple of seconds,
+     * so walking away from one is a decision rather than an oversight.
+     */
+    woundAlarm: 0.7,
     impactAlarm: 0.7,
+    /**
+     * How much further than the investigate radius a noise is *noticed*.
+     *
+     * The response used to be binary -- inside the radius everybody dropped
+     * what they were doing and walked to the noise, outside it nothing happened
+     * at all -- which gave the player one bit of information and no warning
+     * before it. A ring beyond it turns heads without moving feet: the man is
+     * telling you, truthfully, that from here he can hear you and from twenty
+     * paces closer he will see you.
+     *
+     * The glance is deliberately *predictable*. Same distance, same response,
+     * every time; the idle fidget stays random, and the difference between the
+     * two is what makes one of them readable as information.
+     */
+    noticeSpread: 2.1,
+    /** How long a glance holds the head before he goes back to his post. */
+    glanceHold: 1.6,
+    /**
+     * How far a walking squad carries, and how often it is heard.
+     *
+     * Short, and glance-only: a squad crossing open ground must never be able
+     * to drag a garrison onto itself simply by walking, or every existing
+     * mission changes. It may only turn heads -- which is the warning the brief
+     * describes, and the reason moving carefully is a decision at all.
+     */
+    stepNoise: 150,
+    stepInterval: 0.55,
     preferredRange: 70,
     patrolRadius: 46,
     patrolPause: [1.2, 3.0] as [number, number],
     /** Seconds between idle fidgets: a look around, or a step off the mark. */
     fidgetPause: [1.1, 3.4] as [number, number],
+    /**
+     * How far off his post an idle man will drift, before `levers.wander`.
+     *
+     * This was 7 -- under half a tile -- and the result was a garrison that was
+     * fidgeting the whole time and read as fifteen statues. The mechanic was
+     * never missing; it was smaller than the thing it was meant to be visible
+     * against. A step is `fidgetRange * (0.4..1.0)`, so this is the widest of
+     * them, and a man further than twice it from `home` is walked back: the
+     * leash is what makes widening this safe on a map where somebody is
+     * guarding something.
+     */
+    fidgetRange: 26,
 
     /** Rushers close to this instead of preferredRange. */
     rushRange: 26,
@@ -194,6 +253,24 @@ export const CONFIG = {
     aggroRadius: 210,
     reactionTime: 0.85,
     preferredRange: 165,
+  },
+
+  /**
+   * The officer. The target of an `assassinate` mission, and nothing else.
+   *
+   * Deliberately not the hardest man on the map -- he is the *objective*, so
+   * the difficulty is getting to him, not out-shooting him once you have. He
+   * holds his post like a sniper and reaches about as far as a rifleman, which
+   * makes reaching him a problem of the garrison around him rather than of him.
+   */
+  officer: {
+    speed: 38,
+    fireRange: 96,
+    fireInterval: 1.5,
+    spread: 0.05,
+    aggroRadius: 140,
+    reactionTime: 0.6,
+    preferredRange: 80,
   },
 
   /** Fires slow explosive rounds. The original called them your worst enemy. */
@@ -278,6 +355,17 @@ export const CONFIG = {
     blastRadius: 40,
   },
 
+  /**
+   * The objective item of a `collect` mission.
+   *
+   * A wider pickup reach than an ammo crate on purpose: missing a grenade
+   * crate costs you grenades, and walking past the thing the mission is about
+   * because you clipped it by two pixels is the game wasting your time.
+   */
+  supply: {
+    radius: 8,
+  },
+
   /** Scenery explosives: no pickup, pure hazard and opportunity. */
   barrel: {
     radius: 5,
@@ -300,6 +388,16 @@ export const CONFIG = {
     hutHp: 60,
     factoryHp: 140,
     bulletDamage: 1,
+    /**
+     * Below this share of a building's health, a hit is a scratch.
+     *
+     * A scratch keeps the damage it does -- sixty rifle rounds still level a
+     * hut -- but says so differently: chips off the wall instead of the white
+     * flash a real hit gets. The number matters less than the split existing;
+     * at a tenth, a rifle (1 of 60) is always a scratch and a grenade (45 of
+     * 60) never is, which is exactly the line the player needs drawn.
+     */
+    scratchFraction: 0.1,
     /** Blast damage falls off from the centre of the explosion. */
     blastDamage: 45,
     /** Seconds between troopers emerging from an intact enemy building. */
@@ -310,11 +408,106 @@ export const CONFIG = {
     spawnAggroRange: 260,
   },
 
+  /**
+   * Pressure against standing in one place and shooting everything that comes.
+   *
+   * A hidden counter, and deliberately hidden: the player is meant to notice
+   * that they are being *found*, not to watch a meter fill. It only moves on a
+   * kill made from a spot the squad has not left, which is the exact behaviour
+   * being discouraged -- a fighting retreat raises nothing, and neither does
+   * standing still doing nothing.
+   *
+   * It applies at every difficulty on purpose. A per-tier lever would let
+   * Rookie opt out, and Rookie is the tier where a player is most likely to
+   * discover that camping works and learn the wrong lesson from it.
+   */
+  camping: {
+    /** How far from the anchor a kill may be made and still count as camped. */
+    stillRadius: 90,
+    /**
+     * Below this, in pixels a second, the squad counts as standing still.
+     *
+     * Asked as a *speed*, and it has to be. The first version asked whether the
+     * squad had crossed `stillRadius` since it last did, which sounds the same
+     * and is not: a squad walking at forty pixels a second takes over two
+     * seconds to cover ninety, by which time the settle timer has run out and
+     * the game has decided they are camping. Measured -- a squad that marched
+     * eight hundred pixels was treated as stationary for nearly all of it.
+     * Speed answers "are they moving"; distance-since-last answers "have they
+     * moved far enough recently", which is a different and much worse question.
+     */
+    movingSpeed: 14,
+    /** Kills-in-place before they start coming for you. The brief's "2". */
+    huntFrom: 2,
+    /** And it stops there, however long you sit. */
+    cap: 4,
+    /** Points drained per second while the squad is on the move. */
+    relief: 0.55,
+    /**
+     * How long they must hold a spot before kills made from it start counting.
+     *
+     * Without it, "did the squad move" is a question about one frame, and the
+     * answer is yes on the frame they arrive -- so the count drained on arrival
+     * and a fighting withdrawal read the same as a firing position. Two seconds
+     * is long enough that repositioning under fire is genuinely repositioning,
+     * and short enough that nobody camps by accident.
+     */
+    settle: 2,
+    /** Share off the spawn interval at full pressure: they arrive sooner. */
+    spawnBoost: 0.45,
+    /** Extra hearing at full pressure, as a multiplier. They find you. */
+    hearingBoost: 0.5,
+  },
+
   wave: {
-    /** Quiet at the top of the mission, so it does not open with a rush. */
-    lead: 10,
+    /**
+     * Quiet at the top of the mission, before wave one.
+     *
+     * It was 10, chosen when Last Stand also opened with eighteen men already
+     * standing on it -- so nobody ever experienced it as quiet. With the
+     * opening garrison gone this is the whole of a wave mission's first act,
+     * and ten seconds of an empty field reads as a level that has not loaded.
+     * One full interval instead: long enough to walk the wire, find the gaps
+     * and pick a corner, which is what a mission called Last Stand is asking
+     * you to do before it starts.
+     *
+     * Five waves at 22 then land at 22, 44, 66, 88 and 110 against a
+     * 120-second clock. The last arrives with ten seconds to go, which is as
+     * late as it can be and still be a wave rather than a formality.
+     */
+    lead: 22,
     /** Gap between waves when a map names a count but not an interval. */
     interval: 22,
+    /**
+     * How many men are in the first wave, and how much bigger each one after
+     * it is.
+     *
+     * Every wave used to be the same size -- `maxSpawned` scaled by how many
+     * huts were still standing -- so the mission peaked at wave one and then
+     * decayed, and the reported experience was sitting in one place shooting
+     * them as they arrived. A ramp is the whole shape of a wave mission: the
+     * first is a warning, the last is the reason the mission has a name.
+     *
+     * `first` is a floor, not a target: difficulty still multiplies through
+     * `maxSpawned`, so Elite's fifth wave is a different event from Rookie's.
+     */
+    first: 5,
+    /** Each wave is this much larger than the one before it. */
+    growth: 0.45,
+    /**
+     * The `maxSpawned` that means "the sizes as written", and the range the
+     * difficulty may move them over.
+     *
+     * `maxSpawned` is a *concurrency cap* for the proximity trickle -- 2 on
+     * Rookie, 6 on Elite, times 1.5 for swarm doctrine -- so multiplying wave
+     * sizes by it directly turns a first wave of five into forty-five and the
+     * mission into a slideshow. Divided by the middle of its range it becomes
+     * what is wanted here: a modest scale either side of the written number.
+     * Clamped, because a doctrine multiplier on top of an Elite lever is how a
+     * reasonable formula produces an unreasonable mission.
+     */
+    sizeFrom: 3,
+    sizeRange: [0.6, 2.2] as [number, number],
     /**
      * How much of the interval difficulty is allowed to move.
      *
@@ -327,6 +520,55 @@ export const CONFIG = {
     pace: 0.4,
     /** A doorway this close to a living soldier is not used to spawn a wave. */
     hideRadius: 190,
+  },
+
+  banner: {
+    /**
+     * The end-of-phase banner, drawn over the battlefield rather than over a
+     * panel -- which is how the original does it
+     * (`docs/original-images/elements/phase-complete.jpg`), and most of why it
+     * feels like the game finishing rather than a dialog opening.
+     */
+    /** Seconds the lettering takes to fly up and settle. */
+    rise: 0.55,
+    /** Seconds before the results panel is allowed over the top of it. */
+    hold: 1.9,
+    /**
+     * Seconds the battlefield takes to go black at the end of the hold.
+     *
+     * Every transition in the original passes through black, and this is the
+     * first one here that does. It is also the one place the no-alpha rule is
+     * deliberately spent: a full-screen fade to black is a thing the reference
+     * itself does, and dithering it would read as a mistake rather than as a
+     * transition.
+     */
+    fade: 0.4,
+    /**
+     * Fraction of the canvas width the widest line is scaled to fill.
+     *
+     * Bracketed by two critics who never saw each other's frames. At 0.74 the
+     * first called it "a wall of text that swallows the entire playfield ...
+     * burying the troops"; at 0.5 the second called it too small -- "large
+     * empty green margins left and right ... it does not command the screen the
+     * way the original does". Both are describing the same answer from
+     * opposite sides -- but a third, shown 0.5 against 0.6, picked 0.5 and said
+     * it was "not a close call". Two verdicts to one, so 0.5 stands and the
+     * bracket is closed.
+     */
+    fill: 0.5,
+  },
+
+  swim: {
+    /**
+     * What a tile of deep water costs the route planner, in tiles of dry land.
+     *
+     * The whole point of letting everyone swim is that a bridge stops being the
+     * only way over and becomes the *fast* way over. That only holds if the
+     * search would rather walk a little further than get in: at four, a bridge
+     * within about a dozen tiles still wins, and a river you would otherwise
+     * have to go right round does not.
+     */
+    cost: 4,
   },
 
   hostage: {

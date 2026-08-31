@@ -1,7 +1,8 @@
 import { DIFFICULTIES, DIFFICULTY_ORDER, DOCTRINES, describeLevers, isDifficultyId, isDoctrineId, resolveLevers } from '../sim/difficulty.js';
-import { OBJECTIVE_TEXT } from '../sim/objectives.js';
+import { objectiveText } from '../sim/objectives.js';
 import { bootHillOpen } from './boothill.js';
 import { formatTime } from '../sim/campaign.js';
+import { resolveUnlocks } from '../sim/unlock.js';
 import { musicOn, musicSource, onMusicChange, syncMusic } from '../shell/music.js';
 import { updateSettings } from './settings.js';
 import type { CampaignState } from '../sim/campaign.js';
@@ -28,6 +29,32 @@ const SPEAKER_ON = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER_BODY}`
 const SPEAKER_OFF = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER_BODY}`
   + '<path class="slash" d="M15.6 9.6l5 4.8"/><path class="slash" d="M20.6 9.6l-5 4.8"/></svg>';
 
+/**
+ * A star per difficulty, filled up to the **highest** one this mission has been
+ * cleared on -- not one per clear.
+ *
+ * Which is what makes the rating mean anything on a screen where the player
+ * also chooses the difficulty: the number is not a judgement of how well it was
+ * played, it is a record of what was taken on. It also gives the rule the brief
+ * asked for free -- beat a mission on Elite having never touched the easier
+ * tiers and all three light, because a maximum is not a tally.
+ */
+export function starsFor(record: { clears: DifficultyId[] } | undefined): number {
+  if (!record) return 0;
+  let best = 0;
+  for (const id of record.clears) best = Math.max(best, DIFFICULTY_ORDER.indexOf(id) + 1);
+  return best;
+}
+
+/*
+ * Drawn rather than typed. A `★` from whatever font the player's machine
+ * supplies is a different shape on every machine and an anti-aliased one on all
+ * of them; this is five straight lines with `crispEdges`, which is the same
+ * bargain the canvas makes everywhere else.
+ */
+const STAR_SVG = '<svg viewBox="0 0 12 12" aria-hidden="true" shape-rendering="crispEdges">'
+  + '<polygon points="6,0 7.6,4.2 12,4.2 8.4,7 9.8,11.4 6,8.7 2.2,11.4 3.6,7 0,4.2 4.4,4.2"/></svg>';
+
 export interface LevelInfo {
   id: string;
   /** A test map, listed only in a dev build. See `fetchLevels`. */
@@ -35,6 +62,9 @@ export interface LevelInfo {
   name: string;
   theme: string;
   objective: string;
+  /** Modifiers, so a card can state the rule as well as the objective. */
+  nokill: boolean;
+  timeLimit: number;
   doctrine: string;
   brief: string;
   mechanic: string;
@@ -225,6 +255,13 @@ export function showMenu(
         head.appendChild(Object.assign(document.createElement('span'), {
           className: 'theatre-note', textContent: theatre.note,
         }));
+        const tally = unlocks.byTheatre.get(theatre.id);
+        if (tally) {
+          head.appendChild(Object.assign(document.createElement('span'), {
+            className: 'theatre-tally',
+            textContent: `${tally.cleared}/${tally.total}`,
+          }));
+        }
         section.appendChild(head);
 
         const grid = document.createElement('div');
@@ -235,6 +272,12 @@ export function showMenu(
       }
     };
 
+    // Resolved once for the whole list rather than per card: the answer depends
+    // on the theatre a mission is in and on how many of its neighbours have
+    // been cleared, so asking per card would re-derive the same grouping
+    // thirty-six times.
+    const unlocks = resolveUnlocks(levels, campaign);
+
     /** One mission card. `index` is its campaign number, not its position. */
     const card = (level: LevelInfo, index: number): HTMLButtonElement => {
       const doctrine: DoctrineId = isDoctrineId(level.doctrine) ? level.doctrine : 'garrison';
@@ -243,6 +286,25 @@ export function showMenu(
       const el = document.createElement('button');
       el.className = `mission theme-${level.theme}`;
       el.type = 'button';
+      /*
+       * Locked missions are shown, and shown as locked.
+       *
+       * Hiding them would take away the thing that makes a theatre worth
+       * finishing -- the same argument the dim stars on a card already make,
+       * and the reason `Theatre.locked` was left unwired rather than used to
+       * hide the later theatres. `disabled` rather than a click that refuses:
+       * a button that does nothing is indistinguishable from a bug.
+       */
+      // Never in a dev build. Every capture harness in `tools/` reaches a
+      // mission by clicking its card, and a campaign gate would wall all of
+      // them off from three quarters of the game -- so the rule is proved in
+      // `test/campaign.test.mjs`, where it is a pure function and every case is
+      // cheap, rather than by seeding a save in each of five browser drivers.
+      if (!__DEV__ && !unlocks.open.has(level.id)) {
+        el.classList.add('locked');
+        el.disabled = true;
+        el.title = 'Clear another mission in this theatre to open it';
+      }
       // Addressable by mission id, so the capture harness can enter a level by
       // the same click path a player uses.
       el.dataset.id = level.id;
@@ -266,7 +328,7 @@ export function showMenu(
 
       // Map headers are author-supplied text; set them as text, never HTML.
       el.querySelector('.m-name')!.textContent = level.name;
-      el.querySelector('.m-obj')!.textContent = OBJECTIVE_TEXT[level.objective] ?? level.objective;
+      el.querySelector('.m-obj')!.textContent = objectiveText(level);
       el.querySelector('.m-mech')!.textContent = level.brief || level.mechanic;
       el.querySelector('.m-theme')!.textContent = level.theme;
       el.querySelector('.m-doctrine')!.textContent = DOCTRINES[doctrine].name;
@@ -282,21 +344,25 @@ export function showMenu(
 
       // Ribbons.
       //
-      // All four are always drawn, and the ones you have not earned are drawn
-      // dim rather than hidden. A locked thing you cannot see is not a goal; a
-      // gap in a row of four, on a card you are already looking at, is. This is
+      // All three are always drawn, and the ones you have not earned are drawn
+      // dark rather than hidden. A locked thing you cannot see is not a goal; a
+      // gap in a row of three, on a card you are already looking at, is. This is
       // also why `Theatre.locked` stays unwired — hiding the later theatres
       // would take away the very thing that makes them worth reaching.
       const record = campaign.records[level.id];
-      const ribbons = el.querySelector('.m-ribbons') as HTMLElement;
-      for (const id of DIFFICULTY_ORDER) {
-        const cleared = !!record?.clears.includes(id);
-        const rib = document.createElement('i');
-        rib.className = `ribbon diff-${id}${cleared ? ' on' : ''}`;
-        rib.title = cleared
-          ? `Cleared on ${DIFFICULTIES[id].name}`
-          : `Not yet cleared on ${DIFFICULTIES[id].name}`;
-        ribbons.appendChild(rib);
+      const earned = starsFor(record);
+      const stars = el.querySelector('.m-ribbons') as HTMLElement;
+      stars.classList.add('m-stars');
+      for (let i = 0; i < DIFFICULTY_ORDER.length; i++) {
+        const id = DIFFICULTY_ORDER[i];
+        const lit = i < earned;
+        const star = document.createElement('i');
+        star.className = `star diff-${id}${lit ? ' on' : ''}`;
+        star.innerHTML = STAR_SVG;
+        star.title = lit
+          ? `Cleared on ${DIFFICULTIES[id].name} or harder`
+          : `Clear it on ${DIFFICULTIES[id].name} for this one`;
+        stars.appendChild(star);
       }
       if (record) el.classList.add('cleared');
 
@@ -362,7 +428,8 @@ export function loadDifficulty(key: string): DifficultyId {
   } catch {
     // Private browsing; the default is fine.
   }
-  return 'regular';
+  // Nobody who has not chosen has asked for the hard tier.
+  return 'rookie';
 }
 
 export function saveDifficulty(key: string, value: DifficultyId): void {

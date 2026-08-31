@@ -2,7 +2,7 @@ name: River Run
 theme: jungle
 objective: eliminate
 doctrine: garrison
-order: 2
+order: 4
 mechanic: deep water
 brief: Deep water cannot be crossed. Take a bridge, and expect it covered.
 tile: 16

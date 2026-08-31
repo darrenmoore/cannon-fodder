@@ -6,11 +6,46 @@ import type { Theme } from './tiles.js';
 import type { Vec2 } from '../types.js';
 
 /** What a mission asks of you. See objectives.ts for the evaluation. */
-export type ObjectiveKind = 'eliminate' | 'demolish' | 'rescue' | 'reach' | 'survive';
+export type ObjectiveKind =
+  | 'eliminate' | 'demolish' | 'rescue' | 'reach' | 'survive' | 'covert'
+  | 'hold' | 'collect' | 'assassinate';
+
+/**
+ * Pairings that are not hard but incoherent, rejected at load.
+ *
+ * A constraint and an obligation must not contradict. "Kill nobody" beside
+ * "kill everybody" is the obvious case; the others are the same mistake in
+ * different clothes -- a mission you cannot complete by playing well is not a
+ * difficult mission, it is a broken file, and it should say so at the point it
+ * is read rather than forty seconds into a doomed attempt.
+ *
+ * Deliberately a rejection rather than a fallback. An unknown theme is a typo
+ * and costs a mission its flavour; this is a design error and costs the player
+ * their time. See docs/map-format.md, "What cannot go together" -- that table
+ * and this list are meant to be the same list.
+ */
+const CONTRADICTIONS: Array<{ when: (m: GameMap) => boolean; why: string }> = [
+  {
+    when: (m) => m.nokill && m.objective === 'eliminate',
+    why: '`nokill` with `eliminate`: the objective cannot be met without the kill that fails it',
+  },
+  {
+    when: (m) => m.nokill && m.objective === 'assassinate',
+    why: '`nokill` with `assassinate`: the objective is a kill',
+  },
+  {
+    when: (m) => m.nokill && m.waves !== null,
+    why: '`nokill` with `waves`: reinforcements walk into the route the approach depends on being empty',
+  },
+  {
+    when: (m) => m.timeLimit > 0 && m.objective === 'survive',
+    why: '`timelimit` with `survive`: the mission already has a clock, and the two run opposite ways',
+  },
+];
 
 /** A contiguous block of hut or factory tiles, grouped at parse time. */
 export interface BuildingSpec {
-  kind: 'hut' | 'factory' | 'outpost';
+  kind: 'hut' | 'factory' | 'outpost' | 'bunker';
   /** Derived from the character: an outpost is the squad's to hold. */
   role: 'spawner' | 'protect' | 'neutral';
   /** Tile coordinates the building occupies. */
@@ -35,6 +70,19 @@ export interface WaveSpec {
   interval: number;
 }
 
+/**
+ * Somewhere the mission wants people taken to, and how big the thing there is.
+ *
+ * `pad` is the half-extent of whatever sits under the point -- zero for a bare
+ * `X` marker on the ground, half a tent's wider side for a tent. Everything
+ * that asks "is somebody at the extraction" adds it to its own radius, so the
+ * question is always *how close to the edge of it*, never *how close to the
+ * middle of it*.
+ */
+export interface Zone extends Vec2 {
+  pad: number;
+}
+
 export interface GameMap {
   id: string;
   name: string;
@@ -50,10 +98,48 @@ export interface GameMap {
   pixelHeight: number;
   colors: Record<Tile, { color: string; speckle: string }>;
 
+  /**
+   * What the mission asks of you, after `covert` has been unfolded into
+   * `reach` + `nokill`. A map file may still say `covert`; nothing downstream
+   * of the parser ever sees it.
+   */
   objective: ObjectiveKind;
+  /**
+   * The mission is lost the moment the kill count leaves zero -- a rule layered
+   * on top of the objective rather than fused into it.
+   *
+   * `covert` used to *be* an objective, and it was two ideas welded together:
+   * reach the extraction, and kill nobody. That worked exactly once. The moment
+   * a mission wanted "recover the hostages without firing a shot" there was
+   * nowhere to put it -- the only way to say it would have been a
+   * `covert-rescue` objective, then a `covert-collect` one, and so on for every
+   * pairing. As a modifier it costs a header line instead.
+   */
+  nokill: boolean;
+  /**
+   * Seconds before the mission is lost, or 0 for no clock.
+   *
+   * A modifier rather than an objective, so any mission can be made a race
+   * without a `reach-but-quickly` objective existing. Distinct from `duration`,
+   * which is how long `survive` wants you to *last* -- the two run in opposite
+   * directions and declaring both is rejected.
+   */
+  timeLimit: number;
+  /**
+   * The only route to something runs through a building that must be levelled.
+   *
+   * Declared, never inferred. Levelling a hut turns its tiles into walkable
+   * rubble, so a wall of huts really is a door you have to knock down -- but the
+   * completability fill treats every building as solid, and it has to, or an
+   * objective accidentally sealed behind one would start passing the gate. So a
+   * map that wants the puzzle says so, and `npm run check` then admits the
+   * second fill for that map only. A map that needs it and does not declare it
+   * fails, which is what keeps it from ever happening by accident.
+   */
+  gated: boolean;
   /** The garrison's standing orders; bends the difficulty levers. */
   doctrine: DoctrineId;
-  /** Seconds to hold out, for `survive`. */
+  /** Seconds to hold out, for `survive`; seconds to stand in the zone, for `hold`. */
   duration: number;
   /** Set by a `waves:` header; null on a map whose garrison merely reacts. */
   waves: WaveSpec | null;
@@ -78,7 +164,11 @@ export interface GameMap {
   barrels: Vec2[];
   mines: Vec2[];
   hostages: Vec2[];
-  extraction: Vec2[];
+  /** Objective items for a `collect` mission. Not ammo crates. */
+  supplies: Vec2[];
+  /** The officer a `assassinate` mission is about. One per map. */
+  officers: Vec2[];
+  extraction: Zone[];
   buildings: BuildingSpec[];
 }
 
@@ -92,7 +182,10 @@ function parseWaves(src: string | undefined): WaveSpec | null {
   return { count, interval: Number(m[2]) || CONFIG.wave.interval };
 }
 
-const OBJECTIVES: ObjectiveKind[] = ['eliminate', 'demolish', 'rescue', 'reach', 'survive'];
+const OBJECTIVES: ObjectiveKind[] = [
+  'eliminate', 'demolish', 'rescue', 'reach', 'survive', 'covert',
+  'hold', 'collect', 'assassinate',
+];
 const THEME_NAMES: Theme[] = ['jungle', 'desert', 'arctic'];
 
 /**
@@ -122,6 +215,11 @@ export function parseMap(src: string, id = 'level'): GameMap {
   const height = rows.length;
   const grid = new Uint8Array(width * height);
   const tile = Number(header.tile) || CONFIG.TILE;
+  // What the file asked for, before `covert` is unfolded. An unknown objective
+  // falls back rather than failing, so a typo costs flavour and not the build.
+  const askedFor: ObjectiveKind = OBJECTIVES.includes(header.objective as ObjectiveKind)
+    ? (header.objective as ObjectiveKind)
+    : 'eliminate';
 
   const map: GameMap = {
     id,
@@ -135,9 +233,12 @@ export function parseMap(src: string, id = 'level'): GameMap {
     pixelWidth: width * tile,
     pixelHeight: height * tile,
     colors: themeColors(THEME_NAMES.includes(header.theme as Theme) ? (header.theme as Theme) : 'jungle'),
-    objective: OBJECTIVES.includes(header.objective as ObjectiveKind)
-      ? (header.objective as ObjectiveKind)
-      : 'eliminate',
+    // `covert` is an alias, unfolded here so exactly one place in the codebase
+    // knows it is not really an objective of its own.
+    objective: askedFor === 'covert' ? 'reach' : askedFor,
+    nokill: askedFor === 'covert' || header.nokill === 'true',
+    timeLimit: Math.max(0, Number(header.timelimit) || 0),
+    gated: header.gated === 'true',
     doctrine: isDoctrineId(header.doctrine ?? '') ? (header.doctrine as DoctrineId) : 'garrison',
     duration: Number(header.duration) || 90,
     waves: parseWaves(header.waves),
@@ -153,11 +254,19 @@ export function parseMap(src: string, id = 'level'): GameMap {
     barrels: [],
     mines: [],
     hostages: [],
+    supplies: [],
+    officers: [],
     extraction: [],
     buildings: [],
   };
 
+  for (const rule of CONTRADICTIONS) {
+    if (rule.when(map)) throw new Error(`${id}: ${rule.why}`);
+  }
+
   const centre = (x: number, y: number): Vec2 => ({ x: (x + 0.5) * tile, y: (y + 0.5) * tile });
+  /** Where every marker stood, so the ground under it can be resolved after. */
+  const markers: Array<[number, number]> = [];
 
   for (let y = 0; y < height; y++) {
     const row = rows[y];
@@ -168,6 +277,7 @@ export function parseMap(src: string, id = 'level'): GameMap {
         const under = MARKERS[ch];
         if (under === undefined) throw new Error(`unknown map character '${ch}' at ${x},${y}`);
         t = under;
+        markers.push([x, y]);
         const p = centre(x, y);
         if (ch === 'P') map.playerSpawns.push(p);
         else if (ch === 'E') map.enemySpawns.push(p);
@@ -178,12 +288,15 @@ export function parseMap(src: string, id = 'level'): GameMap {
         else if (ch === 'o') map.barrels.push(p);
         else if (ch === '*') map.mines.push(p);
         else if (ch === 'H') map.hostages.push(p);
-        else if (ch === 'X') map.extraction.push(p);
+        else if (ch === 'k') map.supplies.push(p);
+        else if (ch === 'C') map.officers.push(p);
+        else if (ch === 'X') map.extraction.push({ ...p, pad: 0 });
       }
       grid[y * width + x] = t;
     }
   }
 
+  resolveMarkerGround(map, rows, markers);
   map.pristine = grid.slice();
   // Declared size wins, clamped to the men the map actually has room for; with
   // no header it is simply however many `P` markers were placed.
@@ -198,6 +311,69 @@ export function parseMap(src: string, id = 'level'): GameMap {
   return map;
 }
 
+/**
+ * Ground a marker may be standing on, once it has been lifted off the map.
+ *
+ * Deliberately not every walkable tile. Water and quicksand are walkable and
+ * are *hazards*: inheriting one would put a man in a bog because a bog happened
+ * to be next door, which changes how the mission plays rather than how it
+ * looks. A tent is excluded for a harder reason -- `tentCentres` scans for it,
+ * so inheriting one would conjure an extraction zone out of a crate.
+ */
+const MARKER_GROUND: Tile[] = [
+  Tile.Grass, Tile.Sand, Tile.Road, Tile.TallGrass, Tile.Ice, Tile.Rubble, Tile.Bridge,
+];
+
+/**
+ * Puts the surrounding ground back under every entity marker.
+ *
+ * A marker used to leave Grass, always. On a jungle map nobody noticed; on sand
+ * or snow every soldier, crate and mine punched a single green tile into the
+ * desert -- one hard-edged 16px square per entity, which is exactly the defect
+ * the density rules exist to prevent, and there were forty-five of them on
+ * Minefield alone. A crate on a sand island sat in its own little lawn.
+ *
+ * Resolved from the *original characters* rather than from the grid, in a pass
+ * of its own, so the answer cannot depend on the order tiles were written in.
+ * Rings widen outward because a cluster of six men has no un-marked neighbour
+ * at radius one, and falls back to Grass only when nothing walkable is near --
+ * which keeps the old behaviour as the floor rather than as the rule.
+ */
+function resolveMarkerGround(map: GameMap, rows: string[], markers: Array<[number, number]>): void {
+  const charAt = (x: number, y: number): string | null => {
+    if (x < 0 || y < 0 || y >= rows.length || x >= map.width) return null;
+    return x < rows[y].length ? rows[y][x] : '.';
+  };
+
+  for (const [mx, my] of markers) {
+    let chosen: Tile | null = null;
+    for (let r = 1; r <= 4 && chosen === null; r++) {
+      const tally = new Map<Tile, number>();
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          // The ring only, so nearer ground always outvotes further ground.
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const ch = charAt(mx + dx, my + dy);
+          if (ch === null) continue;
+          const t = LEGEND[ch];
+          if (t === undefined || !MARKER_GROUND.includes(t)) continue;
+          tally.set(t, (tally.get(t) ?? 0) + 1);
+        }
+      }
+      // Ties break on the lower tile id, so parsing the same file twice cannot
+      // produce two different maps.
+      let best: Tile | null = null;
+      let bestN = 0;
+      for (const t of MARKER_GROUND) {
+        const n = tally.get(t) ?? 0;
+        if (n > bestN) { best = t; bestN = n; }
+      }
+      if (best !== null) chosen = best;
+    }
+    if (chosen !== null && chosen !== Tile.Grass) map.grid[my * map.width + mx] = chosen;
+  }
+}
+
 /** Flood-fills contiguous hut and factory tiles into building records. */
 function findBuildings(map: GameMap): BuildingSpec[] {
   const seen = new Uint8Array(map.width * map.height);
@@ -206,7 +382,8 @@ function findBuildings(map: GameMap): BuildingSpec[] {
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
       const t = tileAt(map, x, y);
-      if ((t !== Tile.Hut && t !== Tile.Factory && t !== Tile.Outpost) || seen[y * map.width + x]) continue;
+      if ((t !== Tile.Hut && t !== Tile.Factory && t !== Tile.Outpost && t !== Tile.Bunker)
+        || seen[y * map.width + x]) continue;
 
       const tiles: Array<[number, number]> = [];
       const stack: Array<[number, number]> = [[x, y]];
@@ -231,12 +408,16 @@ function findBuildings(map: GameMap): BuildingSpec[] {
         }
       }
 
-      const kind = t === Tile.Factory ? 'factory' : t === Tile.Outpost ? 'outpost' : 'hut';
+      const kind = t === Tile.Factory ? 'factory'
+        : t === Tile.Outpost ? 'outpost'
+        : t === Tile.Bunker ? 'bunker'
+        : 'hut';
       out.push({
         kind,
         // The map says what a building is for by which character it is drawn
         // with, so a mission's mechanics live in the mission file.
-        role: kind === 'outpost' ? 'protect' : 'spawner',
+        // A bunker is a thing to hold, like an outpost; it just cannot be lost.
+        role: kind === 'outpost' || kind === 'bunker' ? 'protect' : 'spawner',
         tiles,
         centre: { x: ((x0 + x1) / 2 + 0.5) * map.tile, y: ((y0 + y1) / 2 + 0.5) * map.tile },
         x0, y0, w: x1 - x0 + 1, h: y1 - y0 + 1,
@@ -246,10 +427,20 @@ function findBuildings(map: GameMap): BuildingSpec[] {
   return out;
 }
 
-/** One point per contiguous block of tent tiles. */
-function tentCentres(map: GameMap): Vec2[] {
+/**
+ * One zone per contiguous block of tent tiles, sized to the block.
+ *
+ * The `pad` is what stops a delivery circle being swallowed by the building it
+ * is drawn on. A tent is usually 2x2 of 16px tiles, so its centre -- which is
+ * the only point this used to return -- sits 16px from its own edge, and
+ * `deliverRadius` of 18 cleared the footprint by two pixels. In practice that
+ * meant walking three freed prisoners *onto* the tent one at a time, which is
+ * exactly as fiddly as it sounds. Measured from the edge instead, a tent of any
+ * size has a ring around it rather than a dot inside it.
+ */
+function tentCentres(map: GameMap): Zone[] {
   const seen = new Uint8Array(map.width * map.height);
-  const out: Vec2[] = [];
+  const out: Zone[] = [];
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
       if (tileAt(map, x, y) !== Tile.Tent || seen[y * map.width + x]) continue;
@@ -269,7 +460,14 @@ function tentCentres(map: GameMap): Vec2[] {
           stack.push([nx, ny]);
         }
       }
-      out.push({ x: ((x0 + x1) / 2 + 0.5) * map.tile, y: ((y0 + y1) / 2 + 0.5) * map.tile });
+      out.push({
+        x: ((x0 + x1) / 2 + 0.5) * map.tile,
+        y: ((y0 + y1) / 2 + 0.5) * map.tile,
+        // Half the wider side. Not the half-diagonal: a square pad this size
+        // plus the delivery radius already clears the corners comfortably, and
+        // the diagonal would make a big tent's ring look detached from it.
+        pad: (Math.max(x1 - x0, y1 - y0) + 1) * map.tile / 2,
+      });
     }
   }
   return out;

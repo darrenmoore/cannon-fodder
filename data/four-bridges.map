@@ -1,0 +1,79 @@
+name: Four Bridges
+theme: jungle
+objective: demolish
+doctrine: garrison
+order: 13
+mechanic: a cut somebody dug
+brief: A straight canal, four crossings, and every one of them covered. Pick your bridge.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT."".".""TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTT..TT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.........""....TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTT.......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...................TTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTT.TT.T.........TTTTTTTTTTTTTTTT....................................TTTT.T..................TTTTTTTTTTTTT
+TTTTTT.TT..............TTTTTT...........................................TTT........................TTTTTTTTT
+TTTTT.....................................................................T.........................TTTTTTTT
+TTTTT.............................................T....................................................TTTTT
+TTTTT...T..........................................T...................................................TTTTT
+TTTTT....T.....................................T.TT....................................................TTTTT
+TTTTT..T.TT...................................T.TTT.TT.................................................TTTTT
+TTTTTT..TT......................................T.T.T.................................................TTTTTT
+TTTTTT..........................................TT.TT.................................................TTTTTT
+TTTTTT................................................................................................TTTTTT
+TTTTTTT...............................................................................................TTTTTT
+TTTTTTTE.......................................................................................TT..E.TTTTTTT
+TTTTTTT.................hh.E..........................hh............................hhE.......T....T.TTTTTTT
+TTTTTTTT...E............hh............................hh............................hh.........T..T.TTTTTTTT
+TTTTTTTT......................................................................................T.T.TTTTTTTTTT
+TTTTTTTT......................................................................................TTTTT.TTTTTTTT
+TTTTTTTTT.......................................................................................TT..TTTTTTTT
+TTTTTTTTT..............................................................................T............TTTTTTTT
+TTTTTTTTTT..................................E...........................................TT.T.......TTTTTTTTT
+TTTTTTTTTT.............................................S.......E......................TTT.T........TTTTTTTTT
+TTTTTTTTT..............................................................................ETTT........TTTTTTTTT
+TTTTTTTTT..............................................................................T...........TTTTTTTTT
+TTTTTTTTT.............o..E..............................................................oT.........TTTTTTTTT
+TTTTTTTT,,,,,,,,,E,,==,,,,,,,,,,,,,,,,,,,,E=,,,,,,,,,,,,,,,,,,E==,o,,,E,,,,,,,,,,,,,,=E,,,,,,,,,,,,TTTTTTTTT
+~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~
+WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW=oWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWW
+~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~
+TTTTTTT,,,,,,,,,,,,,==,,,,,,,,,,,,,,,,,,,,==,,,,,,,,,,,,,,,,,,c==,,,,,,,,,,,,,,,,,,,,==,,,,,,,,,,,,,,TTTT,TT
+TTTTTTT______________________________________________________________________________________________TTTTTTT
+TTTTTTT...........................................""................................."...............TTTTTTT
+TTTTTTT................................T.............................................""".............TTTTTTT
+TTTTTTT..............................TTTTT.........................................".""".............TTTTTTT
+T...T.T..............................TTTTTT.......................................""""""...T.T.......TTTTTTT
+TT.T..T...............................TTT........................................."""""""T...T.......TTTTTTT
+TTTTTTT..............................T.TT.........................................."""""..TTTT.......TTTTTTT
+TTTTTTT...............TTT.........................................................."""".TT...T.......TTTTTTT
+TTTTTTT................T.T..................................................................TT.......TTTTTTT
+TTTTTTT................TT............................................................................TTTTTTT
+TTTTTTT................TTTT..........................................................................TTTTTTT
+TTTTTTT................TT............................................................................TTTTTTT
+TTTTTTT.............T.TT.T...........................................................................TTTTTTT
+TTTTTTT..."."........TT.T............................................................................TTTTTTT
+TTTTTT...""""".......T.T..............................................................................TTTTTT
+TTT.TT....".".......c.TTT.............................................................................TTTTTT
+T...T..................T..........T..TT...............................................................TTTTTT
+TT.TT.............................TTTTTTT.............................................................TTTTTT
+TTTTT........P....................TT.TTT...................................TTT.....................TTTTTTTTT
+TT.TT.....P.......................T.T...T.................................TTT......................T.TTTTTTT
+T..TT..P..........................T.TTTTT................................TTTT.TT......"".........TT.T.TTTTTT
+TTTT..............................T.T....TTTTTTTTTT......TTTTTTTTTTTTTTT....TT......."""".........T."TTTTTTT
+TTTT.................................TTTTTTTTTTTTT..T.TTTTTTTTTTTTTTTTTTTTTTTT......"""""".......T."TT"TTTTT
+TTTTT........P..TT..."............TTTTTTTTTTTTTTTT..TT.TTTTTTTTTTTTTTTTTTTTTTT......".""""...TTTTTTTTTTTTTTT
+TTTTT...P.......TTTTTTT.......TTTTTTTTTTTTTTTTTTT.TT..T.TTTTTTTTTTTTTTTTTTTTTTTTT....TTTTTTTTTTTTTTTTTTTTTTT
+.TT.TT.....P...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTT...TTTTTTTTTTTTTTTTTTTTTTTT
+T.TTTTT.......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT."TTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

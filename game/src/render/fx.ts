@@ -166,6 +166,37 @@ export class Fx {
     }
   }
 
+  /**
+   * A round that hit a building and did not matter.
+   *
+   * A rifle does 1 damage to a hut's 60, which is the design -- rifles are not
+   * how you level a building -- but on screen it was indistinguishable from
+   * doing nothing at all: the same white flash as a real hit, and a damage bar
+   * moving by a sixtieth of its width, which is under half a pixel. Players
+   * reported the huts as invulnerable, and they were describing what they could
+   * see accurately.
+   *
+   * So a scratch gets its own answer: chips thrown back off the wall, along the
+   * direction the round came in rather than in a ring. It reads as a ricochet,
+   * which is the true statement -- you hit it, and it did not care.
+   */
+  spall(pos: Vec2, from: Vec2): void {
+    // Back the way it came, so the shower leans toward the shooter.
+    const away = Math.atan2(pos.y - from.y, pos.x - from.x) + Math.PI;
+    for (let i = 0; i < 7; i++) {
+      const a = away + (Math.random() - 0.5) * 1.5;
+      const speed = 26 + Math.random() * 54;
+      this.particles.push({
+        pos: { ...pos },
+        vel: { x: Math.cos(a) * speed, y: Math.sin(a) * speed - 10 },
+        life: 0.14 + Math.random() * 0.2,
+        maxLife: 0.34,
+        color: Math.random() < 0.3 ? '#fff2c4' : '#9a8c6d',
+        size: 1,
+      });
+    }
+  }
+
   /** Chips of bark or dust where a round strikes scenery. */
   impact(pos: Vec2): void {
     for (let i = 0; i < 4; i++) {
@@ -210,15 +241,24 @@ export class Fx {
   }
 
   /** Rings on the surface when someone wades through the river. */
-  splash(pos: Vec2): void {
-    for (let i = 0; i < 3; i++) {
+  /**
+   * Someone wading. `thick` is mud rather than water, and it is not a recolour.
+   *
+   * This threw pale blue droplets whatever you were standing in, so crossing a
+   * quicksand flat sprayed water -- the one place mud borrowed the water's
+   * idiom and should not have. Mud is heavier: fewer clods, thrown lower and
+   * dying sooner, so they land rather than mist.
+   */
+  splash(pos: Vec2, thick = false): void {
+    for (let i = 0; i < (thick ? 2 : 3); i++) {
       const a = Math.random() * Math.PI * 2;
+      const speed = thick ? 8 : 14;
       this.particles.push({
         pos: { ...pos },
-        vel: { x: Math.cos(a) * 14, y: Math.sin(a) * 14 },
-        life: 0.18 + Math.random() * 0.2,
-        maxLife: 0.38,
-        color: '#9fd8ef',
+        vel: { x: Math.cos(a) * speed, y: Math.sin(a) * speed - (thick ? 6 : 0) },
+        life: thick ? 0.12 + Math.random() * 0.14 : 0.18 + Math.random() * 0.2,
+        maxLife: thick ? 0.26 : 0.38,
+        color: thick ? (Math.random() < 0.4 ? '#a89355' : '#6b5c30') : '#9fd8ef',
         size: 1,
       });
     }

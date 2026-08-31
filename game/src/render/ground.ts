@@ -575,12 +575,39 @@ function paintDetails(
         g.fillRect(x, y + 6, t, 1);
         for (let px = 1; px < t; px += 5) g.fillRect(x + px, y + 3, 2, 12);
       } else if (tile === Tile.Quicksand) {
-        // Concentric ripples read as "this will swallow you".
-        for (let r = 2; r < 9; r += 2) {
-          g.strokeStyle = r % 4 === 0 ? 'rgba(160,140,80,0.55)' : 'rgba(70,58,26,0.6)';
-          g.beginPath();
-          g.ellipse(x + t / 2, y + t / 2, r, r * 0.6, 0, 0, Math.PI * 2);
-          g.stroke();
+        /*
+         * A crust that has sagged, not a target painted on the ground.
+         *
+         * This was four concentric ellipses centred in the tile, drawn
+         * identically in every tile of the flat -- so a large sink read as
+         * wallpaper: the eye finds the repeat before it finds the hazard, and
+         * on a map built out of the stuff there is nothing else to look at.
+         * Three separate faults in one line: it repeated, it used `ellipse`,
+         * and it used `rgba`, and this codebase is allowed none of them.
+         *
+         * So the ring is stepped and `fillRect`ed like every other circle here,
+         * its centre and radius are pulled off the tile's own noise so no two
+         * neighbours agree, and the whole thing is dropped on about a third of
+         * tiles -- because an unbroken field of *anything* tiles, however
+         * varied each one is.
+         */
+        const seed = detail.at(x + 3, y + 7);
+        if (seed > 0.34) {
+          const cx = x + 3 + ((seed * 53) % (t - 6) | 0);
+          const cy = y + 3 + ((seed * 191) % (t - 6) | 0);
+          const rings = seed > 0.72 ? 3 : 2;
+          for (let k = 0; k < rings; k++) {
+            const r = 2 + k * 2 + ((seed * 7) % 2 | 0);
+            g.fillStyle = k % 2 === 0 ? '#5c4f28' : '#a08a4e';
+            // Stepped circle: one span per row, squashed to read as ground.
+            for (let dy = -r; dy <= r; dy++) {
+              const half = Math.round(Math.sqrt(Math.max(0, r * r - dy * dy)) * 1.6);
+              const py = cy + Math.round(dy * 0.62);
+              if (half <= 0) continue;
+              g.fillRect(cx - half, py, 1, 1);
+              g.fillRect(cx + half, py, 1, 1);
+            }
+          }
         }
       } else if (tile === Tile.Ice) {
         // Cracks: short bright diagonals, sparse enough to read as flaws.

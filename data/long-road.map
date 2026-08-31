@@ -2,7 +2,7 @@ name: The Long Road
 theme: desert
 objective: reach
 doctrine: ambush
-order: 3
+order: 5
 mechanic: extraction
 brief: A long march east. Get everyone still standing to the pickup.
 tile: 16

@@ -2,7 +2,7 @@ name: Undergrowth
 theme: jungle
 objective: eliminate
 doctrine: patrol
-order: 4
+order: 6
 mechanic: tall grass
 brief: Tall grass hides you but not your bullets. Snipers own the open ground.
 tile: 16

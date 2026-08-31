@@ -31,7 +31,7 @@ export function stepHostages(world: World, dt: number): void {
 
     // Delivered the moment they touch a tent.
     for (const tent of world.extraction) {
-      if (Math.hypot(tent.x - h.pos.x, tent.y - h.pos.y) <= CONFIG.hostage.deliverRadius) {
+      if (Math.hypot(tent.x - h.pos.x, tent.y - h.pos.y) <= tent.pad + CONFIG.hostage.deliverRadius) {
         h.delivered = true;
         world.fx.sparkle(h.pos, '#9bf07a');
         world.fx.popup({ x: h.pos.x, y: h.pos.y - 12 }, 'DELIVERED', '#9bf07a', 'hostage');

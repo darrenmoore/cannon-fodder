@@ -1,0 +1,69 @@
+name: Over the Water
+theme: jungle
+objective: demolish
+doctrine: garrison
+order: 2
+mechanic: the bridge, and what is on it
+brief: Both huts, and rifles will barely mark them. There are grenades on the bridge -- walk over them, then use them.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTT...TTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTT.TT.....TT.TTTTTTTTTTTTTTT
+TTTTT.TT....................T.T...T..T.TTTTTTT
+TTTTT.TT....................TT......T...TTTTTT
+TTTTT...................................TTTTTT
+TTTTTT.......hh................hh........TTTTT
+TTTTT........hh................hh........TTTTT
+TTTTT...........E........................TTTTT
+TTTTT...............TTT..................TTTTT
+TTTTT..............TTT.......E...........TTTTT
+TTTTT...............TTT.E................TTTTT
+TTTTT...............T....................TTTTT
+TTTTT....................................TTTTT
+TTTTT....................................TTTTT
+TTTTT....................................TTTTT
+TTTTT....................................TTTTT
+TTTTT....................................TTTTT
+TTTT.....................................TTTTT
+TTTT.....................................TTTTT
+TTTT.....................................TTTTT
+TTTT.....................................TTTTT
+TTTT.................................,,,,TTTTT
+TTTT.............................,,,,~~~~~~~~~
+TTTT........................,,,,,~~~~~~~~~~~~~
+TTTT......,,,,,,,,,,,,k=,,,,~~~~~~~~~~~~~~~~~~
+TTT,,,,,,,~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~~
+TT~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~k=~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~,,,,,TTTT
+~~~~~~~~~~~~~~~~~~~~~~==~~~~~~~~~,,,,.....TTTT
+~~~~~~~~~~~~~~~~~~~~~~==~~~~,,,,,.........TTTT
+~~~~~~~~~~,,,,,,,,,,,,=k,,,,..............TTTT
+~~T,,,,,,,................................TTTT
+TTT........................................TTT
+TTT........................................TTT
+TTTT.......................................TTT
+TTTT.......................................TTT
+TTTT.......................................TTT
+TTTT.......................................TTT
+TTTT.......................................TTT
+TTTT.......................................TTT
+TTTTT......................................TTT
+TTTTT......................................TTT
+TTTTT......................................TTT
+TTTTTT....................................TTTT
+TTTTT.T...................................TTTT
+TTTTT..T................P.................TTTT
+TTTTTTTTTT.T..............................TTTT
+TTTTTTTTTTT.................P.............TTTT
+TTTTTTTTTTTTTT.......P...............T.TTTTTTT
+TTTTTT..T.T...........................T.TTTTTT
+TTTTTTTTT.T.......P.........P.....TTTTTT.TTTTT
+TT.TT..TT....................TTTTTTTTTTTTTTTTT
+T...TTTTTTTTT.......P........TTTTTTTTTTTTTTTTT
+T.T.TTTTTTTTTTTTTTT.........TTTTTTTTTTTTTTTTTT
+..TT.TTTTTTTTTTTTTT........TTTTTTTTTTTTTTTTTTT
+TT.TTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTT

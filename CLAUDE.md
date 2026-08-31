@@ -2,7 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-A browser prototype of Cannon Fodder (1993). TypeScript + Canvas 2D, bundled by
+*Boots & Bullets*, a browser game cut to the pattern of Cannon Fodder (1993).
+TypeScript + Canvas 2D, bundled by
 esbuild, served by ~90 lines of `node:http`. Three dev dependencies, **no runtime
 dependencies and no asset files** — every sprite is plotted into an offscreen
 canvas at boot (`render/sprites/`), every inch of terrain is generated, and the sound
@@ -20,6 +21,7 @@ npm run build     # one-off bundle into public/bundle.js
 npm run levels    # regenerate data/*.map from the campaign table
 npm run playtest  # drive the mission shell in headless Chromium (needs a server)
 npm run shots     # screenshot every mission (needs a server)
+npm run moments   # screenshot the moments a mission shot cannot reach
 PORT=5200 npm run dev
 ```
 
@@ -74,9 +76,17 @@ is indistinguishable from the dev server crashing on every change, and it does
 not come back. Run your own server on another port (`PORT=5210 node server.js`)
 and point harnesses at it; kill only what you started.
 
+Under `npm run dev` there is also **[/sprites.html](http://localhost:5199/sprites.html)**,
+a live gallery of every baked sprite with a deep link to each one
+(`#hut.2`, `#player.0.3`) -- the only way to look at a sprite without making the
+game show it to you. `/sprites` is the skill; it is emitted by `npm run dev`
+and deleted by `npm run build`, so production has no such page.
+
 Tests and screenshots each only cover half of it: `npm run check` proves it
 compiles and every mission is still winnable, `tools/shoot.mjs` proves it
-renders, `tools/playtest.mjs` proves it still *plays*. For anything input-,
+renders, `tools/moment.mjs` proves a *moment* renders -- a banner, an explosion
+three frames in, a plate at 4x -- by freezing the simulation and advancing it an
+exact number of steps, and `tools/playtest.mjs` proves it still *plays*. For anything input-,
 AI- or timing-shaped, drive the real game in Playwright — `main.ts` exposes
 `window.game` (and `window.__atlas`) for exactly this — rather than reasoning
 about it from the source. Several bugs here were invisible to every other check.
@@ -106,16 +116,12 @@ know what you intended and you will see it whether or not it reached the screen.
 Use `/grill` (one screen) or `/gauntlet` (the loop) — both judge in a subagent
 with no history, shown only the pixels.
 
-Those reference images are Sensible Software's. They are looked at and matched
-by eye; none of their pixels are copied in. Every sprite here stays generated in
-code — see `game/public/music/README.md` for the same call made about the music.
+The reference images are matched **by eye**. Nothing is traced or pasted in —
+not because of a rule about the pictures, but because every sprite in this game
+is plotted in code and an imported one would not match anything around it.
 
-Re-implementations like [OpenFodder](https://github.com/OpenFodder/openfodder)
-ship **no artwork** — they require the player's own copy of the original game
-data — so there are no pixels there to take. What they do have is GPL-3.0 source
-describing what the original contained and how it behaved, which is worth
-reading as documentation. Facts learned from it are free; transcribing its code
-into this repository is not.
+[OpenFodder](https://github.com/OpenFodder/openfodder) is worth reading as
+documentation of what the original contained and how it behaved.
 
 ## House style
 
@@ -135,6 +141,9 @@ All checked in under `.claude/skills/`, so they work for anyone who clones this.
 | `/grill` | One round of the loop's judgement, on one screen, without the loop. |
 | `/pixel-check` | The "is this in lore?" check: drawing code against the visual laws, and where the renderer still breaks them. |
 | `/playtest` | Drives the real game in a browser to see what the tests cannot. |
+| `/sprites` | Opens the live sprite gallery -- every baked sprite on one page, one link per sprite. For looking at what exists before drawing, and handing over what you drew. |
+| `/pixelate` | Measures a reference image and reads its shape off as a plottable mask. Use it before drawing anything matched to `docs/original-images/` -- it has settled two arguments that looked like taste and were facts. |
+| `/map` | Writes one mission by hand from an idea rather than a seed — reads `docs/map-format.md`, checks the idea is coherent before drawing, and proves the result can be won. |
 | `/commit` | Reviews the tree and stages by name — more than one session edits this tree at once. Never pushes. |
 | `/release` | Refuses a dirty tree, runs check and build, pushes `main`, then polls `GET /api/version` until the deployed URL serves that exact commit. |
 

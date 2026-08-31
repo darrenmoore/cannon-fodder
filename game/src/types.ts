@@ -30,6 +30,27 @@ export interface Actor {
   walkPhase: number;
   /** True while standing in water or quicksand: slowed, and unable to shoot. */
   wading: boolean;
+  /**
+   * Can cross deep water. Everybody can -- it is a capability rather than a
+   * setting, and it is here rather than assumed so that the movement code never
+   * has to ask what *kind* of thing it is moving. Hostages are not Actors and
+   * are the reason that matters: they keep walking round the river.
+   */
+  canSwim: boolean;
+  /** In deep water right now: slower still, and no shadow to cast. */
+  swimming: boolean;
+  /**
+   * Hit and down, but not dead. Cannot move, cannot shoot, and screams -- so he
+   * is a noise source rather than a threat, and he still counts against the
+   * objective until somebody finishes him.
+   *
+   * Lives on `Actor` rather than on `Enemy` so the movement and draw paths can
+   * ask one question, but only enemies are ever set: the squad's one-hit rule is
+   * the game's central bargain and is enforced in `damage`.
+   */
+  wounded: boolean;
+  /** Counts down to his next scream. */
+  screamTimer: number;
   /** True while standing on ice: steering is sluggish and skiddy. */
   sliding: boolean;
   /**
@@ -89,6 +110,19 @@ export interface Soldier extends Actor {
   fresh: boolean;
 }
 
+/**
+ * Where a man is looking because he heard something, and for how long.
+ *
+ * Not a state: he is still idle, still at his post, still doing whatever he was
+ * doing the moment before. It is the head only, which is the whole point --
+ * a state change would move him, and moving is what the player is being warned
+ * about rather than subjected to.
+ */
+export interface Glance {
+  at: Vec2;
+  time: number;
+}
+
 export enum EnemyState {
   Idle = 0,
   Patrol = 1,
@@ -114,6 +148,8 @@ export interface EnemyTraits {
   flank: number;
   /** Which way it circles. Fixed per enemy so it does not dither. */
   flankSide: number;
+  /** Dressed for the ground: dark jungle greens instead of the blue uniform. */
+  camo: boolean;
 }
 
 /** Rifleman, sniper or bazookateer -- see CONFIG for the per-kind stats. */
@@ -121,6 +157,8 @@ export enum EnemyKind {
   Rifle = 0,
   Sniper = 1,
   Bazooka = 2,
+  /** The target of an `assassinate` mission. Holds his post like a sniper. */
+  Officer = 3,
 }
 
 export interface EnemyStats {
@@ -155,6 +193,8 @@ export interface Enemy extends Actor {
   traits: EnemyTraits;
   /** Where it is walking to look, while investigating. */
   investigate: Vec2 | null;
+  /** Heard something too far off to be worth walking to. Head only. */
+  glance: Glance | null;
   /** Seconds spent looking around at the end of an investigation. */
   searchTime: number;
   /**
@@ -200,6 +240,23 @@ export interface Crate {
   barrel: boolean;
 }
 
+/**
+ * A supply box: the objective of a `collect` mission.
+ *
+ * Deliberately not a `Crate`. An ammo crate is a reward that also happens to
+ * be a bomb, and detonating one is a tactic; this is the thing the mission is
+ * about, so it does not explode, does not give grenades, and losing one to a
+ * stray round ends the mission. Two objects that look similar and behave
+ * oppositely need to be two types, or somebody will pass one to the other.
+ */
+export interface Supply {
+  pos: Vec2;
+  /** Destroyed by a blast. The mission cannot be completed after this. */
+  alive: boolean;
+  /** Walked over by a soldier. Collected on touch -- there is no carrying. */
+  collected: boolean;
+}
+
 export interface Mine {
   pos: Vec2;
   alive: boolean;
@@ -234,7 +291,7 @@ export interface Hostage {
 /** A hut or factory: solid until levelled, and a source of reinforcements. */
 export interface Building {
   id: number;
-  kind: 'hut' | 'factory' | 'outpost';
+  kind: 'hut' | 'factory' | 'outpost' | 'bunker';
   /**
    * What this building is *for*, which is a mission mechanic rather than a
    * shape.
@@ -245,6 +302,8 @@ export interface Building {
    * loses the mission; `neutral` is scenery with hit points.
    */
   role: 'spawner' | 'protect' | 'neutral';
+  /** Takes fire, shows it, and never falls. See `createWorld`. */
+  indestructible: boolean;
   tiles: Array<[number, number]>;
   centre: Vec2;
   x0: number;

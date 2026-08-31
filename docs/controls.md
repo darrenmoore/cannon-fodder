@@ -34,8 +34,7 @@ levers rather than one dial.
 | | What changes |
 |---|---|
 | **Rookie** | They shoot slowly and badly, and **only the nearest man** hears your gunfire. No fog. |
-| **Regular** | Gunfire carries. Some come looking, and they do not walk straight at you. |
-| **Veteran** | **Fog of war.** They hunt you across the map, flank hard, and the huts keep feeding. |
+| **Veteran** | They hunt you across the map, flank hard, and the huts keep feeding. **No fog.** |
 | **Elite** | Thick fog. They swarm, they flank, and they throw grenades. |
 
 Each mission also has a **doctrine** — garrison, patrols, hunters, ambush or
@@ -50,12 +49,12 @@ fight.
 
 ### Noise and sight
 
-- **Your gunfire carries.** From Regular up, shooting alerts everything within
+- **Your gunfire carries.** From Veteran up, shooting alerts everything within
   earshot and they walk to the sound. Opening fire is a decision.
 - **Explosions carry twice as far.**
 - **They share sightings.** Once one of them sees you, the others know where you
   were, and hunters keep coming to it.
-- **Fog of war** on Veteran and Elite: you only see what your men can see, the
+- **Fog of war** on Elite alone: you only see what your men can see, the
   ground you have crossed stays dimly remembered, and **enemies outside your
   sight are not drawn**. Tall grass blocks your vision exactly as it blocks
   theirs, so a grass map in fog is genuinely blind work.

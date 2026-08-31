@@ -1,0 +1,65 @@
+name: Throw Your Voice
+theme: jungle
+objective: collect
+doctrine: patrol
+order: 16
+mechanic: a shot that lands elsewhere
+brief: They go to where the round landed, not to who fired it. Put one in the far trees and walk the other way.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.............TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...............TTTTTTT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTT
+TTTTTTTTTTTTT.................................TTTTTTTTT.................TTTTTTTTTTTTTTTTTT.....TTTTT
+TTTTTTT..................TTTT...........E.....TTTTTTTTT...............TTTTTTTTTTTTTTTT.........TTTTT
+TTTTTT.................TTTTTTTT................TTTTTTT................TTTTTTTTT................TTTTT
+TTTTTT................TTTTTTTTT.................TTTTTT...............TTTTTTTTTTT...............TTTTT
+TTTTTT................TTTTTTTTT..................TTTT................TTTTTTTTTTT..............TTTTTT
+TTTTT.................TTTTTTTTT.....................E................TTTTTTTTTTT..............TTTTTT
+TTTTT.................TTTTTTTTT.......................................TTTTTTTTTT..............TTTTTT
+TTTTT.................TTTTTTTTT.......................................TTTTTTTTT...............TTTTTT
+TTTTT..................TTTTTTT........................................TTTTTTTTT..............TTTTTTT
+TTTTT....................TTT..................k.................k......TTTTTTT..........E....TTTTTTT
+TTTTT....................................................................TTTT................TTTTTTT
+TTTT........................................................................................TTTTTTTT
+TTTT........................................................................................TTTTTTTT
+TTTT..............................................................S.................k.......TTTTTTTT
+TTTT........................................................................................TTTTTTTT
+TTTT..........................p.............E..............................................TTTTTTTTT
+TTTT..................................".............................................""""...TTTTTTTTT
+TTTTT..........."".................""""""""........................................""""""..TTTTTTTTT
+TTTTT.......P...."................"""""""""".................."....................""""""".TTTTTTTTT
+TTTTT....P.....P."".............."""""""""""..........c...""""""""..............E..""""""".TTTTTTTTT
+TTTTT............""..............""""""""""".............""""""""""................""""""".TTTTTTTTT
+TTTTT......P....................."""""""""""............."""""""""""..p............."""""...TTTTTTTT
+TTTTTT..P.....P.................."""""""""""............."""""""""""................"""""...TTTTTTTT
+TTTTTT..........................."""""""""""....p........"""""""""""..................""....TTTTTTTT
+TTTTTT............................""""""""""............."""""""""""........................TTTTTTTT
+TTTTTTT...................E........""""""""...............""""""""".........................TTTTTTTT
+TTTTTTT..............................."...................""""""""".........................TTTTTTTT
+TTTTTTTT............c......................................"""""""".......................B..TTTTTTT
+TTTTTTTT....................................................."""""...........................TTTTTTT
+TTTTTTTT......................k..............................................................TTTTTTT
+TTTTTTTT.....................................................................................TTTTTTT
+TTTTTTTT........................................................E..........TTTT..............TTTTTTT
+TTTTTTTT..............TTT................................................TTTTTTTT............TTTTTTT
+TTTTTTTT............TTTTTTTT......E.....................................TTTTTTTTT............TTTTTTT
+TTTTTTTT...........TTTTTTTTTT...........................................TTTTTTTTT............TTTTTTT
+TTTTTTTT...........TTTTTTTTTTT............................k............TTTTTTTTTT............TTTTTTT
+TTTTTTTT...........TTTTTTTTTTT..........................................TTTTTTTTT............TTTTTTT
+TTTTTTTT...........TTTTTTTTTTT..........................................TTTTTTTTT............TTTTTTT
+TTTTTTTT............TTTTTTTTTT..................TTTTT....................TTTTTTT.............TTTTTTT
+TTTTTTTT............TTTTTTTTT.......S..........TTTTTTT..E..................TTTT..............TTTTTTT
+TTTTTTT.............TTTTTTTTT.................TTTTTTTTT..............TTT.....................TTTTTTT
+TTTTTTT..............TTTTTTTT.................TTTTTTTTT.......TTTTTTTTTTETTTT................TTTTTTT
+TTTTTTT......TTT.......TTTTT...............TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.............TTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTT................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.........TTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTT.........TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

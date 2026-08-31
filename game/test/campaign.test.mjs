@@ -42,6 +42,39 @@ const {
   `data:text/javascript;base64,${Buffer.from(built.outputFiles[0].text).toString('base64')}`
 );
 
+/*
+ * `unlock.ts` reaches menu.ts for the theatre table, which reaches the DOM at
+ * module scope for nothing this test needs -- so it is bundled separately with
+ * a `__DEV__` define, the same way the real build does it.
+ */
+const unlockBuild = await esbuild.build({
+  entryPoints: [join(ROOT, 'src', 'sim', 'unlock.ts')],
+  bundle: true,
+  write: false,
+  format: 'esm',
+  target: 'es2022',
+  define: { __DEV__: 'false' },
+  logLevel: 'silent',
+});
+const { resolveUnlocks, FREE_PER_THEATRE } = await import(
+  `data:text/javascript;base64,${Buffer.from(unlockBuild.outputFiles[0].text).toString('base64')}`
+);
+
+/** A level list shaped like the real one, without needing the real one. */
+const lvl = (id, theme) => ({
+  id, theme, name: id, objective: 'eliminate', nokill: false, timeLimit: 0,
+  doctrine: 'garrison', brief: '', mechanic: '', width: 64, height: 64,
+});
+const CAMPAIGN = [
+  ...Array.from({ length: 6 }, (_, i) => lvl(`j${i}`, 'jungle')),
+  ...Array.from({ length: 5 }, (_, i) => lvl(`d${i}`, 'desert')),
+  ...Array.from({ length: 4 }, (_, i) => lvl(`a${i}`, 'arctic')),
+];
+const withClears = (ids) => ({
+  v: 1, squad: [], fallen: [], issued: 0, renameUsed: false,
+  records: Object.fromEntries(ids.map((id) => [id, { bestHome: 1, bestTime: 60, clears: ['rookie'] }])),
+});
+
 let run = 0;
 const test = (name, fn) => {
   run++;
@@ -66,7 +99,7 @@ const win = (state, squad, over = {}) => recordMission(state, {
   won: true,
   missionId: 'chicken-run',
   missionName: 'Chicken Run',
-  difficulty: 'regular',
+  difficulty: 'veteran',
   time: 100,
   survived: squad.map((t) => t.name),
   died: [],
@@ -138,7 +171,7 @@ test('winning buries the dead and takes them off the roster', () => {
   // The grave remembers the mission that did it, which is the detail that turns
   // a name into an event.
   assert.equal(state.fallen[0].mission, 'Chicken Run');
-  assert.equal(state.fallen[0].difficulty, 'regular');
+  assert.equal(state.fallen[0].difficulty, 'veteran');
 });
 
 test('a dead man never lands on the roster and the hill at once', () => {
@@ -182,7 +215,7 @@ test('losing changes absolutely nothing', () => {
     won: false,
     missionId: 'chicken-run',
     missionName: 'Chicken Run',
-    difficulty: 'regular',
+    difficulty: 'veteran',
     time: 60,
     survived: ['JOOLS'],
     died: ['JOPS', 'STOO', 'RJ', 'GARY', 'ANDY'],
@@ -210,11 +243,11 @@ test('a clear is recorded once per difficulty', () => {
   const { state } = fresh();
   win(state, deploy(state, 6));
   win(state, deploy(state, 6));
-  assert.deepEqual(state.records['chicken-run'].clears, ['regular']);
+  assert.deepEqual(state.records['chicken-run'].clears, ['veteran']);
 
   const after = win(state, deploy(state, 6), { difficulty: 'elite' });
   assert.ok(after.newClear);
-  assert.deepEqual(state.records['chicken-run'].clears, ['regular', 'elite']);
+  assert.deepEqual(state.records['chicken-run'].clears, ['veteran', 'elite']);
 });
 
 test('the first clear is flagged as a record on every axis', () => {
@@ -276,6 +309,41 @@ test('a campaign survives a reload', () => {
   assert.equal(reloaded.records['chicken-run'].bestHome, 2);
 });
 
+test('a save written before Regular was dropped keeps everything it had', () => {
+  // The exact shape an older build wrote: a retired difficulty in `clears`, on
+  // a grave, and a squad and records worth not throwing away. Migrating by
+  // bumping the save version would have discarded all of it, because a version
+  // mismatch returns an empty campaign.
+  store.set('cf.campaign', JSON.stringify({
+    v: 1,
+    squad: [{ name: 'HAWK', missions: 6, own: true }],
+    fallen: [{ name: 'JOPS', missions: 1, mission: 'Chicken Run', difficulty: 'regular' }],
+    records: { 'chicken-run': { bestHome: 5, bestTime: 161, clears: ['regular'] } },
+    issued: 7,
+    renameUsed: true,
+  }));
+  const state = loadCampaign();
+
+  assert.equal(state.squad.length, 1, 'the living squad survives the migration');
+  assert.equal(state.squad[0].name, 'HAWK');
+  assert.equal(state.fallen.length, 1, 'and so does Boot Hill');
+  assert.equal(state.renameUsed, true);
+  assert.equal(state.records['chicken-run'].bestHome, 5);
+
+  // Regular becomes Rookie: the lower of the two it could not be told apart
+  // from, so a clear is never credited with more than it earned.
+  assert.deepEqual(state.records['chicken-run'].clears, ['rookie']);
+  assert.equal(state.fallen[0].difficulty, 'rookie');
+});
+
+test('a save holding both a retired tier and the one it maps to claims one star, not two', () => {
+  store.set('cf.campaign', JSON.stringify({
+    v: 1, squad: [], fallen: [], issued: 0, renameUsed: false,
+    records: { 'chicken-run': { bestHome: 3, bestTime: 90, clears: ['regular', 'rookie'] } },
+  }));
+  assert.deepEqual(loadCampaign().records['chicken-run'].clears, ['rookie']);
+});
+
 test('a corrupt save costs the roster, not the game', () => {
   store.set('cf.campaign', '{"v":1,"squad":"not an array"');
   const state = loadCampaign();
@@ -296,13 +364,62 @@ test('a tampered save cannot resurrect a name', () => {
   store.set('cf.campaign', JSON.stringify({
     v: 1, issued: 0, renameUsed: false, records: {},
     squad: [{ name: 'JOOLS', missions: 2 }],
-    fallen: [{ name: 'JOPS', missions: 1, mission: 'Chicken Run', difficulty: 'regular' }],
+    fallen: [{ name: 'JOPS', missions: 1, mission: 'Chicken Run', difficulty: 'veteran' }],
   }));
   const state = loadCampaign();
   assert.ok(state.issued >= 2);
   const squad = deploy(state, 6);
   assert.ok(!squad.some((t) => t.name === 'JOPS'), 'JOPS is buried and must stay buried');
 });
+// --- 100/R2: what a player may start, and why
+
+test('a fresh campaign opens the first three of every theatre, and no more', () => {
+  const u = resolveUnlocks(CAMPAIGN, withClears([]));
+  assert.equal(FREE_PER_THEATRE, 3);
+  assert.deepEqual([...u.open].sort(), ['a0', 'a1', 'a2', 'd0', 'd1', 'd2', 'j0', 'j1', 'j2']);
+  // Three at once in each theatre is the whole point: a player stuck on one
+  // mission can go and fight somewhere else instead of hitting a wall.
+  assert.equal(u.byTheatre.get('jungle').open, 3);
+  assert.equal(u.byTheatre.get('desert').open, 3);
+  assert.equal(u.byTheatre.get('arctic').open, 3);
+});
+
+test('clearing one opens one more, in that theatre and not the others', () => {
+  const u = resolveUnlocks(CAMPAIGN, withClears(['j1']));
+  assert.equal(u.byTheatre.get('jungle').open, 4, 'the jungle gains one');
+  assert.equal(u.byTheatre.get('desert').open, 3, 'the desert does not');
+  assert.ok(u.open.has('j3'));
+  assert.ok(!u.open.has('d3'));
+});
+
+test('it is a budget, not a chain -- any clear pays for the next one along', () => {
+  // Clearing the *third* mission opens the fourth, not the fourth-after-third.
+  const u = resolveUnlocks(CAMPAIGN, withClears(['j2']));
+  assert.ok(u.open.has('j3'));
+  assert.ok(!u.open.has('j4'));
+});
+
+test('a theatre cannot open more missions than it has', () => {
+  const u = resolveUnlocks(CAMPAIGN, withClears(['a0', 'a1', 'a2', 'a3']));
+  const arctic = u.byTheatre.get('arctic');
+  assert.equal(arctic.total, 4);
+  assert.equal(arctic.open, 4, 'clamped to what exists');
+  assert.equal(arctic.cleared, 4);
+});
+
+test('a mission already beaten stays open however the campaign is reordered', () => {
+  // Somebody who cleared the last jungle mission before an edit moved it must
+  // never find their own history locked behind them.
+  const u = resolveUnlocks(CAMPAIGN, withClears(['j5']));
+  assert.ok(u.open.has('j5'));
+});
+
+test('the test range is never gated behind campaign progress', () => {
+  const withDev = [...CAMPAIGN, { ...lvl('range', 'jungle'), dev: true }];
+  assert.ok(resolveUnlocks(withDev, withClears([])).open.has('range'));
+});
+
+
 
 console.log(`\n  ${run} campaign checks run`);
 if (process.exitCode) {

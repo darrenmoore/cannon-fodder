@@ -1,9 +1,13 @@
+import { CONFIG } from './config.js';
 import { Camera } from './render/camera.js';
 import { missionResolved, missionStarted, startSession } from './shell/analytics.js';
 import { unlockAudio } from './shell/audio.js';
+import { installPixelFace } from './ui/pixelface.js';
 import { Controls } from './ui/controls.js';
 import { Game } from './sim/game.js';
 import { closeSheet, sheetOpen, showSettings, showSheet } from './ui/sheet.js';
+import { fadeIn, setBlackout } from './ui/blackout.js';
+import { debug } from './ui/debug.js';
 import { Layout } from './ui/layout.js';
 import { Hud } from './ui/hud.js';
 import { Input } from './shell/input.js';
@@ -55,6 +59,22 @@ async function boot(): Promise<void> {
   // with the site. When it is refused, music.ts arms the first gesture instead,
   // and the switch says so rather than looking broken.
   startMusic();
+
+  /*
+   * The chrome's typeface, before anything measures itself against it.
+   *
+   * It is built from the same glyph table the canvas plots (`src/glyphs.ts`)
+   * and installed as a data-URI `@font-face`, so the sidebar and the
+   * battlefield are set in one face rather than in whatever monospace the
+   * player's machine happens to supply -- which is 004 H3, and the reason two
+   * critics independently picked the UI text as the thing that could not have
+   * come from a 1993 machine.
+   *
+   * Failure is not fatal and not worth a branch: the stylesheet lists the old
+   * monospace stack behind it, so a browser that refuses the font falls back to
+   * exactly what it used before.
+   */
+  installPixelFace();
 
   const canvas = document.getElementById('screen') as HTMLCanvasElement;
   const ctx = canvas.getContext('2d', { alpha: false })!;
@@ -183,7 +203,15 @@ async function boot(): Promise<void> {
       // the other end of a mission -- it is a title card, not a head start for
       // the garrison, so nothing moves until the player has put it away.
       if (!game || sheetOpen() || hud.briefingUp) return;
-      game.step(dt);
+      // Dev only, and the second and last line the debug switches cost anyone:
+      // the world holds while the draw carries on, so a capture harness can
+      // advance it by an exact number of steps and photograph the result.
+      //
+      // The gate is around the *step* alone and not around the frame. The HUD
+      // is what raises the end-of-mission panel, so freezing it too made the
+      // one moment worth photographing -- winning -- the one moment that could
+      // not be photographed.
+      if (!(__DEV__ && debug.paused)) game.step(dt);
       hud.update(game.world);
     },
     (alpha) => {
@@ -289,17 +317,40 @@ async function boot(): Promise<void> {
      * seen the map. So the click that dismisses the briefing is swallowed --
      * the squad gets its first order when the player has actually chosen one.
      */
+    /*
+     * Every mission opens on black and fades in, whichever way you arrived.
+     *
+     * Coming from the mission before, the screen is already out -- the results
+     * panel was drawn on it -- so this is simply not turning it back on yet,
+     * and the briefing lands on the same black the panel did. Coming from the
+     * list it is turned out here, so the two routes look the same rather than
+     * one of them cutting straight to a live map.
+     */
+    setBlackout(1);
     hud.showBriefing(game.world);
     const dismissBriefing = (e: Event): void => {
       if (!game || game.world.phase !== 0) return;
       e.preventDefault();
       e.stopPropagation();
       hud.hideOverlay();
-      // Only a *press* has an order to swallow. Dismissing with a key used to
-      // arm the swallow anyway, and with nothing to consume it, it sat there
-      // and ate whichever move order the player gave next -- possibly minutes
-      // later, and looking exactly like the game ignoring a click.
-      if (e.type === 'pointerdown') input.swallowNextOrder();
+      // ...and the mission comes up out of the black. The order matters: the
+      // briefing is gone first, so what fades in is the map and not the card.
+      void fadeIn(CONFIG.banner.fade);
+      /*
+       * Nothing is swallowed here, and that is the fix rather than an omission.
+       *
+       * `stopPropagation` above runs in the *capture* phase on `window`, so the
+       * dismissing press never reaches the canvas and never becomes an order --
+       * there is nothing left for a swallow to eat. Arming one anyway left it
+       * sitting there to eat the player's next real order, which is exactly
+       * what it did: click one closed the briefing, **click two did nothing**,
+       * click three worked. Reproduced on Chicken Run, and absent when the
+       * briefing was dismissed with a key.
+       *
+       * The keyboard half of this was found and fixed in 004 and guarded with
+       * `if (e.type === 'pointerdown')` -- a test of the event's type, when the
+       * question is whether the game ever saw it. It never does.
+       */
       teardownBriefing();
     };
     const teardownBriefing = (): void => {
@@ -354,6 +405,9 @@ async function boot(): Promise<void> {
       } catch {
         last = null;
       }
+      // The list is its own screen and owns the whole window; anything left of
+      // the last mission's fade would sit over it.
+      setBlackout(0);
       startMusic();
       const chosen = await showMenu(levels, last, difficulty, (d) => {
         difficulty = d;

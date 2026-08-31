@@ -21,6 +21,33 @@ export function bakeCrate(): Sprite {
   return c;
 }
 
+/**
+ * A supply box: the objective of a `collect` mission.
+ *
+ * Deliberately not a recolour of the ammo crate. The two sit on the same map
+ * and do opposite things -- one is a reward that also happens to be a bomb, the
+ * other is the thing you came for and ends the mission if it goes up -- so they
+ * have to be told apart in a glance at twelve pixels, by silhouette before
+ * colour. The crate is tall, brown and X-braced; this is a squat olive case,
+ * wider than it is high, with a lid seam and a stencil band across it.
+ */
+export function bakeSupply(): Sprite {
+  const { c, g } = makeCanvas(14, 11);
+  rect(g, 1, 3, 12, 7, '#4d5a34');
+  rect(g, 1, 3, 12, 2, '#63723f');   // lid, catching the light
+  rect(g, 1, 8, 12, 2, '#3a4527');   // shadowed foot
+  rect(g, 1, 5, 12, 1, '#2e3720');   // the seam the lid opens on
+  // Stencil band: the one high-contrast mark, and the thing the eye finds.
+  rect(g, 4, 6, 6, 2, '#d8d2b4');
+  px(g, 6, 6, '#4d5a34');
+  px(g, 7, 7, '#4d5a34');
+  // Carry handles, one each end, which is what makes it read as a case.
+  rect(g, 0, 5, 1, 2, '#2e3720');
+  rect(g, 13, 5, 1, 2, '#2e3720');
+  addOutline(c, '#161a0e');
+  return c;
+}
+
 /** Fuel barrel: scenery explosive, no pickup. */
 export function bakeBarrel(): Sprite {
   const { c, g } = makeCanvas(12, 14);

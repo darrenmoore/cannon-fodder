@@ -2,7 +2,7 @@ name: Minefield
 theme: desert
 objective: demolish
 doctrine: garrison
-order: 5
+order: 7
 mechanic: mines
 brief: Mines everywhere. Shoot a barrel to clear a lane, then level the huts.
 tile: 16

@@ -75,6 +75,30 @@ export const PALETTES = {
     boots: '#0a0a10',
     gun: '#14181c',
   },
+  /*
+   * Camouflage: dark jungle greens, pitched *below* the grass rather than at it.
+   *
+   * Matching the grass exactly would have made him invisible rather than hard to
+   * see, and matching it approximately would have made him look like one of your
+   * own -- the squad is green too. So he sits in the tone of tree shadow: he
+   * disappears against the canopy and the dark half of a field, reads as a
+   * silhouette on open ground, and never reads as yours, because yours are a
+   * lighter green with a lime kit and rank pips over their heads.
+   */
+  camo: {
+    outline: '#060a04',
+    helmetLight: '#6a8438',
+    helmet: '#3a5220',
+    helmetDark: '#182608',
+    face: '#b4763a',
+    faceDark: '#6e3c14',
+    body: '#1f3210',
+    bodyLight: '#33501c',
+    kit: '#4a5f28',
+    kitAlt: '#5c5424',
+    boots: '#080c04',
+    gun: '#14181c',
+  },
   sniper: {
     outline: '#080a0e',
     helmetLight: '#b0b8c8',
@@ -89,6 +113,32 @@ export const PALETTES = {
     boots: '#0a0a0c',
     gun: '#0e1014',
   },
+  /*
+   * The officer.
+   *
+   * He has to be pickable out of a crowd of riflemen at thirteen pixels, and
+   * the only levers that read at that size are the helmet and the torso -- kit
+   * detail is two pixels and disappears. So he gets a peaked cap in near-black
+   * against a pale band, which is the highest-contrast thing on the sprite and
+   * sits where the eye already looks, and a dress tunic several steps darker
+   * and bluer than a rifleman's field green. The gold collar is one pixel and
+   * is a bonus, not the tell.
+   */
+  officer: {
+    outline: '#07080c',
+    helmetLight: '#8d939e',
+    helmet: '#1a1d26',
+    helmetDark: '#0b0d12',
+    face: '#d08848',
+    faceDark: '#8c4c1e',
+    body: '#1d2a22',
+    bodyLight: '#33463a',
+    kit: '#c8a84c',
+    kitAlt: '#8e1f24',
+    boots: '#08080a',
+    gun: '#101418',
+  },
+
   bazooka: {
     outline: '#0c0603',
     helmetLight: '#e8a878',

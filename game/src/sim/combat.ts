@@ -3,6 +3,7 @@ import { debug } from '../ui/debug.js';
 import { sfxDeath, sfxEnemyShot, sfxExplosion, sfxShot } from '../shell/audio.js';
 import { buildingAt, damageBuilding } from './buildings.js';
 import { raiseAlarm } from './enemies.js';
+import { creditKill } from './pressure.js';
 import { killHostage } from './hostages.js';
 import { tileAtWorld } from './map.js';
 import { primeMinesInBlast } from './mines.js';
@@ -105,7 +106,12 @@ export function stepBullets(world: World, dt: number): void {
       // A round that stopped on a building damages it; on a tree it just chips.
       const struck = buildingAt(world, b.pos.x, b.pos.y, 3);
       if (struck && !friendlyToKeep(struck, b.faction)) {
-        damageBuilding(world, struck, b.blast > 0 ? CONFIG.building.blastDamage : b.buildingDamage);
+        // Where it stopped and where it was travelling from, so a round that
+        // barely scratches the wall can throw its chips back at the shooter.
+        const from = { x: b.pos.x - b.vel.x, y: b.pos.y - b.vel.y };
+        damageBuilding(world, struck,
+          b.blast > 0 ? CONFIG.building.blastDamage : b.buildingDamage,
+          { x: b.pos.x, y: b.pos.y }, from);
       }
       if (b.blast > 0) detonateRound(world, b);
       else world.fx.impact(b.pos);
@@ -209,6 +215,35 @@ export function stepDying(world: World, dt: number): void {
   }
 }
 
+/**
+ * Down, not out.
+ *
+ * The one-hit rule is the game's central bargain and it is what makes every
+ * record honest, so it is untouched for the squad -- this only ever fires on
+ * theirs, and only once per man. What it buys is a different kind of enemy for
+ * the price of a coin flip: one who cannot shoot back, still counts against the
+ * objective, and screams for his friends every couple of seconds until somebody
+ * finishes him. Walking away from one is a choice with a cost.
+ *
+ * A wounding is *not* a kill, which is the rule doing something quietly clever
+ * on a covert mission: putting a sentry down does not end the run, and leaving
+ * him screaming is how it ends up ending anyway.
+ *
+ * Returns true if the man was wounded rather than killed.
+ */
+function wound(world: World, actor: Actor): boolean {
+  if (actor.faction !== Faction.Enemy || actor.wounded) return false;
+  if (Math.random() >= CONFIG.enemy.woundChance) return false;
+
+  actor.wounded = true;
+  actor.hp = 1;                 // the next hit, whatever it is, finishes him
+  actor.vel.x = 0;
+  actor.vel.y = 0;
+  actor.screamTimer = 0;        // he calls out at once
+  world.fx.blood(actor.pos);
+  return true;
+}
+
 export function damage(world: World, actor: Actor, amount = 1): void {
   if (!actor.alive) return;
   // The only line the debug panel costs the simulation. `__DEV__` is folded to
@@ -216,6 +251,7 @@ export function damage(world: World, actor: Actor, amount = 1): void {
   if (__DEV__ && debug.invulnerable && actor.faction === Faction.Player) return;
   actor.hp -= amount;
   if (actor.hp > 0) return;
+  if (wound(world, actor)) return;
 
   actor.alive = false;
   actor.vel.x = 0;
@@ -230,6 +266,8 @@ export function damage(world: World, actor: Actor, amount = 1): void {
 
   if (actor.faction === Faction.Enemy) {
     world.kills++;
+    // Counted against the spot it was made from, not against the mission.
+    creditKill(world);
     // Free up a reinforcement slot on whichever building produced it.
     const from = (actor as { spawnedBy?: number }).spawnedBy ?? -1;
     if (from >= 0) {
@@ -294,6 +332,24 @@ export function explode(world: World, pos: Vec2, radius: number, by?: Faction): 
     if (Math.hypot(crate.pos.x - pos.x, crate.pos.y - pos.y) <= radius) detonateCrate(world, crate);
   }
   primeMinesInBlast(world, pos.x, pos.y, radius);
+
+  /*
+   * A supply box in the blast is destroyed, and with it the mission.
+   *
+   * Blasts only -- a rifle round through a crate of supplies leaves supplies
+   * with a hole in them. Making every stray bullet a mission-ender would turn a
+   * `collect` map into a mission about not shooting near the objective, which
+   * is a worse game than one about getting to it. A grenade is a decision, and
+   * a decision is allowed to cost you.
+   */
+  for (const box of world.supplies) {
+    if (!box.alive || box.collected) continue;
+    if (Math.hypot(box.pos.x - pos.x, box.pos.y - pos.y) <= radius) {
+      box.alive = false;
+      world.fx.sparkle(box.pos, '#c86a3a');
+      world.fx.popup({ x: box.pos.x, y: box.pos.y - 10 }, 'SUPPLIES LOST', '#ff6a48', 'hostage');
+    }
+  }
 }
 
 export function detonateCrate(world: World, crate: { pos: Vec2; alive: boolean; barrel: boolean }): void {

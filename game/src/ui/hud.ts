@@ -1,8 +1,10 @@
+import { CONFIG } from '../config.js';
 import { DIFFICULTIES } from '../sim/difficulty.js';
-import { OBJECTIVE_TEXT } from '../sim/objectives.js';
+import { objectiveText } from '../sim/objectives.js';
 import { formatTime, rankName, rankShort, rankTier } from '../sim/campaign.js';
 import { protectedBuilding } from '../sim/objectives.js';
-import { button, fill, heading, meter, plate, readout } from './ui.js';
+import { bindKeys, button, fill, heading, meter, plate, readout } from './ui.js';
+import { setBlackout } from './blackout.js';
 import { Phase } from '../types.js';
 import type { Aftermath, MissionRecord } from '../sim/campaign.js';
 import type { World } from '../sim/world.js';
@@ -161,6 +163,19 @@ export class Hud {
   }
 
   update(world: World): void {
+    /*
+     * The screen goes out with the mission, chrome included.
+     *
+     * Driven from `phaseTime` rather than a CSS transition, so it takes the
+     * same time on every machine and a capture can be frozen at an exact point
+     * in it -- the same bargain the fixed simulation step makes. The one place
+     * the no-alpha rule is deliberately spent, and the reference spends it in
+     * the same place.
+     */
+    if (world.phase !== Phase.Playing) {
+      const { hold, fade } = CONFIG.banner;
+      setBlackout(Math.max(0, Math.min(1, (world.phaseTime - (hold - fade)) / fade)));
+    }
     // Keyed on the difficulty as well as the map. It used to be the map name
     // alone, so replaying the *same* mission at a new setting kept the old chip
     // -- the world was genuinely Elite and the sidebar still said Rookie.
@@ -195,10 +210,22 @@ export class Hud {
     }
     this.objective.textContent = world.status;
 
-    if (world.map.objective === 'survive') {
+    // Two different clocks, drawn the same way: `survive` counts you toward
+    // winning, `timelimit` counts you toward losing. Both are "seconds left",
+    // which is the only thing the player has to act on.
+    const span = world.map.timeLimit > 0 ? world.map.timeLimit
+      : world.map.objective === 'survive' ? world.map.duration
+        : 0;
+    if (span > 0) {
       this.timer.root.hidden = false;
-      const left = Math.max(0, world.map.duration - world.time);
-      this.timer.set(1 - left / world.map.duration, `${Math.ceil(left)}s`);
+      // The label is the difference between the two clocks. On `survive` the
+      // bar filling is you winning; under a `timelimit` it is you running out,
+      // and calling both of them "hold" told the player the wrong thing about
+      // which one he was looking at.
+      const head = this.timer.root.querySelector('.ui-meter-label');
+      if (head) head.textContent = world.map.timeLimit > 0 ? 'time left' : 'hold';
+      const left = Math.max(0, span - world.time);
+      this.timer.set(1 - left / span, `${Math.ceil(left)}s`);
     } else {
       this.timer.root.hidden = true;
     }
@@ -206,6 +233,11 @@ export class Hud {
     // The briefing owns the overlay until it is dismissed.
     if (this.briefing && world.phase === Phase.Playing) return;
     if (world.phase === this.lastPhase) return;
+    // And the banner owns the screen when a mission ends. The panel used to
+    // arrive on the same frame the mission resolved, which left no moment at
+    // all between playing and reading -- the ceremony the original makes of
+    // finishing is the banner, and a card over the top of it cancels it.
+    if (world.phase !== Phase.Playing && world.phaseTime < CONFIG.banner.hold) return;
     this.lastPhase = world.phase;
 
     if (world.phase === Phase.Playing) {
@@ -334,7 +366,28 @@ export class Hud {
     fill(this.overlayCard, card);
     this.overlay.hidden = false;
     this.overlay.classList.add('interactive');
+
+    /*
+     * The caps this panel draws have to be real.
+     *
+     * `button()` renders a `data-key` cap beside each label, and `bindKeys` is
+     * what turns one into a key you can press -- but it was called by sheet.ts
+     * and by nothing else, so the end panel printed `R`, `Enter` and `Esc` and
+     * honoured none of them. Measured, one at a time: Enter did nothing at all,
+     * R restarted only because input.ts happens to bind R itself, and Esc
+     * reached the pause handler and stacked a second modal on top of the win
+     * panel. A player who presses the key the game has just printed at him is
+     * owed the thing it says.
+     *
+     * It binds in capture and stops the press, which is also what keeps Esc
+     * from reaching `input.onPause` underneath.
+     */
+    this.unbindResultKeys?.();
+    this.unbindResultKeys = bindKeys(this.overlay);
   }
+
+  /** Dropped when the panel comes down, so its keys die with it. */
+  private unbindResultKeys: (() => void) | null = null;
 
   /**
    * Shown briefly at the start of a mission, so you know what you are doing.
@@ -352,7 +405,7 @@ export class Hud {
     card.appendChild(Object.assign(document.createElement('div'), {
       className: 'briefing-title', textContent: world.map.name,
     }));
-    const objective = OBJECTIVE_TEXT[world.map.objective] ?? world.map.objective;
+    const objective = objectiveText(world.map);
     card.appendChild(Object.assign(document.createElement('div'), {
       className: 'briefing-obj', textContent: objective,
     }));
@@ -391,6 +444,10 @@ export class Hud {
     this.overlay.hidden = true;
     this.overlay.classList.remove('interactive');
     this.lastPhase = null;
+    // A hidden panel must not keep answering keys: the mission underneath owns
+    // R and Esc again the moment the card is gone.
+    this.unbindResultKeys?.();
+    this.unbindResultKeys = null;
   }
 }
 
@@ -403,5 +460,18 @@ function failureReason(world: World): string {
   // told it was is the game failing to explain what just happened.
   const keep = protectedBuilding(world);
   if (keep && !keep.standing) return 'The outpost was levelled. There was nothing left to hold.';
+  if (world.map.objective === 'collect' && world.supplies.some((s) => !s.alive && !s.collected)) {
+    return 'The supplies went up. There was nothing left to recover.';
+  }
+  // Before the wipe-out line for the same reason as the others: a squad that
+  // ran out of time is standing there reading the panel.
+  if (world.map.timeLimit > 0 && world.time >= world.map.timeLimit) {
+    return 'The clock ran out.';
+  }
+  // Same reasoning: a squad that got somebody killed on a covert approach is
+  // not a squad that was wiped out, and it is still standing there reading it.
+  if (world.map.nokill && world.kills > 0) {
+    return 'Somebody died. A covert approach is over the moment it makes a body.';
+  }
   return 'The squad was wiped out.';
 }

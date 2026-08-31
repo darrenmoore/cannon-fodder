@@ -5,7 +5,7 @@
  *
  *   node tools/shoot.mjs                       # every mission, default spots
  *   node tools/shoot.mjs --out shots/after     # somewhere else
- *   node tools/shoot.mjs --only ice-station    # one mission
+ *   node tools/shoot.mjs --only ice-station    # one mission, or a comma-separated list
  *   node tools/shoot.mjs --menu                # just the level select
  *   node tools/shoot.mjs --zoom 2              # magnify to inspect tiling
  *   node tools/shoot.mjs --port 5199           # against a dev server you own
@@ -113,7 +113,11 @@ async function main() {
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 
   const maps = await (await fetch(`${BASE}/api/maps`)).json();
-  const wanted = ONLY ? maps.filter((m) => m.id === ONLY) : maps;
+  // A comma-separated list, not just one id. At twelve missions shooting the
+  // lot was a minute; at thirty-two it is long enough that "check the four I
+  // just changed" needs to be one command rather than four.
+  const only = ONLY ? new Set(ONLY.split(',').map((s) => s.trim()).filter(Boolean)) : null;
+  const wanted = only ? maps.filter((m) => only.has(m.id)) : maps;
   if (wanted.length === 0) throw new Error(`no mission matched --only ${ONLY}`);
 
   await page.goto(BASE, { waitUntil: 'networkidle' });
@@ -136,11 +140,31 @@ async function main() {
     }, map.id);
 
     await page.waitForFunction(() => !!window.game, null, { timeout: 10000 });
-    // Let the briefing overlay clear and the first frames settle.
-    await page.evaluate(() => {
-      const o = document.getElementById('overlay');
-      if (o) o.hidden = true;
-    });
+
+    /*
+     * Dismiss the briefing, do not hide it.
+     *
+     * This used to reach in and set `overlay.hidden`, which cleared the picture
+     * without telling the game -- `hud.briefingUp` stayed true, `hud.update()`
+     * returns early while it is, and the sidebar therefore never rebuilt for
+     * the mission being photographed. Every shot after the first came out with
+     * the new map's terrain and the *previous* mission's name, squad and
+     * objective in the panel beside it.
+     *
+     * That is precisely the failure docs/loop.md is a record of: a capture that
+     * looks right, is confidently wrong, and gets believed. So the briefing is
+     * dismissed the way a player dismisses it, and the shot waits until the
+     * panel actually says the mission it is about to photograph.
+     */
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(
+      (name) => {
+        const el = document.querySelector('.hud-mission');
+        return !!el && el.textContent.includes(name);
+      },
+      map.name,
+      { timeout: 10000 },
+    );
     await page.waitForTimeout(400);
 
     const rows = artRows(await (await fetch(`${BASE}/api/maps/${map.id}`)).text());
@@ -198,7 +222,20 @@ async function main() {
       console.log(`  ${name}`);
     }
 
+    /*
+     * Back to the list, the long way round.
+     *
+     * A single Escape used to land on the mission select and this tool has
+     * asked for exactly that ever since. It stopped being true when the pause
+     * sheet arrived: Escape now dismisses a briefing if one is up, then opens
+     * the sheet, and the list is behind a button on it. Nothing failed loudly
+     * -- `npm run check` does not run this tool -- so it simply timed out on
+     * the second mission of every run, and had been doing so for some time.
+     */
+    // One press, because the briefing was already dismissed on the way in.
     await page.keyboard.press('Escape');
+    await page.waitForSelector('.sheet-card', { timeout: 5000 });
+    await page.click('.sheet-actions .ui-btn:has-text("Mission list")');
     await page.waitForSelector('#menu-list .m-name', { timeout: 10000 });
   }
 

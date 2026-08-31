@@ -2,7 +2,7 @@ name: Ice Station
 theme: arctic
 objective: rescue
 doctrine: patrol
-order: 7
+order: 9
 mechanic: hostages and ice
 brief: Walk every prisoner back to the tent. Ice ruins your footing; one dead hostage ends it.
 tile: 16

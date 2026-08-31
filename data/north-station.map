@@ -1,0 +1,77 @@
+name: North Station
+theme: arctic
+objective: rescue
+doctrine: garrison
+order: 48
+mechanic: a shore with one way up it
+brief: They are held at the station above the beach. Walk them back down to the tent.
+tile: 16
+---
+####################################################################################################################
+####################################################################################################################
+##################################################################################################################..
+################..#####################################################........###################################..
+########.##.............###########################################.#..............###############################.#
+########...................######################################...#................................############.#.
+#######.......................##############.......#########...#....#.....................................########.#
+#######..........................................................#.........................................#..######
+#######..................................................................................................#i#.iii####
+#######................................................................................................#####iii.####
+#######.................................................................................................###iiii.####
+#######.................................................................................................###..iii####
+######..................................................................................................#.i#.iii####
+#####.......P...........................................................................ii.i..................i#####
+####.P..P..............................................................................iiiiii..................#####
+####...................................................................................iiiiii.................i#####
+####...........AA......................................................................iiiiii..................#####
+####...........AA............................................E........................iiii.ii.................######
+####........P.........p......T...T....E...................................o............i......................######
+####P...............c..........T.T.........S...........o.........................................H............######
+####.....P.....E............TTTTTTT..............................................B...........................#######
+#####........................TTTT...E.c..................iii.i......................................H........#######
+######..........................T........................iiiiii..............................................#######
+######...................................................iiiiii..........E....................H..............#######
+######..................................................iiii................................................########
+######...................................................iii.....................E...............H..........########
+######........E..TT.T......................................i................................................########
+######...........TT.T.....................................E.................................................########
+######i........TTTT..T....................p.................................................................########
+######i........TTTT.........................................................p.................E.............########
+#####ii...........TiTi............................................................................E..........#######
+#####i..........T...iii......................................................................................#######
+#####..............iiiii.....................................................................................#######
+#####..............iiiii.....................................................................................#######
+####...............iiiii.......#.............................................................................#######
+####................iii.......##..........................,,,,,,,,,,.........................................#######
+####................iii................................,,,,,,,,,,,,,,,,...........ii..........................######
+####................ii...............................,,,,,~~~~~~~~~~,,,,,.........ii..........................######
+###................................................,,,,~~~~~~~~~~~~~~~~,,,,,......iii.........................######
+###..............................................,,,,~~~~~~~~~~~~~~~~~~~~,,,,,,,,,,i..i.......................######
+###................==..........................,,,,~~~~~~~==~~~~~~~~~~~~~~~~,,,,,,,,,,,,,,,,,,,,.==...........######
+###....#...........==........................,,,,~~~~~~~~~==WWWWWWWW~~~~~~~~~~~~~~~,,,,,,,,,,,,,,==...........######
+~##,,..##..........==...,,,,,,,,,,,.....,,,,,,,~~~~~~~~WWW==WWWWWWWWWWW~~~~~~~~~~~~~~~~~~~~~~~~~,==,,,........######
+~~~#,###.#.........==,,,,,,,,,,,,,,,,,,,,,,,,~~~~~~~~WWWWW==WWWWWWWWWWWWW~~~~~~~~~~~~~~~~~~~~~~~~==,,,,,......######
+~~~~~##,##,,,,,,,,,==,,,~~~~~~~~~~~,,,,,~~~~~~~~~~~WWWWWWW==WWWWWWWWWWWWWWWW~~~~~~~~~~~~~~~~~~~~~==~~~,,,,,...######
+~~~~~~~~,,,,,,,,,,,==~~~~~~~~~~~~~~~~~~~~~~~~~~~~WWWWWWWWW==WWWWWWWWWWWWWWWWWWWWWWW~~~~~~~~~~~~~~==~~~~~,,,,,,######
+W~~~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~~~~~~WWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW~==~~~~~~~~,,,######
+WWW~~~~~~~~~~~~~~~~==~~~~~~~~~~~~~~~~~~~~~~~~WWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW==~~~~~~~~~~~~##~~~
+WWWWW~~~~~~~~~~~~~~==~~~WWWWWWWWWWW~~~~~WWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW==WWW~~~~~~~~~~~~~~
+WWWWWWWW~~~~~~~~~~~==WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW==WWWWW~~~~~~~~~~~~
+WWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW==WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW==WWWWWWWW~~~~~~~~~
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW~~WWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

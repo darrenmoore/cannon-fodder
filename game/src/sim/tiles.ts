@@ -26,6 +26,7 @@ export enum Tile {
   Tent = 15,
   /** A building the squad has to keep standing. See `Building.role`. */
   Outpost = 16,
+  Bunker = 17,
 }
 
 export interface TileDef {
@@ -39,6 +40,17 @@ export interface TileDef {
   blocksShots: boolean;
   /** Wading: slow, and you cannot fire. */
   wade: boolean;
+  /**
+   * Solid to everything that walks, but crossable by an actor who can swim.
+   *
+   * Deliberately *not* the inverse of `solid`. `solid` still feeds spawn
+   * placement, patrol picking, hostage movement, formation slots and the
+   * completability test, and every one of those should keep treating the river
+   * as a wall -- otherwise reinforcements appear in it and hostages walk into
+   * the sea. Only the movement path consults this, and only for an actor who
+   * has been steered into the water on purpose.
+   */
+  swim: boolean;
   /** Movement speed multiplier on this tile. */
   speed: number;
   /** Low friction -- soldiers slide and steer badly. */
@@ -54,7 +66,7 @@ export interface TileDef {
 
 const def = (id: Tile, name: string, color: string, speckle: string, over: Partial<TileDef> = {}): TileDef => ({
   id, name, color, speckle,
-  solid: false, blocksSight: false, blocksShots: false, wade: false,
+  solid: false, blocksSight: false, blocksShots: false, wade: false, swim: false,
   speed: 1, slippery: false, canopy: false, sway: false,
   ...over,
 });
@@ -67,13 +79,23 @@ export const TILES: Record<Tile, TileDef> = {
   [Tile.Rock]:      def(Tile.Rock, 'rock', '#6b6f66', '#7b8076', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
   [Tile.Hut]:       def(Tile.Hut, 'hut', '#8d5a2b', '#7c4e24', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
   [Tile.Outpost]:   def(Tile.Outpost, 'outpost', '#6a6a5e', '#7a7a6c', { solid: true, blocksSight: true, blocksShots: true }),
+  [Tile.Bunker]:    def(Tile.Bunker, 'bunker', '#5c5f55', '#6b6e63', { solid: true, blocksSight: true, blocksShots: true }),
   [Tile.Factory]:   def(Tile.Factory, 'factory', '#6d6f74', '#5e6065', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
   [Tile.Fence]:     def(Tile.Fence, 'fence', '#7a6440', '#6a5636', { solid: true, blocksShots: true }),
   [Tile.Rubble]:    def(Tile.Rubble, 'rubble', '#5c5348', '#6a6055', { speed: 0.8 }),
   // Shallow water: crossable, but slow and you cannot shoot from it.
   [Tile.Water]:     def(Tile.Water, 'water', '#2f6d92', '#3a7ea6', { wade: true, speed: 0.45 }),
-  // Deep water stops you dead -- but it is flat, so you can still shoot across it.
-  [Tile.DeepWater]: def(Tile.DeepWater, 'deep water', '#1d4665', '#245478', { solid: true }),
+  /*
+   * Deep water: a bad idea rather than a wall.
+   *
+   * It stays `solid`, which is what keeps it out of every decision about where
+   * to put something, and `swim` is what lets a man cross it anyway -- slowly,
+   * unable to fire, and up to his neck. `wade` is what enforces the second of
+   * those: the "he is holding his rifle clear of the water" rule already exists
+   * and this simply reuses it. Flat, so you can still shoot across it.
+   */
+  [Tile.DeepWater]: def(Tile.DeepWater, 'deep water', '#1d4665', '#245478',
+    { solid: true, swim: true, wade: true, speed: 0.34 }),
   [Tile.Bridge]:    def(Tile.Bridge, 'bridge', '#8a6c3f', '#7a5f37'),
   // Cover you can walk through: hides you without stopping bullets.
   [Tile.TallGrass]: def(Tile.TallGrass, 'tall grass', '#3f6b28', '#4c7d31', { blocksSight: true, speed: 0.82, sway: true }),
@@ -101,6 +123,7 @@ export const LEGEND: Record<string, Tile> = {
   ':': Tile.Rubble,
   'A': Tile.Tent,
   'O': Tile.Outpost,
+  'U': Tile.Bunker,
 };
 
 /** Markers that spawn something and leave the named terrain behind. */
@@ -113,6 +136,8 @@ export const MARKERS: Record<string, Tile> = {
   'o': Tile.Grass,  // explosive barrel
   '*': Tile.Grass,  // mine
   'p': Tile.Grass,  // enemy patrol node
+  'k': Tile.Grass,  // supply box: an objective item, not an ammo crate
+  'C': Tile.Grass,  // enemy officer: the target of an assassinate mission
   'H': Tile.Grass,  // hostage
   'X': Tile.Grass,  // extraction zone
 };

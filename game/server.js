@@ -79,6 +79,12 @@ function summarise(src) {
     theme: header.theme ?? 'jungle',
     objective: header.objective ?? 'eliminate',
     doctrine: header.doctrine ?? 'garrison',
+    // Modifiers, so the level select can state the rule before the player
+    // commits to a mission. `covert` carries its own wording and is left as it
+    // is; anything else wearing `nokill` would otherwise advertise only half of
+    // what it is asking for.
+    nokill: header.nokill === 'true' || header.objective === 'covert',
+    timeLimit: Math.max(0, Number(header.timelimit) || 0),
     brief: header.brief ?? '',
     mechanic: header.mechanic ?? '',
     order: Number(header.order) || 999,
@@ -142,5 +148,5 @@ server.on('error', (err) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`\n  Cannon Fodder  ->  http://localhost:${PORT}\n`);
+  console.log(`\n  Boots & Bullets  ->  http://localhost:${PORT}\n`);
 });

@@ -1,0 +1,65 @@
+name: Softly Softly
+theme: jungle
+objective: covert
+doctrine: garrison
+order: 12
+mechanic: not being seen
+brief: Walk out the far side without killing anybody. Firing is allowed; a body is not.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"TTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTT......TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"TTTTTTTTTTTTTTTTTTT
+TTTTTTTTTT.TT.TTTTTT.......""TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TT"TTTTTT.T.T"TTT""".TTTTTTTTTT
+TTTTTTTTT.TTTTTTTTT.."........"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"T"TTTTTTTTTTTTT.TT"""T"T"T"TTTTTTTT
+TTTTTTTTTTTT"T"""T""""............TTTTTTTTTT.T.TT."TT.TTTTTTTTT""T""TTTTTTTTT.TTTTT.T..T"T"".TTTTTTTTTTT
+TTTTTTTT"."TT"TTT""""...........E.."".""......".""T""T""""".""""""T"".TTTTT.TTTT....."T.""".".""TTTTTTTT
+TTTTTTTTT""""TT"""""...............""""......""""""T""""""""""""""""TTTTTTTTTT..TT.TT.......""T""TTTTTTT
+TTTTTTTTT""""TT"""""............E..""........""""""""""""""""""."""""TTTTTTT....TTTT........""T""TTTTTTT
+TTTTTTTTT"""""""""""................"...E.E..""""""""""""""""...."""""T."TT.TTTTTT.T.T......"""""TTTTTTT
+TTTTTTTTTT""""""""""..........T...."..........""""""""""""""T..."""""""TT.#TT.T.T.TTTTTT...""""""TTTTTTT
+TTTTTTTTTTT"""""""""......."..T.TTTT.T.........""""""""""""".T.TT"""""""#"""T""""""""""....""""""TTTTTTT
+TTTTTTTTTT"T""""""........""".TT.TT..........."""""""..""""T.""TTT""""".#"T""""""""""""T""""".T"TTTTTTTT
+TTTTTTTTTT"T"""""........."".."TT"T.E...E.....""""""".."""".TTTTT"T"""".#"""""""""""""""""""TTTTTTTTTTTT
+TTTTTTTTTTT.""""............T""TT"TTT........""""""""...."TTTTTTTTT""""""""""""""""""""""""T"""TTTTTTTTT
+TTTTTTTTTTT"""""............""T"TTT.T."....."..."""""......TTTTTTT."""""""""""""""""""""""..TTTTTTTTTTTT
+TTTTTTTTTT"T""""..T.........TT"T"""T"T"""..""........"......TTTTTT""""""""""""""T""TT""""""..TTT"TTTTTTT
+TTTTTTTTTT""""""""""........."TT""""T"""""""........."......T"""TT""""""""""""""""""T.T""""""TTTTTTTTTTT
+TTTTTTTTT"""""""""""""........."""""..."""""................."""""""""""""""""""""""""""""""""TT..TTTTTT
+TTTTTTTTTT."""""""""""".........""".....""""................"""""""""""""""""""""""""""""""""".X...TTTTT
+TTTT.......""""""""""""".........."..B...."""............#.""""""""""""""""""""""""""""""""""".....TTTTT
+TTT.......P."""""""""""""........."........"""..........##"""""""""""""""""""""""""T""""."""".......TTTT
+TT...........""T"TTT"""""".......""".......""""........#..#.""""""""""""""""""""".T.TT"............TTTTT
+TTP.........."""TTTTT""""""..."."""""""""...""""""".""...#...""""""""""""""""""T"TTTT".....#........TTTT
+TT...P.......TTT"TT..T.""""".""""""""""""""""""""""".""......"""""""""""""".""""".TTT.....#.#.....TTTTTT
+TT...........P"""TT....."""""""""""""""""""""""""""""......."""""".""""""....""""."......#.#".......TTTT
+TT..........."T".TT.."..."""""""""""""""""""""""""""......."""""....""""".......TTT""....#""......T.TTTT
+TT.P..........".T""""""..."""""""""""""""""""""""""""....."""""""..."""""".......T..""...""".""...TTTTTT
+TT.......P...."""""""""....""""""""""""""""""""""""""...."""""""T..TT""""""..B....."""""""""""""..TTTTTT
+TTT.........."""""""""".....""""""""""""""""""""""""....""""""T"".T.""T""""......""""""""""""""...T.TTTT
+TTTT........"""""""""""......"""""""""""""""""""""""..""""""""""".TTT""""""".....""""""""""""""..TTT.TTT
+TTTTTTT....""""""""""""......."""""""""""""""""""""""""""""""T"...TT""T""T""".."""""""""""""""c....TTTTT
+TTTTTTT......""""""""""........"""""""""""""""""T""""""""".#"""TTT.TTTTT."""""""""""""""""""""""..TTTTTT
+TTTTTTT"......"""""""""........."""""""""""""""""""""""""#.""TT.."TTTT"TTT"""""""""""""""T"""""...TTTTTT
+TTTTTTT.....""""""""""".........""""""""""""""""""""""""#"#"""".TT.TTT."""""""""""".TTTT"""".....TTTTTTT
+TTTTTTT""""""""""""..............""""""""""""""""""""""..###""".TTTT.TT.""""""""""...""T.TTT....ETTTTTTT
+TTTTTTT""""""""""""................""""""""""""""""""""...."..T.TT..."T"""""""""".....TTTTTT..E.TTTTTTTT
+TTTTTTT""""""""""""................""""""""""""""""""""........TT.T...T""...""""......."TTT.T...TTTTTTTT
+TTTTTTT""""""""""".................""""""""""""""""""""............E.........""...hh....TTTTT...TTTTTTTT
+TTTTTTT""""""""""...................""""""""""""""""""""..................E..""...hh..........E.TTTTTTTT
+TTTTTTT"""""""""...E......................""""""""""""""".............E......"".........T.......TTTTTTTT
+TTTTTTT"""""""""..........................."""""TTT"T"""..........."........""""...............TTTTTTTTT
+TTTTTTT"""""""""""..........................""""TT."""""..........""".......""""................TTTTTTTT
+TTTTTT""T"T"""""""...E...E................T.""TT"TTT""".........."""""....TTT."".T...TTTT........TTTTTTT
+TTTTTTTTTTTTTT""".".........."............TTTT"TTTTTT".........T"""""""""""TTTTTTTTTTTTTT...hh....TTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT".......T."TTTTTTTTT....E....T.T.".T"."T.TTTTTTTTTTTTTTT...hh....T"TTTT
+TTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.....T.TT.TTTTTT...E.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.........T"TT""
+TTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...T.TTT"T""T.ETTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.......TTT"T".
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TT.TTTT""T"TT""TTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.....TT".""TT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...TTT"TTT.T
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"TT"TT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

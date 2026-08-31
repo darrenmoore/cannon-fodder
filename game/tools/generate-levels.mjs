@@ -24,7 +24,9 @@ const DATA_DIR = fileURLToPath(new URL('../../data/', import.meta.url));
 
 const GRASS = '.', SAND = ',', ROAD = '_', TREE = 'T', WATER = '~', DEEP = 'W',
       BRIDGE = '=', ROCK = '#', HUT = 'h', FACTORY = 'F', OUTPOST = 'O', FENCE = '+',
-      TALL = '"', QUICK = '%', ICE = 'i', TENT = 'A';
+      TALL = '"', QUICK = '%', ICE = 'i', TENT = 'A', BUNKER = 'U';
+// Entity markers the validator reasons about by name.
+const SUPPLY = 'k', OFFICER = 'C';
 
 /** Mulberry32: small, fast, and identical across runs. */
 function rng(seed) {
@@ -197,9 +199,25 @@ class Grid {
   }
 
   /** Flood fill of reachable tiles from a start, used for the sanity checks. */
-  reachable(sx, sy) {
+  /**
+   * `extra` narrows what counts as walkable without changing what walkable
+   * means, which is how the covert check asks "and what if you also refuse to
+   * go near anybody" of the same fill everything else uses.
+   */
+  /**
+   * `throughBuildings` admits huts and factories as routes, because levelling
+   * one leaves walkable rubble. Off by default and only ever turned on for a
+   * map that declares `gated` -- see the `gated` field in map.ts. Never the
+   * outpost: that is the squad's own and the mission is lost if it falls.
+   */
+  reachable(sx, sy, extra = null, throughBuildings = false) {
     const seen = new Set();
-    const walkable = (x, y) => ![TREE, ROCK, HUT, FACTORY, OUTPOST, FENCE, DEEP].includes(this.get(x, y));
+    const solid = throughBuildings
+      ? [TREE, ROCK, OUTPOST, FENCE, DEEP]
+      : [TREE, ROCK, HUT, FACTORY, OUTPOST, FENCE, DEEP];
+    const walkable = (x, y) =>
+      !solid.includes(this.get(x, y))
+      && (!extra || extra(x, y));
     if (!walkable(sx, sy)) return seen;
     const stack = [[sx, sy]];
     seen.add(`${sx},${sy}`);
@@ -388,6 +406,143 @@ function clearing(g, x, y, r) {
 function building(g, x, y, w, h, tile) {
   g.disc(x + w / 2, y + h / 2, Math.max(w, h) + 2.2, GRASS, [TREE, TALL, ROCK]);
   g.fillRect(x, y, w, h, tile);
+}
+
+// --------------------------------------------------- man-made primitives
+
+/*
+ * Everything above this line is organic: blobs, drifts, meanders, random walks.
+ * That is the right default -- the reference's landscape is grown, not drawn --
+ * but it means the toolbox could not express anything *built*. A dam, an
+ * airfield, a walled town and four bridges square across a river all need a
+ * straight edge, and a straight edge was the one thing nothing here could make.
+ *
+ * These are the hard-edged half. `smooth()` only ever rewrites soft ground
+ * (grass, sand, tall grass, ice) into other soft ground, so nothing below can
+ * be rounded off by the finishing pass -- which is asserted rather than assumed,
+ * because a quietly smoothed compound wall is exactly the kind of failure that
+ * is invisible in the source.
+ */
+
+/** A dead-straight run between two points. Bresenham, thickened. */
+function wall(g, from, to, tile = FENCE, thickness = 1) {
+  const steps = Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y));
+  const laid = [];
+  for (let s = 0; s <= steps; s++) {
+    const t = steps === 0 ? 0 : s / steps;
+    const x = Math.round(from.x + (to.x - from.x) * t);
+    const y = Math.round(from.y + (to.y - from.y) * t);
+    for (let k = 0; k < thickness; k++) {
+      // Thicken across the run rather than along it, so a diagonal stays a line.
+      const across = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y) ? [0, k] : [k, 0];
+      g.set(x + across[0], y + across[1], tile);
+      laid.push({ x: x + across[0], y: y + across[1] });
+    }
+  }
+  return laid;
+}
+
+/**
+ * A walled yard with gates, and open ground inside it.
+ *
+ * The gates are the whole point: a sealed box is scenery, and a box with one
+ * way in is a corridor. Two or more openings make it a place with a near side
+ * and a far side, which is what a defender and an attacker both need.
+ */
+function compound(g, x0, y0, w, h, { tile = FENCE, gates = 2, fill = GRASS } = {}) {
+  g.fillRect(x0, y0, w, h, fill);
+  wall(g, { x: x0, y: y0 }, { x: x0 + w - 1, y: y0 }, tile);
+  wall(g, { x: x0, y: y0 + h - 1 }, { x: x0 + w - 1, y: y0 + h - 1 }, tile);
+  wall(g, { x: x0, y: y0 }, { x: x0, y: y0 + h - 1 }, tile);
+  wall(g, { x: x0 + w - 1, y: y0 }, { x: x0 + w - 1, y: y0 + h - 1 }, tile);
+
+  // One gate per side, in rotation, each three tiles wide -- wide enough for the
+  // herd to get through without the flow field bottling up on the post.
+  const sides = [
+    (i) => ({ x: x0 + Math.round(w / 2) + i, y: y0 }),
+    (i) => ({ x: x0 + Math.round(w / 2) + i, y: y0 + h - 1 }),
+    (i) => ({ x: x0, y: y0 + Math.round(h / 2) + i }),
+    (i) => ({ x: x0 + w - 1, y: y0 + Math.round(h / 2) + i }),
+  ];
+  for (let n = 0; n < Math.min(gates, 4); n++) {
+    for (let i = -1; i <= 1; i++) g.set(sides[n](i).x, sides[n](i).y, fill);
+  }
+  return { x: x0 + w / 2, y: y0 + h / 2 };
+}
+
+/**
+ * A grid of streets with buildings in the blocks.
+ *
+ * The one layout in the toolbox that reads as a *town* rather than as a
+ * clearing somebody happened to put huts in. Roads are laid first and buildings
+ * inset into what is left, so no hut ever sits on a road and the routes through
+ * are guaranteed open before anything is placed.
+ */
+function streets(g, x0, y0, w, h, { cols = 3, rows = 2, tile = HUT } = {}) {
+  const cw = w / cols;
+  const ch = h / rows;
+  g.fillRect(x0, y0, w, h, GRASS);
+
+  for (let c = 0; c <= cols; c++) {
+    const x = Math.round(x0 + c * cw);
+    for (let y = y0; y < y0 + h; y++) { g.set(x, y, ROAD); g.set(x + 1, y, ROAD); }
+  }
+  for (let r = 0; r <= rows; r++) {
+    const y = Math.round(y0 + r * ch);
+    for (let x = x0; x < x0 + w; x++) { g.set(x, y, ROAD); g.set(x, y + 1, ROAD); }
+  }
+
+  // A building inset into each block, never touching the road either side.
+  const put = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const bx = Math.round(x0 + c * cw) + 4;
+      const by = Math.round(y0 + r * ch) + 4;
+      const bw = Math.max(2, Math.min(3, Math.floor(cw) - 7));
+      const bh = Math.max(2, Math.min(3, Math.floor(ch) - 7));
+      if (bw < 2 || bh < 2) continue;
+      g.fillRect(bx, by, bw, bh, tile);
+      put.push({ x: bx + bw / 2, y: by + bh / 2 });
+    }
+  }
+  return put;
+}
+
+/**
+ * A dug line: walkable floor with a raised lip either side.
+ *
+ * Cover that works the opposite way round from a treeline. You can move along
+ * it under fire from the flanks and you cannot shoot out of it sideways, so it
+ * is a route rather than a position -- and it is the only piece of terrain here
+ * whose value depends on which way you are facing.
+ */
+function trench(g, from, to) {
+  const steps = Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y));
+  const alongX = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y);
+  for (let s = 0; s <= steps; s++) {
+    const t = steps === 0 ? 0 : s / steps;
+    const x = Math.round(from.x + (to.x - from.x) * t);
+    const y = Math.round(from.y + (to.y - from.y) * t);
+    g.set(x, y, ':');
+    // The spoil, thrown up on both sides. Rock stops sight and shots, which is
+    // what makes the floor of the trench worth being in.
+    if (alongX) { g.paint(x, y - 1, ROCK, [GRASS, SAND, TALL, ICE]); g.paint(x, y + 1, ROCK, [GRASS, SAND, TALL, ICE]); }
+    else { g.paint(x - 1, y, ROCK, [GRASS, SAND, TALL, ICE]); g.paint(x + 1, y, ROCK, [GRASS, SAND, TALL, ICE]); }
+  }
+}
+
+/** A jetty of bridge tiles running out over water. Two wide, like a bridge. */
+function pier(g, from, to) {
+  const steps = Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y));
+  const alongX = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y);
+  for (let s = 0; s <= steps; s++) {
+    const t = steps === 0 ? 0 : s / steps;
+    const x = Math.round(from.x + (to.x - from.x) * t);
+    const y = Math.round(from.y + (to.y - from.y) * t);
+    g.paint(x, y, BRIDGE, [WATER, DEEP, SAND, GRASS]);
+    const [ox, oy] = alongX ? [0, 1] : [1, 0];
+    g.paint(x + ox, y + oy, BRIDGE, [WATER, DEEP, SAND, GRASS]);
+  }
 }
 
 // -------------------------------------------------------------- placement
@@ -666,6 +821,95 @@ const BUILDERS = {
     place.put('c', g.w * 0.75, g.h * 0.3, 7);
   },
 
+  /**
+   * 01 -- basic training: this is how you shoot.
+   *
+   * The first thing a new player is asked to do is the one thing the game never
+   * explains -- ordering a squad to move is a click, and making it *fire* is a
+   * different button. So the mission is small, the ground is empty, and there
+   * are five men in front of you and nothing else to work out.
+   *
+   * Deliberately sparse. Every feature on a teaching map is another thing that
+   * might be the answer, and a player who has not yet learnt to shoot cannot
+   * tell a distraction from an instruction.
+   */
+  'training-fire'(g, place) {
+    g.fillRect(0, 0, g.w, g.h, GRASS);
+    g.frame(TREE, { min: 4, max: 7 });
+    // A few trees for shape, well off the line of fire: cover is not the lesson.
+    forest(g, 4, [2, 3]);
+
+    const spawn = clearing(g, 9, Math.round(g.h / 2), 4);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    // In a line across the far half, in the open, close enough to be plainly
+    // the point of the mission and far enough to need an order rather than luck.
+    for (let i = 0; i < 5; i++) {
+      place.put('E', g.w - 14, 6 + ((g.h - 12) / 4) * i, 3);
+    }
+  },
+
+  /**
+   * 02 -- second lesson: the bridge, the water, and what is lying on it.
+   *
+   * Four things at once, which is three more than the first mission, and they
+   * are arranged so the order they are learnt in is not optional: the huts are
+   * across the water, the only dry way over is the bridge, and the grenades are
+   * *on* the bridge. A player who crosses has picked them up whether or not
+   * they meant to, and then finds that rifles barely mark a building.
+   *
+   * That last part is the lesson, and it is taught by the wall rather than by
+   * the briefing: sixty rifle rounds level a hut and one grenade nearly does.
+   */
+  'training-bridge'(g, place) {
+    g.fillRect(0, 0, g.w, g.h, GRASS);
+    g.frame(TREE, { min: 3, max: 6 });
+    scatter(g, TREE, 6, [2, 4]);
+
+    // A river across the waist, with exactly one crossing.
+    //
+    // `crossings` are fractions of the river's length, not tile coordinates --
+    // passing a column number puts the span a thousand tiles off the map and
+    // leaves a river with no way over it, which is what the first attempt did.
+    // It hands back where it actually built them, so nothing here has to work
+    // out where the wobble put the deck.
+    const spans = river(g, { axis: 'h', width: 3, wobble: 2, crossings: [0.5] });
+    const span = spans[0];
+
+    const spawn = clearing(g, span.x, g.h - 7, 4);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    /*
+     * The grenades sit on the crossing itself. Not beside it, not before it:
+     * the tiles everybody has to walk over.
+     *
+     * Found by looking rather than by arithmetic -- `river` wobbles, so the
+     * span is not reliably at the middle row, and a supply placed at a computed
+     * coordinate lands in the water or on the bank and teaches nothing. The
+     * first attempt did exactly that and put none on the bridge at all.
+     */
+    const deck = [];
+    for (let y = 0; y < g.h; y++) {
+      for (let x = span.x - 2; x <= span.x + 2; x++) {
+        if (g.get(x, y) === BRIDGE) deck.push({ x, y });
+      }
+    }
+    for (let i = 0; i < 3 && deck.length > 0; i++) {
+      const at = deck[Math.floor(((deck.length - 1) * i) / 2)];
+      place.put('k', at.x, at.y, 0, 1);
+    }
+
+    // The objective, on the far bank, with a thin guard -- enough that walking
+    // straight up to a wall is punished, not enough to make it a firefight.
+    building(g, Math.round(g.w * 0.28), 7, 2, 2, HUT);
+    building(g, Math.round(g.w * 0.68), 7, 2, 2, HUT);
+    for (let i = 0; i < 3; i++) place.put('E', g.w * (0.25 + 0.5 * g.rnd()), 8 + g.rnd() * 6, 5, 3);
+  },
+
   /** 05 -- minefield: cross slowly, or blow a lane through it. */
   minefield(g, place) {
     g.fillRect(0, 0, g.w, g.h, SAND);
@@ -765,6 +1009,371 @@ const BUILDERS = {
   },
 
   /** 08 -- hold a position while reinforcements keep coming. */
+  /**
+   * The covert mission.
+   *
+   * Built the opposite way round from every other map here. `objective: covert`
+   * -- get to the pickup and kill nobody -- is only a mission rather than a
+   * cruel joke if a route exists that never has to walk into a sentry, so the
+   * lane is drawn *first* and the garrison is placed into whatever is left, at
+   * a distance from it. `validate` then proves the claim independently, on the
+   * finished grid, rather than trusting the construction that made it.
+   *
+   * The clearance is eleven tiles, which is not arbitrary: a rifleman's aggro
+   * radius is 132px and his range 88px, so a man standing at his post cannot
+   * see the lane, let alone reach it. There are no snipers on this map for the
+   * same reason -- a sniper reaches 190px and would make the lane a shooting
+   * gallery from outside his own clearance. The huts are pushed out to
+   * eighteen, past `spawnAggroRange`, so they stay quiet unless the player
+   * chooses to go and disturb them.
+   */
+  'softly-softly'(g, place) {
+    g.frame(TREE, { min: 4, max: 10 });
+    forest(g, 30, [3, 7]);
+    // Tall grass wall to wall rather than in patches. It hides you without
+    // stopping a bullet, which is the entire mechanic of this mission: on every
+    // other map cover is somewhere to shoot from, and here it is somewhere to
+    // not be seen. An open field would have made the no-kill rule a punishment
+    // rather than a way to play.
+    scatter(g, TALL, 90, [4, 9]);
+    scatter(g, ROCK, 9, [2, 4]);
+
+    // The lane: a wandering line of it, west to east, kept clear of trees so
+    // there is always a way through -- but drawn in the same grass as
+    // everything around it, so it is a route rather than a corridor and
+    // leaving it is a decision rather than an impossibility.
+    const lane = [];
+    let y = Math.floor(g.h / 2);
+    let drift = 0;
+    for (let x = 6; x < g.w - 6; x++) {
+      drift = Math.max(-1.1, Math.min(1.1, drift + (g.rnd() - 0.5) * 0.9));
+      y = Math.max(8, Math.min(g.h - 9, Math.round(y + drift)));
+      lane.push({ x, y });
+      for (let dy = -2; dy <= 2; dy++) g.paint(x, y + dy, TALL, [TREE, ROCK, GRASS, SAND]);
+    }
+
+    const start = lane[1];
+    squad(g, place, start);
+    place.used.push(start);
+    place.confineTo(start.x, start.y);
+
+    const end = lane[lane.length - 2];
+    g.disc(end.x, end.y, 3, GRASS, [TREE, ROCK, TALL]);
+    place.put('X', end.x, end.y, 2);
+
+    /*
+     * What the garrison has to keep away from: the lane, and the ground the
+     * squad actually spawns on.
+     *
+     * The second half is not decoration. `squad()` scatters six men over a
+     * radius-four pad, so measuring clearance from the lane's centre line alone
+     * leaves a man four tiles nearer a sentry than the map claims -- which is
+     * exactly what the validator caught the first time this was built.
+     */
+    const avoid = [...lane];
+    for (let ay = 0; ay < g.h; ay++) {
+      for (let ax = 0; ax < g.w; ax++) if (g.get(ax, ay) === 'P') avoid.push({ x: ax, y: ay });
+    }
+    const clearOf = (x, y, by) => avoid.every((q) => Math.hypot(q.x - x, q.y - y) >= by);
+
+    /**
+     * Somewhere open, reachable, and a stated distance clear of all of that.
+     *
+     * Searched over the whole map rather than around an anchor, because the
+     * lane is drawn first and wanders: the places a sentry can stand are
+     * whatever pockets it happens to leave, and looking for them is more
+     * robust than deciding in advance where they ought to be.
+     */
+    const post = (marker, clear, near = null, spread = 7, spreadY = spread) => {
+      for (let i = 0; i < 600; i++) {
+        const px = near
+          ? Math.round(near.x + (g.rnd() - 0.5) * spread * 2)
+          : Math.round(4 + g.rnd() * (g.w - 8));
+        const py = near
+          ? Math.round(near.y + (g.rnd() - 0.5) * spreadY * 2)
+          : Math.round(4 + g.rnd() * (g.h - 8));
+        if (!g.isOpen(px, py)) continue;
+        if (place.reachable && !place.reachable.has(`${px},${py}`)) continue;
+        if (place.used.some((q) => Math.hypot(q.x - px, q.y - py) < 2)) continue;
+        if (!clearOf(px, py, clear)) continue;
+        place.used.push({ x: px, y: py });
+        // A sentry stands in a cleared patch, not in the grass. He should be
+        // something the player can see and go round; a man hidden in the same
+        // cover the player is hiding in is an ambush, and this mission is not
+        // supposed to be one.
+        if (marker === 'E' || marker === 'B') g.disc(px, py, 2.4, GRASS, [TALL]);
+        g.set(px, py, marker);
+        return { x: px, y: py };
+      }
+      return null;
+    };
+
+    /*
+     * Six posts of three: a knot rather than a picket line, so leaving the lane
+     * anywhere puts you near somebody rather than near everybody.
+     *
+     * Each knot is pinned to a slice of the map's length and free to sit
+     * anywhere across its width. Searching the whole map for every man instead
+     * put two thirds of the garrison in the one big clearing it found first,
+     * and left half the route unwatched.
+     */
+    for (let i = 0; i < 6; i++) {
+      const anchor = lane[Math.round((lane.length * (i + 0.5)) / 6)];
+      const head = post('E', 11, { x: anchor.x, y: g.h / 2 }, 8, g.h / 2);
+      if (!head) continue;
+      for (let k = 0; k < 2; k++) post('E', 11, head, 5);
+    }
+    // Two bazookateers, a third of the way in from each end.
+    for (const t of [0.3, 0.7]) {
+      const anchor = lane[Math.round(lane.length * t)];
+      post('B', 11, { x: anchor.x, y: g.h / 2 }, 7, g.h / 2);
+    }
+
+    // Huts, pushed past `spawnAggroRange` so they stay quiet unless walking
+    // into their range is the player's own idea.
+    for (let i = 0; i < 2; i++) {
+      for (let attempt = 0; attempt < 300; attempt++) {
+        const hx = Math.round(8 + g.rnd() * (g.w - 18));
+        const hy = Math.round(6 + g.rnd() * (g.h - 14));
+        if (!g.isOpen(hx, hy) || !clearOf(hx, hy, 18)) continue;
+        // `building` fills its footprint with `set`, which would happily paint
+        // over a sentry that is already standing there.
+        if (place.used.some((q) => Math.hypot(q.x - hx, q.y - hy) < 5)) continue;
+        place.used.push({ x: hx, y: hy });
+        building(g, hx, hy, 2, 2, HUT);
+        break;
+      }
+    }
+
+    // One crate off the lane. Grenades you have to break cover to collect, on
+    // the one mission where using them ends the run.
+    post('c', 9);
+  },
+
+  /**
+   * A set piece: the canal.
+   *
+   * Everything else in this file is grown. This is the one that is *built* --
+   * a dead-straight cut with four crossings square across it, evenly spaced,
+   * because somebody dug it. `wobble: 0` is the whole trick, and it was always
+   * available; nothing had ever asked for it.
+   *
+   * The crossings are the mission. Deep water either side means the bridges are
+   * the only way over, four of them means the choice of which is real, and the
+   * garrison on the far bank is spread so that no single crossing is safe and
+   * none is suicide.
+   */
+  'four-bridges'(g, place) {
+    g.frame(TREE, { min: 4, max: 9 });
+    forest(g, 10, [3, 5]);
+    scatter(g, TALL, 8, [3, 5]);
+
+    const crossings = [0.2, 0.4, 0.6, 0.8];
+    const bridges = river(g, { axis: 'h', width: 4, wobble: 0, crossings, deep: true });
+    // A towpath down the near bank: this is a canal, and canals have one.
+    const bankY = bridges[0].y + 6;
+    for (let x = 5; x < g.w - 5; x++) g.paint(x, bankY, ROAD, [GRASS, SAND, TALL]);
+
+    const spawn = clearing(g, 10, g.h - 8, 5);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    // Two men dug in at the head of each crossing, and a pillbox behind it.
+    for (const b of bridges) {
+      for (let i = 0; i < 2; i++) place.put('E', b.x, b.y - 7, 4, 3);
+      place.put('o', b.x, b.y - 5, 3);
+    }
+    // The objective, on the far bank: the lock houses that control the cut.
+    for (let i = 0; i < 3; i++) {
+      building(g, Math.round(g.w * (0.22 + i * 0.28)), Math.max(6, bridges[0].y - 16), 2, 2, HUT);
+    }
+    for (let i = 0; i < 6; i++) place.put('E', g.w * g.rnd(), bridges[0].y - 12, 8, 4);
+    place.put('S', g.w * 0.5, Math.max(6, bridges[0].y - 15), 6);
+    place.put('c', spawn.x + 12, spawn.y - 3, 5);
+    place.put('c', g.w * 0.6, bankY - 3, 6);
+  },
+
+  /**
+   * A set piece: the walled town, and the man in it.
+   *
+   * `streets()` laying roads first and insetting the buildings is what makes
+   * this read as a town rather than as huts in a field -- the routes through
+   * exist before anything is placed, so the block corners are cover rather than
+   * a maze. The officer is in the middle of it, and the mission is over the
+   * moment he is, which makes the whole thing a problem of getting in.
+   */
+  'walled-town'(g, place) {
+    g.frame(TREE, { min: 4, max: 9 });
+    forest(g, 12, [3, 6]);
+    scatter(g, TALL, 10, [3, 6]);
+
+    const cx = Math.round(g.w * 0.6);
+    const cy = Math.round(g.h / 2);
+    const tw = Math.round(g.w * 0.44);
+    const th = Math.round(g.h * 0.5);
+    compound(g, cx - Math.round(tw / 2), cy - Math.round(th / 2), tw, th, { gates: 3 });
+    const blocks = streets(g, cx - Math.round(tw / 2) + 3, cy - Math.round(th / 2) + 3, tw - 6, th - 6, {
+      cols: 3, rows: 2,
+    });
+
+    const spawn = clearing(g, 9, cy, 5);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    // The officer in the middle block, with his bodyguard around him.
+    const post = blocks[Math.floor(blocks.length / 2)] ?? { x: cx, y: cy };
+    place.put('C', post.x + 3, post.y + 3, 3, 2);
+    for (let i = 0; i < 4; i++) place.put('E', post.x + 3, post.y + 3, 6, 3);
+    // The rest of the garrison on the streets, not in the blocks.
+    for (const b of blocks) for (let i = 0; i < 2; i++) place.put('E', b.x + 3, b.y + 3, 7, 3);
+    place.put('S', cx, cy - Math.round(th / 2) + 4, 5);
+    place.put('B', cx + Math.round(tw / 2) - 5, cy, 5);
+    place.put('c', spawn.x + 10, cy, 6);
+    place.put('c', cx - Math.round(tw / 2) - 6, cy, 6);
+  },
+
+  /**
+   * A set piece: a rescue nobody is allowed to hear.
+   *
+   * The mission the fused `covert` objective could not express. `nokill` is a
+   * modifier now, so "recover the prisoners without killing anybody" is two
+   * header lines rather than a new objective -- and the spatial rule that makes
+   * it playable is the same one Softly Softly proved, pointed at the hostages
+   * instead of at the extraction.
+   *
+   * Built lane-first for exactly that reason, and the pen is placed *on* the
+   * lane rather than off it: a hostage the squad cannot reach quietly is not a
+   * hard rescue, it is an unwinnable one, and the validator says so.
+   */
+  'not-a-sound'(g, place) {
+    g.frame(TREE, { min: 4, max: 9 });
+    forest(g, 24, [3, 6]);
+    scatter(g, TALL, 70, [4, 8]);
+
+    // The lane, west to east, in the same grass as everything around it.
+    const lane = [];
+    let y = Math.floor(g.h / 2);
+    let drift = 0;
+    for (let x = 6; x < g.w - 6; x++) {
+      drift = Math.max(-1, Math.min(1, drift + (g.rnd() - 0.5) * 0.8));
+      y = Math.max(9, Math.min(g.h - 10, Math.round(y + drift)));
+      lane.push({ x, y });
+      for (let dy = -2; dy <= 2; dy++) g.paint(x, y + dy, TALL, [TREE, ROCK, GRASS, SAND]);
+    }
+
+    const start = lane[1];
+    squad(g, place, start);
+    place.used.push(start);
+    place.confineTo(start.x, start.y);
+
+    // The tent, back beside the squad: the prisoners are walked home, not out.
+    g.disc(start.x + 6, start.y, 4, GRASS, [TREE, ROCK, TALL]);
+    g.fillRect(start.x + 5, start.y - 1, 2, 2, TENT);
+
+    // The pen, at the far end of the lane and on it.
+    const pen = lane[lane.length - 6];
+    g.disc(pen.x, pen.y, 5, GRASS, [TREE, ROCK, TALL]);
+    for (let i = 0; i < 3; i++) place.put('H', pen.x, pen.y, 3, 2);
+
+    // Everything the garrison has to stay clear of: the lane, the pen, the tent
+    // and the ground the squad actually spawns on.
+    const avoid = [...lane, pen, { x: start.x + 5, y: start.y }];
+    for (let ay = 0; ay < g.h; ay++) {
+      for (let ax = 0; ax < g.w; ax++) if (g.get(ax, ay) === 'P' || g.get(ax, ay) === 'H') avoid.push({ x: ax, y: ay });
+    }
+    const clearOf = (x, yy, by) => avoid.every((q) => Math.hypot(q.x - x, q.y - yy) >= by);
+
+    // Twelve tiles, not eight. The validator's clearance is a rifleman's aggro
+    // radius exactly; building to the limit leaves a mission that passes and is
+    // miserable, because every step of the route is on the edge of being seen.
+    const post = (marker, anchor, spread, spreadY = spread) => {
+      for (let i = 0; i < 700; i++) {
+        const px = Math.round(anchor.x + (g.rnd() - 0.5) * spread * 2);
+        const py = Math.round(anchor.y + (g.rnd() - 0.5) * spreadY * 2);
+        if (!g.isOpen(px, py)) continue;
+        if (place.reachable && !place.reachable.has(`${px},${py}`)) continue;
+        if (place.used.some((q) => Math.hypot(q.x - px, q.y - py) < 2)) continue;
+        if (!clearOf(px, py, 12)) continue;
+        place.used.push({ x: px, y: py });
+        g.disc(px, py, 2.2, GRASS, [TALL]);
+        g.set(px, py, marker);
+        return { x: px, y: py };
+      }
+      return null;
+    };
+
+    // No snipers: 13 tiles of aggro would reach the lane from outside their own
+    // clearance and turn the route into a shooting gallery.
+    for (let i = 0; i < 5; i++) {
+      const anchor = lane[Math.round((lane.length * (i + 0.5)) / 5)];
+      const head = post('E', { x: anchor.x, y: g.h / 2 }, 8, g.h / 2);
+      if (head) for (let k = 0; k < 2; k++) post('E', head, 5);
+    }
+    post('c', lane[Math.round(lane.length * 0.5)], 10, 10);
+  },
+
+  /**
+   * A set piece: the wall you have to knock down.
+   *
+   * The rubble puzzle, and the only map here that declares `gated: true`.
+   * Levelling a building leaves walkable rubble, so a line of huts across the
+   * only gap is a door -- but the completability fill treats buildings as
+   * solid, and has to, or an objective *accidentally* sealed behind one would
+   * start passing. So this map says the puzzle is deliberate and is judged by
+   * the second fill.
+   *
+   * The supplies are behind the wall and there is no way round: a rifle does
+   * one damage against sixty, so the grenades by the spawn are not a
+   * convenience, they are the key.
+   */
+  'through-the-wall'(g, place) {
+    g.fillRect(0, 0, g.w, g.h, GRASS);
+    g.frame(ROCK, { min: 4, max: 9 });
+    scatter(g, SAND, 12, [4, 8], [GRASS]);
+    scatter(g, TALL, 8, [3, 5], [GRASS]);
+    forest(g, 8, [2, 4]);
+
+    // A rock wall clean across the map, with one gap in it.
+    const wallX = Math.round(g.w * 0.46);
+    const gapY = Math.round(g.h * 0.5);
+    for (let y = 0; y < g.h; y++) {
+      for (let k = 0; k < 3; k++) g.set(wallX + k, y, ROCK);
+    }
+    // The gap, filled by a factory. This is the door.
+    for (let y = gapY - 2; y <= gapY + 2; y++) for (let k = 0; k < 3; k++) g.set(wallX + k, y, FACTORY);
+
+    const spawn = clearing(g, 10, gapY, 5);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+
+    // Grenades on the near side. Without them the wall does not come down.
+    place.put('c', spawn.x + 8, spawn.y - 4, 4);
+    place.put('c', spawn.x + 8, spawn.y + 4, 4);
+    place.put('o', wallX - 5, gapY, 4);
+
+    // Everything past the wall is unreachable until it falls, so it is placed
+    // by hand rather than through the confined Placer.
+    const far = (mx, my, ch) => {
+      for (let i = 0; i < 300; i++) {
+        const px = Math.round(mx + (g.rnd() - 0.5) * 12);
+        const py = Math.round(my + (g.rnd() - 0.5) * 16);
+        if (!g.isOpen(px, py) || px <= wallX + 3) continue;
+        if (place.used.some((q) => Math.hypot(q.x - px, q.y - py) < 2.5)) continue;
+        place.used.push({ x: px, y: py });
+        g.set(px, py, ch);
+        return { x: px, y: py };
+      }
+      return null;
+    };
+    for (let i = 0; i < 4; i++) far(g.w * 0.72, g.h * (0.25 + i * 0.17), 'k');
+    for (let i = 0; i < 7; i++) far(g.w * 0.7, g.h * g.rnd(), 'E');
+    far(g.w * 0.85, g.h * 0.3, 'S');
+    far(g.w * 0.85, g.h * 0.7, 'B');
+  },
+
   'last-stand'(g, place) {
     g.fillRect(0, 0, g.w, g.h, GRASS);
     g.frame(ROCK, { min: 4, max: 11 });
@@ -802,19 +1411,417 @@ const BUILDERS = {
     place.put('c', cx - 5, cy + 4, 3);
     for (let i = 0; i < 4; i++) place.put('o', cx, cy, 8, 5);
 
-    // Attackers ring the outpost at a distance, with huts feeding more in.
+    // Huts ring the outpost at a distance, and every attacker in the mission
+    // comes out of one of them.
+    //
+    // They used to come with two men standing beside them, which on eight huts
+    // plus swarm doctrine's `extraEnemies` meant the mission opened with
+    // eighteen enemies already on the field -- against a briefing that promises
+    // "five waves come out of the huts", and against a squad that was wiped at
+    // eleven seconds if left alone. An opening garrison is not a garnish on a
+    // wave mission; it is a different mission happening first. So: none.
     for (let a = 0; a < 360; a += 45) {
       const ang = (a * Math.PI) / 180;
       const hx = Math.round(cx + Math.cos(ang) * (g.w * 0.38));
       const hy = Math.round(cy + Math.sin(ang) * (g.h * 0.38));
       if (hx < 5 || hy < 5 || hx > g.w - 7 || hy > g.h - 7) continue;
       building(g, hx, hy, 2, 2, HUT);
-      for (let i = 0; i < 2; i++) place.put('E', hx, hy, 6, 3);
     }
-    place.put('B', cx + 20, cy, 6);
-    place.put('B', cx - 20, cy, 6);
+    // No bazookateers standing off either. Two men shelling the outpost from
+    // twenty tiles out is a good idea for this mission and a bad idea at t=0:
+    // the brief asks for a field that is empty until the first wave, and half
+    // an exception is still an exception. Wave *composition* is where they
+    // belong -- every wave is riflemen today -- and that is its own change.
   },
 };
+
+// ------------------------------------------------------- layout grammar
+
+/*
+ * Layouts, dressing and population as three separate passes.
+ *
+ * The twelve builders above each do all three at once, which is why they all
+ * came out the same shape: `frame` then `forest` then `scatter` then a spawn
+ * then enemies thrown at random positions. Every terrain primitive places blobs
+ * uniformly, so nothing in that toolbox can produce a *silhouette* -- and twenty
+ * more of them would have been twenty recolours of one wood.
+ *
+ * So a layout decides the skeleton only: where the impassable mass is, where
+ * the routes are, where the chokepoints are. It returns the anchors a mission
+ * needs -- a spawn, a far end, and the places worth fighting over -- and knows
+ * nothing about objectives. `dress` then adds the theme's foliage and hazards,
+ * and `populate` puts down whatever the objective requires, reading the anchors.
+ *
+ * The twelve existing builders are deliberately left alone. They are the
+ * shipped campaign and they are tuned; rewriting them into this to prove a
+ * point about tidiness would risk twelve regressions and buy nothing.
+ */
+
+/** Theme-appropriate hard terrain: what the world is walled in with. */
+const MASS = { jungle: TREE, desert: ROCK, arctic: ROCK };
+
+/**
+ * Each layout takes the grid and returns `{ spawn, far, hubs }` in tiles.
+ *
+ * `spawn` is where the squad lands, `far` is the other end of the mission, and
+ * `hubs` are the places a garrison or an objective belongs -- a clearing, a
+ * yard, an island. Populate never invents a position; it only ever asks for one
+ * of these, which is what keeps a mission's shape and its contents agreeing.
+ */
+const LAYOUTS = {
+  /** A long corridor with cover in alternating bays. Everything is forward. */
+  gauntlet(g, mass) {
+    g.frame(mass, { min: 5, max: 12 });
+    const midY = Math.round(g.h / 2);
+    const hubs = [];
+    const bays = Math.max(4, Math.round(g.w / 26));
+    for (let i = 0; i < bays; i++) {
+      const x = Math.round((g.w / (bays + 1)) * (i + 1));
+      // Alternating shoulders pinching the corridor, so the route weaves.
+      const y = i % 2 === 0 ? midY - Math.round(g.h * 0.28) : midY + Math.round(g.h * 0.28);
+      g.blob(x, y, 4 + g.rnd() * 4, mass, 0.95, [GRASS, SAND, TALL]);
+      hubs.push({ x, y: i % 2 === 0 ? midY + 4 : midY - 4 });
+    }
+    return { spawn: { x: 8, y: midY }, far: { x: g.w - 9, y: midY }, hubs };
+  },
+
+  /** Land in the middle of deep water, reached by two causeway bridges. */
+  island(g, mass) {
+    g.fillRect(0, 0, g.w, g.h, DEEP);
+    const cx = g.w / 2;
+    const cy = g.h / 2;
+    const r = Math.min(g.w, g.h) * 0.36;
+    g.disc(cx, cy, r, GRASS);
+    g.disc(cx, cy, r + 1.2, SAND, [DEEP]);
+    // A shallow lip, so the shore is a beach rather than a cliff into the sea.
+    for (let a = 0; a < 360; a += 3) {
+      const rad = (a * Math.PI) / 180;
+      g.paint(Math.round(cx + Math.cos(rad) * (r + 2)), Math.round(cy + Math.sin(rad) * (r + 2)), WATER, [DEEP]);
+    }
+    const spawn = { x: Math.round(cx - r * 0.72), y: Math.round(cy) };
+    g.disc(spawn.x, spawn.y, 5, GRASS);
+    const hubs = [];
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + 0.6;
+      hubs.push({ x: Math.round(cx + Math.cos(a) * r * 0.55), y: Math.round(cy + Math.sin(a) * r * 0.55) });
+    }
+    return { spawn, far: { x: Math.round(cx + r * 0.7), y: Math.round(cy) }, hubs };
+  },
+
+  /** A walled compound in the middle, approachable from every side. */
+  ringSiege(g, mass) {
+    g.frame(mass, { min: 4, max: 10 });
+    const cx = Math.round(g.w / 2);
+    const cy = Math.round(g.h / 2);
+    const w = Math.round(Math.min(g.w, g.h) * 0.34);
+    const h = Math.round(Math.min(g.w, g.h) * 0.3);
+    g.disc(cx, cy, Math.max(w, h) * 0.9, GRASS, [TREE, ROCK, TALL]);
+    compound(g, cx - Math.round(w / 2), cy - Math.round(h / 2), w, h, { gates: 4 });
+    const hubs = [{ x: cx, y: cy }];
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      hubs.push({
+        x: Math.round(cx + Math.cos(a) * g.w * 0.33),
+        y: Math.round(cy + Math.sin(a) * g.h * 0.33),
+      });
+    }
+    return { spawn: { x: cx, y: g.h - 8 }, far: { x: cx, y: cy }, hubs };
+  },
+
+  /** A braided river with several crossings and land between the channels. */
+  delta(g, mass) {
+    g.frame(mass, { min: 4, max: 9 });
+    river(g, { axis: 'h', width: 3, wobble: 6, crossings: [0.22, 0.5, 0.78], deep: true });
+    river(g, { axis: 'v', width: 2, wobble: 8, crossings: [0.3, 0.68] });
+    const hubs = [];
+    for (let i = 0; i < 6; i++) {
+      hubs.push({
+        x: Math.round(g.w * (0.18 + 0.64 * ((i % 3) / 2))),
+        y: Math.round(g.h * (i < 3 ? 0.22 : 0.78)),
+      });
+    }
+    return { spawn: { x: 9, y: g.h - 9 }, far: { x: g.w - 9, y: 9 }, hubs };
+  },
+
+  /** Rock walls with a narrow winding floor, and no way round. */
+  canyon(g, mass) {
+    g.fillRect(0, 0, g.w, g.h, ROCK);
+    let y = g.h / 2;
+    const hubs = [];
+    for (let x = 2; x < g.w - 2; x++) {
+      y += Math.sin(x / 9) * 0.55 + (g.rnd() - 0.5) * 0.35;
+      y = Math.max(7, Math.min(g.h - 8, y));
+      // The floor pinches and opens, so there are places to fight and places to
+      // only pass through.
+      const half = 3.5 + Math.sin(x / 17) * 2.6;
+      for (let k = -half; k <= half; k++) g.set(x, Math.round(y + k), GRASS);
+      if (x % Math.round(g.w / 6) === 0 && x > 10 && x < g.w - 12) hubs.push({ x, y: Math.round(y) });
+    }
+    scatter(g, SAND, 12, [3, 6], [GRASS]);
+    return { spawn: { x: 7, y: Math.round(g.h / 2) }, far: { x: g.w - 8, y: Math.round(y) }, hubs };
+  },
+
+  /** Sea down one side, a strip of land, and piers running out into it. */
+  coast(g, mass) {
+    g.frame(mass, { min: 3, max: 8 });
+    const shore = Math.round(g.h * 0.62);
+    for (let x = 0; x < g.w; x++) {
+      const edge = shore + Math.round(Math.sin(x / 14) * 4 + Math.sin(x / 5.5) * 1.6);
+      for (let y = edge; y < g.h; y++) g.set(x, y, y > edge + 3 ? DEEP : WATER);
+      g.paint(x, edge - 1, SAND, [GRASS, TALL]);
+      g.paint(x, edge - 2, SAND, [GRASS, TALL]);
+    }
+    const hubs = [];
+    for (let i = 0; i < 5; i++) {
+      const x = Math.round((g.w / 6) * (i + 1));
+      hubs.push({ x, y: Math.round(shore * 0.55) });
+      if (i % 2 === 0) pier(g, { x, y: shore - 2 }, { x, y: Math.min(g.h - 3, shore + 8) });
+    }
+    return { spawn: { x: 9, y: Math.round(shore * 0.4) }, far: { x: g.w - 10, y: Math.round(shore * 0.4) }, hubs };
+  },
+
+  /** Two roads meeting, with a town in the quadrants. */
+  crossroads(g, mass) {
+    g.frame(mass, { min: 4, max: 9 });
+    forest(g, 10, [3, 6]);
+    const cx = Math.round(g.w / 2);
+    const cy = Math.round(g.h / 2);
+    road(g, { x: 5, y: cy }, { x: g.w - 6, y: cy });
+    road(g, { x: cx, y: 5 }, { x: cx, y: g.h - 6 });
+    verge(g, 2);
+    const tw = Math.round(g.w * 0.3);
+    const th = Math.round(g.h * 0.3);
+    const put = streets(g, cx - Math.round(tw / 2), cy - Math.round(th / 2), tw, th, { cols: 3, rows: 2 });
+    return { spawn: { x: 8, y: cy }, far: { x: cx, y: cy }, hubs: put.length ? put : [{ x: cx, y: cy }] };
+  },
+
+  /** A spiral wall: one long way in, and no shortcuts across it. */
+  spiral(g, mass) {
+    g.frame(mass, { min: 4, max: 9 });
+    const cx = Math.round(g.w / 2);
+    const cy = Math.round(g.h / 2);
+    const maxR = Math.min(g.w, g.h) * 0.42;
+    g.disc(cx, cy, maxR + 2, GRASS, [TREE, ROCK, TALL]);
+    // Three arcs at increasing radius, each with its opening a third of a turn
+    // round from the last, so getting in means walking most of a lap per ring.
+    for (let ring = 0; ring < 3; ring++) {
+      const r = maxR * (0.4 + ring * 0.28);
+      const gap = ring * 2.1;
+      for (let a = 0; a < 360; a += 2) {
+        const rad = (a * Math.PI) / 180;
+        if (Math.abs(((rad - gap + Math.PI * 3) % (Math.PI * 2)) - Math.PI) > Math.PI - 0.42) continue;
+        g.paint(Math.round(cx + Math.cos(rad) * r), Math.round(cy + Math.sin(rad) * r), FENCE, [GRASS, SAND, TALL, ICE]);
+      }
+    }
+    const hubs = [{ x: cx, y: cy }];
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + 0.4;
+      hubs.push({ x: Math.round(cx + Math.cos(a) * maxR * 0.72), y: Math.round(cy + Math.sin(a) * maxR * 0.72) });
+    }
+    return { spawn: { x: cx, y: g.h - 7 }, far: { x: cx, y: cy }, hubs };
+  },
+
+  /** A diagonal spine of rock with a handful of passes through it. */
+  ridgeline(g, mass) {
+    g.frame(mass, { min: 4, max: 9 });
+    const passes = [0.24, 0.55, 0.82];
+    for (let i = 0; i < g.w; i++) {
+      const t = i / g.w;
+      const y = Math.round(g.h * (0.18 + t * 0.62) + Math.sin(i / 12) * 3);
+      const near = passes.some((p) => Math.abs(t - p) < 0.035);
+      if (near) continue;
+      for (let k = -3; k <= 3; k++) g.paint(i, y + k, ROCK, [GRASS, SAND, TALL, ICE]);
+    }
+    const hubs = passes.map((p) => ({
+      x: Math.round(g.w * p),
+      y: Math.round(g.h * (0.18 + p * 0.62)),
+    }));
+    hubs.push({ x: Math.round(g.w * 0.5), y: Math.round(g.h * 0.14) });
+    hubs.push({ x: Math.round(g.w * 0.5), y: Math.round(g.h * 0.88) });
+    return { spawn: { x: 8, y: 8 }, far: { x: g.w - 9, y: g.h - 9 }, hubs };
+  },
+
+  /** A chain of islands joined by narrow causeways. Nowhere to spread out. */
+  causeway(g, mass) {
+    g.fillRect(0, 0, g.w, g.h, DEEP);
+    const n = Math.max(4, Math.round(g.w / 24));
+    const hubs = [];
+    let prev = null;
+    for (let i = 0; i < n; i++) {
+      const x = Math.round((g.w / (n + 1)) * (i + 1));
+      const y = Math.round(g.h * (0.32 + 0.36 * ((i % 2 + Math.sin(i)) / 2 + 0.5)));
+      const r = 6 + g.rnd() * 4;
+      g.disc(x, y, r, GRASS);
+      g.disc(x, y, r + 1.1, SAND, [DEEP]);
+      if (prev) pier(g, prev, { x, y });
+      prev = { x, y };
+      hubs.push({ x, y });
+    }
+    return { spawn: hubs[0], far: hubs[hubs.length - 1], hubs: hubs.slice(1, -1) };
+  },
+};
+
+/** Theme dressing: what grows on the skeleton. Never changes what is passable. */
+function dress(g, spec) {
+  if (spec.theme === 'desert') {
+    dunes(g, 22, [6, 13]);
+    scatter(g, TALL, 10, [2, 5], [SAND, GRASS]);
+    scatter(g, ROCK, 9, [1, 3], [SAND, GRASS]);
+    scatter(g, QUICK, 4, [2, 4], [SAND]);
+  } else if (spec.theme === 'arctic') {
+    scatter(g, ICE, 10, [3, 7], [GRASS]);
+    forest(g, 8, [2, 4]);
+    scatter(g, ROCK, 7, [1, 3], [GRASS, ICE]);
+  } else {
+    forest(g, 14, [2, 5]);
+    scatter(g, TALL, 14, [3, 6], [GRASS]);
+    scatter(g, ROCK, 5, [1, 3], [GRASS]);
+  }
+}
+
+/**
+ * Puts down whatever the objective needs, using the layout's anchors.
+ *
+ * Never invents a position: everything lands on a hub, the spawn or the far
+ * end. That is what keeps a generated mission's contents agreeing with its
+ * shape -- an objective dropped at a random open tile is how a "canyon map"
+ * ends up being about a corner of the canyon nobody was routed through.
+ */
+function populate(g, place, spec, at) {
+  const { spawn, far, hubs } = at;
+  /*
+   * Hubs come off the layouts on half-tiles -- a corridor's midpoint, a
+   * crossroads' centre -- and a *marker* is happy with that while a *building*
+   * is not: `fillRect` walks integer rows and a fractional y indexes nothing.
+   * It surfaced as a crash on the one layout whose hubs happened to land on a
+   * half, which is the kind of fault that waits for the map after next, so it
+   * is rounded here rather than at each of the six places that build on one.
+   */
+  const pick = (i) => {
+    const h = hubs[i % hubs.length] ?? far;
+    return { ...h, x: Math.round(h.x), y: Math.round(h.y) };
+  };
+  const guards = spec.guards ?? 10;
+
+  switch (spec.objective) {
+    case 'reach':
+      g.disc(far.x, far.y, 4, GRASS, [TREE, ROCK, TALL, QUICK]);
+      g.fillRect(far.x - 1, far.y - 1, 2, 2, TENT);
+      break;
+    case 'rescue': {
+      g.disc(spawn.x + 7, spawn.y, 4, GRASS, [TREE, ROCK, TALL, QUICK, ICE]);
+      g.fillRect(spawn.x + 6, spawn.y - 1, 2, 2, TENT);
+      const pen = pick(hubs.length - 1);
+      g.disc(pen.x, pen.y, 6, GRASS, [TREE, ROCK, TALL, QUICK, ICE]);
+      for (let i = 0; i < 4; i++) place.put('H', pen.x, pen.y, 4, 3);
+      break;
+    }
+    case 'demolish':
+      for (let i = 0; i < Math.min(5, hubs.length); i++) {
+        const h = pick(i);
+        building(g, h.x - 1, h.y - 1, 2, 2, HUT);
+      }
+      break;
+    case 'collect':
+      for (let i = 0; i < 5; i++) {
+        const h = pick(i);
+        place.put('k', h.x, h.y, 5, 4);
+      }
+      break;
+    case 'assassinate': {
+      const post = pick(0);
+      g.disc(post.x, post.y, 5, GRASS, [TREE, ROCK, TALL, QUICK, ICE]);
+      place.put('C', post.x, post.y, 2, 2);
+      // His bodyguard, close enough that reaching him is the problem.
+      for (let i = 0; i < 4; i++) place.put('E', post.x, post.y, 6, 3);
+      break;
+    }
+    case 'hold': {
+      /*
+       * A hold zone needs something in it.
+       *
+       * It used to be a marker on cleared ground, so the mission asked the
+       * player to stand on a coordinate -- and a circle drawn on bare road
+       * looks like a bug rather than a position, because nothing about the map
+       * explains why *there*. A bunker explains it: the ground is worth holding
+       * because somebody built something on it, and the thing they built cannot
+       * be blown up, so the mission stays a defence instead of quietly becoming
+       * a demolition puzzle with a hidden answer.
+       *
+       * The zone marker sits beside the bunker rather than on it -- the tile is
+       * solid, and the extraction pad is measured from the block's edge anyway.
+       */
+      const zx = pick(0).x;
+      const zy = pick(0).y;
+      g.disc(zx, zy, 6, GRASS, [TREE, ROCK, TALL, QUICK, ICE]);
+      building(g, zx - 1, zy - 1, 2, 2, BUNKER);
+      place.used.push({ x: zx, y: zy });
+      place.put('X', zx, zy + 2, 1);
+
+      /*
+       * Somewhere for the pressure to come from.
+       *
+       * `hold` and `survive` are the same mission -- stand somewhere while they
+       * come for you -- and only one of them had a way of producing anybody. A
+       * hold map fielded a fixed garrison, so once it was dead the player stood
+       * in a circle watching a clock, which is a wait rather than a defence.
+       * Four huts well out from the zone, and the `waves:` header in the
+       * campaign table does the rest.
+       *
+       * Placed at the compass points and clear of the zone by a good margin, so
+       * a wave has ground to cross and the player has time to see it coming.
+       */
+      const reach = Math.round(Math.min(g.w, g.h) * 0.34);
+      for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+        const hx = zx + dx * reach;
+        const hy = zy + dy * reach;
+        if (hx < 5 || hy < 5 || hx > g.w - 7 || hy > g.h - 7) continue;
+        building(g, hx, hy, 2, 2, HUT);
+        place.used.push({ x: hx, y: hy });
+      }
+      break;
+    }
+    case 'survive': {
+      building(g, spawn.x - 1, spawn.y - 6, 2, 2, OUTPOST);
+      for (let i = 0; i < Math.min(4, hubs.length); i++) {
+        const h = pick(i);
+        building(g, h.x - 1, h.y - 1, 2, 2, HUT);
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
+  // The garrison, spread over the hubs rather than over the map, so every part
+  // of the layout that was worth building is a part somebody is holding.
+  for (let i = 0; i < guards; i++) {
+    const h = pick(i);
+    place.put('E', h.x, h.y, 7, 3);
+  }
+  for (let i = 0; i < Math.max(1, Math.round(guards / 5)); i++) {
+    const h = pick(i * 2 + 1);
+    place.put(i % 2 === 0 ? 'S' : 'B', h.x, h.y, 6, 4);
+  }
+  for (let i = 0; i < 3; i++) place.put('p', pick(i * 3).x, pick(i * 3).y, 6, 6);
+  place.put('c', spawn.x + 9, spawn.y, 6);
+  place.put('c', pick(1).x, pick(1).y, 7);
+  for (let i = 0; i < 2; i++) place.put('o', pick(i + 2).x, pick(i + 2).y, 6, 5);
+}
+
+/** Builds a mission from a layout rather than from a hand-written builder. */
+function fromLayout(g, place, spec) {
+  const mass = MASS[spec.theme] ?? TREE;
+  const at = LAYOUTS[spec.layout](g, mass);
+  dress(g, spec);
+
+  const spawn = clearing(g, at.spawn.x, at.spawn.y, 5);
+  squad(g, place, spawn, spec.squad ?? 6);
+  place.used.push(spawn);
+  place.confineTo(spawn.x, spawn.y);
+
+  populate(g, place, spec, { ...at, spawn });
+}
 
 // -------------------------------------------------------------- campaign
 
@@ -826,7 +1833,7 @@ const CAMPAIGN = [
     brief: 'Dev only. Flat ground, huts to level and men to shoot, and no cover to blame.',
   },
   {
-    id: 'lone-wolf', squad: 1, doctrine: 'patrol', order: 9, seed: 887701, w: 84, h: 52,
+    id: 'lone-wolf', squad: 1, doctrine: 'patrol', order: 11, seed: 887701, w: 84, h: 52,
     name: 'Lone Wolf', theme: 'jungle', objective: 'reach',
     mechanic: 'one man',
     brief: 'One soldier. No herd to hide in, and one hit is still all it takes.',
@@ -837,53 +1844,297 @@ const CAMPAIGN = [
     mechanic: 'everything at once',
     brief: 'Dev only. One of everything, for looking at rather than winning.',
   },
+  /*
+   * The two missions before the campaign starts.
+   *
+   * Everything this game asks of a player is taught by a mission rather than by
+   * a page of controls: the first one is five men in a field and the discovery
+   * that moving and shooting are different buttons, the second is a bridge with
+   * grenades lying on it and two huts that rifles will not touch.
+   */
   {
-    id: 'chicken-run', doctrine: 'garrison', order: 1, seed: 20250830, w: 88, h: 56,
+    id: 'training-fire', doctrine: 'garrison', order: 1, seed: 110001, w: 52, h: 34,
+    name: 'Basic Training', theme: 'jungle', objective: 'eliminate',
+    mechanic: 'move, and then fire',
+    brief: 'Five of them, in the open. Click to march; hold right-click, or FIRE, to shoot.',
+  },
+  {
+    id: 'training-bridge', doctrine: 'garrison', order: 2, seed: 110002, w: 46, h: 60,
+    name: 'Over the Water', theme: 'jungle', objective: 'demolish',
+    mechanic: 'the bridge, and what is on it',
+    brief: 'Both huts, and rifles will barely mark them. There are grenades on the bridge -- walk over them, then use them.',
+  },
+  {
+    id: 'chicken-run', doctrine: 'garrison', order: 3, seed: 20250830, w: 88, h: 56,
     name: 'Chicken Run', theme: 'jungle', objective: 'eliminate',
     mechanic: 'basics',
     brief: 'Move as a herd, use the treeline, and let them come to you.',
   },
   {
-    id: 'river-run', doctrine: 'garrison', order: 2, seed: 771903, w: 64, h: 88,
+    id: 'river-run', doctrine: 'garrison', order: 4, seed: 771903, w: 64, h: 88,
     name: 'River Run', theme: 'jungle', objective: 'eliminate',
     mechanic: 'deep water',
     brief: 'Deep water cannot be crossed. Take a bridge, and expect it covered.',
   },
   {
-    id: 'long-road', doctrine: 'ambush', order: 3, seed: 448210, w: 220, h: 44,
+    id: 'long-road', doctrine: 'ambush', order: 5, seed: 448210, w: 220, h: 44,
     name: 'The Long Road', theme: 'desert', objective: 'reach',
     mechanic: 'extraction',
     brief: 'A long march east. Get everyone still standing to the pickup.',
   },
   {
-    id: 'undergrowth', doctrine: 'patrol', order: 4, seed: 913377, w: 96, h: 68,
+    id: 'undergrowth', doctrine: 'patrol', order: 6, seed: 913377, w: 96, h: 68,
     name: 'Undergrowth', theme: 'jungle', objective: 'eliminate',
     mechanic: 'tall grass',
     brief: 'Tall grass hides you but not your bullets. Snipers own the open ground.',
   },
   {
-    id: 'minefield', doctrine: 'garrison', order: 5, seed: 610455, w: 92, h: 64,
+    id: 'minefield', doctrine: 'garrison', order: 7, seed: 610455, w: 92, h: 64,
     name: 'Minefield', theme: 'desert', objective: 'demolish',
     mechanic: 'mines',
     brief: 'Mines everywhere. Shoot a barrel to clear a lane, then level the huts.',
   },
   {
-    id: 'village', doctrine: 'hunters', order: 6, seed: 328814, w: 96, h: 76,
+    id: 'village', doctrine: 'hunters', order: 8, seed: 328814, w: 96, h: 76,
     name: 'Village', theme: 'jungle', objective: 'demolish',
     mechanic: 'enemy buildings',
     brief: 'Huts keep sending out troopers. Grenades bring them down, rifles will not.',
   },
   {
-    id: 'ice-station', doctrine: 'patrol', order: 7, seed: 175062, w: 100, h: 64,
+    id: 'ice-station', doctrine: 'patrol', order: 9, seed: 175062, w: 100, h: 64,
     name: 'Ice Station', theme: 'arctic', objective: 'rescue',
     mechanic: 'hostages and ice',
     brief: 'Walk every prisoner back to the tent. Ice ruins your footing; one dead hostage ends it.',
   },
   {
-    id: 'last-stand', doctrine: 'swarm', order: 8, seed: 502991, w: 76, h: 76, duration: 120,
+    id: 'softly-softly', doctrine: 'garrison', order: 12, seed: 664218, w: 104, h: 56,
+    name: 'Softly Softly', theme: 'jungle', objective: 'covert',
+    mechanic: 'not being seen',
+    brief: 'Walk out the far side without killing anybody. Firing is allowed; a body is not.',
+  },
+  /*
+   * ---- grown from the layout grammar ------------------------------------
+   *
+   * A row, not a function. Every one of the ten layouts appears at least once
+   * and every objective at least twice across the campaign, which is the point
+   * of the grammar: the spread is something you arrange in a table rather than
+   * something you hope for.
+   *
+   * The names and briefs are written by hand and always will be. The grammar
+   * generates terrain; it does not generate a reason to play a level, and a
+   * mission whose brief was autogenerated would read like one.
+   */
+  {
+    id: 'dry-run', layout: 'gauntlet', doctrine: 'ambush', order: 22, seed: 411903, w: 168, h: 52,
+    name: 'Dry Run', theme: 'desert', objective: 'reach',
+    mechanic: 'a corridor with shoulders',
+    brief: 'One way east, and the walls keep closing on you. Nothing here is optional.',
+  },
+  {
+    id: 'no-way-off', layout: 'island', doctrine: 'garrison', order: 23, seed: 720184, w: 96, h: 86,
+    name: 'No Way Off', theme: 'jungle', objective: 'eliminate', guards: 14,
+    mechanic: 'nowhere to fall back to',
+    brief: 'The sea is on every side. Clear it, because there is nowhere else to be.',
+  },
+  {
+    id: 'cold-keep', layout: 'ringSiege', doctrine: 'swarm', order: 24, seed: 338261, w: 88, h: 88,
+    duration: 110, waves: '5@20',
+    name: 'Cold Keep', theme: 'arctic', objective: 'survive',
+    mechanic: 'a wall with four gates',
+    brief: 'Four ways in and one outpost. Level a hut and the next wave is thinner.',
+  },
+  {
+    id: 'braided-water', layout: 'delta', doctrine: 'patrol', order: 25, seed: 509772, w: 104, h: 82,
+    name: 'Braided Water', theme: 'jungle', objective: 'collect',
+    mechanic: 'channels and crossings',
+    brief: 'Five crates scattered across the delta. Every one of them is over water.',
+  },
+  {
+    id: 'the-narrows', layout: 'canyon', doctrine: 'ambush', order: 26, seed: 186540, w: 152, h: 58,
+    timelimit: 240,
+    name: 'The Narrows', theme: 'desert', objective: 'reach',
+    mechanic: 'a clock, and no room',
+    brief: 'Four minutes to the far end of the canyon. There is no second route.',
+  },
+  {
+    id: 'landing-ground', layout: 'coast', doctrine: 'hunters', order: 27, seed: 843017, w: 124, h: 72,
+    name: 'Landing Ground', theme: 'jungle', objective: 'demolish', guards: 12,
+    mechanic: 'piers and open shore',
+    brief: 'Everything they land is stored above the beach. Take it all down.',
+  },
+  {
+    id: 'hold-the-junction', layout: 'crossroads', doctrine: 'garrison', order: 28, seed: 265419, w: 104, h: 88,
+    duration: 45, waves: '4@11',
+    name: 'Hold the Junction', theme: 'desert', objective: 'hold',
+    mechanic: 'ground, measured in seconds',
+    brief: 'Take the bunker on the crossroads and stand there. Four waves come for it. Leaving stops the clock.',
+  },
+  {
+    id: 'the-coil', layout: 'spiral', doctrine: 'patrol', order: 29, seed: 972330, w: 90, h: 90,
+    name: 'The Coil', theme: 'arctic', objective: 'assassinate',
+    mechanic: 'three rings, three gaps',
+    brief: 'He is at the centre and every ring makes you walk most of a lap. Only he has to die.',
+  },
+  {
+    id: 'the-spine', layout: 'ridgeline', doctrine: 'hunters', order: 30, seed: 604158, w: 112, h: 78,
+    name: 'The Spine', theme: 'arctic', objective: 'eliminate', guards: 13,
+    mechanic: 'a ridge with three passes',
+    brief: 'Rock from end to end and three ways through it. They know which three.',
+  },
+  {
+    id: 'stepping-stones', layout: 'causeway', doctrine: 'garrison', order: 31, seed: 117622, w: 144, h: 60,
+    name: 'Stepping Stones', theme: 'jungle', objective: 'rescue',
+    mechanic: 'islands, one at a time',
+    brief: 'The prisoners are at the far end of the chain. Every causeway is a decision.',
+  },
+  {
+    id: 'the-long-white', layout: 'gauntlet', doctrine: 'swarm', order: 32, seed: 488251, w: 150, h: 54,
+    duration: 45, waves: '4@11',
+    name: 'The Long White', theme: 'arctic', objective: 'hold',
+    mechanic: 'holding a corridor',
+    brief: 'Walk the length of it, take the far bunker, and keep somebody standing on it while they come.'
+  },
+  {
+    id: 'white-cut', layout: 'canyon', doctrine: 'swarm', order: 33, seed: 733806, w: 138, h: 56,
+    duration: 100, waves: '4@22',
+    name: 'White Cut', theme: 'arctic', objective: 'survive',
+    mechanic: 'nowhere to spread out',
+    brief: 'A canyon floor, four waves, and walls that stop you going round them.',
+  },
+  {
+    id: 'salt-flats', layout: 'delta', doctrine: 'patrol', order: 34, seed: 951274, w: 108, h: 80,
+    name: 'Salt Flats', theme: 'desert', objective: 'eliminate', guards: 14,
+    mechanic: 'water where there should be none',
+    brief: 'Channels across a flat nobody expected water on. Clear both banks.',
+  },
+  {
+    id: 'cold-shore', layout: 'coast', doctrine: 'ambush', order: 35, seed: 622085, w: 128, h: 70,
+    name: 'Cold Shore', theme: 'arctic', objective: 'reach',
+    mechanic: 'open ground beside deep water',
+    brief: 'A strip of shore, a long way east, and no cover worth the name.',
+  },
+  {
+    id: 'the-drum', layout: 'ringSiege', doctrine: 'hunters', order: 36, seed: 380916, w: 92, h: 92,
+    name: 'The Drum', theme: 'jungle', objective: 'demolish', guards: 12,
+    mechanic: 'a compound to get into',
+    brief: 'Everything worth levelling is inside the wire, and they will not wait for you.',
+  },
+  {
+    id: 'market-day', layout: 'crossroads', doctrine: 'ambush', order: 37, seed: 297643, w: 108, h: 86,
+    name: 'Market Day', theme: 'jungle', objective: 'collect',
+    mechanic: 'a town with sightlines',
+    brief: 'Five crates among the blocks. Every street is a lane somebody is watching.',
+  },
+
+  // ---- set pieces: hand-written, because the shape is the point ----------
+  {
+    id: 'four-bridges', doctrine: 'garrison', order: 13, seed: 310577, w: 108, h: 70,
+    name: 'Four Bridges', theme: 'jungle', objective: 'demolish',
+    mechanic: 'a cut somebody dug',
+    brief: 'A straight canal, four crossings, and every one of them covered. Pick your bridge.',
+  },
+  {
+    id: 'walled-town', doctrine: 'patrol', order: 14, seed: 664901, w: 104, h: 72,
+    name: 'The Walled Town', theme: 'desert', objective: 'assassinate',
+    mechanic: 'streets, and one man in them',
+    brief: 'He is somewhere in the middle. Nothing else on this map has to die.',
+  },
+  {
+    id: 'not-a-sound', doctrine: 'garrison', order: 15, seed: 907714, w: 108, h: 58,
+    name: 'Not a Sound', theme: 'jungle', objective: 'rescue', nokill: true,
+    mechanic: 'a rescue nobody hears',
+    brief: 'Walk three prisoners home through the grass. One body and it is over.',
+  },
+  {
+    id: 'through-the-wall', doctrine: 'garrison', order: 16, seed: 155038, w: 96, h: 64, gated: true,
+    name: 'Through the Wall', theme: 'desert', objective: 'collect',
+    mechanic: 'the door is a building',
+    brief: 'The supplies are on the far side and there is no way round. Bring the wall down.',
+  },
+
+  {
+    id: 'last-stand', doctrine: 'swarm', order: 10, seed: 502991, w: 76, h: 76, duration: 150,
     name: 'Last Stand', theme: 'arctic', objective: 'survive', waves: '5@22',
     mechanic: 'holding out',
     brief: 'Hold the outpost for two minutes. Five waves come out of the huts -- level a hut and the next one is smaller.',
+  },
+
+  /*
+   * Eleven more, to bring the desert and the ice up to the same fifteen the
+   * jungle already had.
+   *
+   * Written as table rows rather than as builders, which is what 006's layout
+   * grammar was for: a mission is layout x dressing x objective x doctrine x
+   * seed, and eleven of them is a table. Ordered so no three consecutive
+   * missions share an objective -- a run of three demolitions in a row is the
+   * same mission three times however different the ground is.
+   */
+  {
+    id: 'salt-pan', layout: 'island', doctrine: 'ambush', order: 38, seed: 517742, w: 96, h: 72,
+    name: 'Salt Pan', theme: 'desert', objective: 'collect',
+    mechanic: 'flat, bright and overlooked',
+    brief: 'Crates scattered across the pan, and nowhere at all to stand out of sight.',
+  },
+  {
+    id: 'the-quarry', layout: 'canyon', doctrine: 'garrison', order: 39, seed: 863401, w: 112, h: 64,
+    name: 'The Quarry', theme: 'desert', objective: 'demolish',
+    mechanic: 'terraces and dead ground',
+    brief: 'They work the pit from the rim. Level what they built and get out.',
+  },
+  {
+    id: 'bone-road', layout: 'causeway', doctrine: 'patrol', order: 40, seed: 294118, w: 180, h: 48,
+    name: 'Bone Road', theme: 'desert', objective: 'reach',
+    mechanic: 'a road with no shoulder',
+    brief: 'One road, water either side, and pickets all the way along it.',
+  },
+  {
+    id: 'dust-devils', layout: 'ridgeline', doctrine: 'hunters', order: 41, seed: 706233, w: 104, h: 80,
+    name: 'Dust Devils', theme: 'desert', objective: 'eliminate',
+    mechanic: 'high ground, both ways',
+    brief: 'They own the ridge and they will not stay on it. Take it anyway.',
+  },
+  {
+    id: 'the-cistern', layout: 'spiral', doctrine: 'garrison', order: 43, seed: 448970, w: 88, h: 88,
+    name: 'The Cistern', theme: 'desert', objective: 'rescue',
+    mechanic: 'a compound wound inward',
+    brief: 'They are held at the middle of it, and every turn of the spiral is watched.',
+  },
+  {
+    id: 'black-ice', layout: 'delta', doctrine: 'patrol', order: 42, seed: 655012, w: 108, h: 76,
+    name: 'Black Ice', theme: 'arctic', objective: 'reach',
+    mechanic: 'many crossings, none safe',
+    brief: 'The river braids here and the ice is thin. Pick a crossing and commit.',
+  },
+  {
+    id: 'the-hangar', layout: 'crossroads', doctrine: 'garrison', order: 44, seed: 138265, w: 96, h: 84,
+    name: 'The Hangar', theme: 'arctic', objective: 'demolish',
+    mechanic: 'a junction they built on',
+    brief: 'Four roads meet at their sheds. Take the sheds down and the roads are yours.',
+  },
+  {
+    id: 'snow-blind', layout: 'gauntlet', doctrine: 'ambush', order: 45, seed: 981744, w: 148, h: 52,
+    name: 'Snow Blind', theme: 'arctic', objective: 'assassinate',
+    mechanic: 'a corridor, and one man in it',
+    brief: 'He is somewhere along the pass, and so is everybody guarding him.',
+  },
+  {
+    id: 'frozen-lake', layout: 'island', doctrine: 'swarm', order: 46, seed: 322806, w: 84, h: 84,
+    duration: 45, waves: '4@11',
+    name: 'Frozen Lake', theme: 'arctic', objective: 'hold',
+    mechanic: 'ground you cannot leave',
+    brief: 'Take the bunker on the ice and stay on it. Four waves come across for it.',
+  },
+  {
+    id: 'the-crevasse', layout: 'canyon', doctrine: 'hunters', order: 47, seed: 570439, w: 128, h: 60,
+    name: 'The Crevasse', theme: 'arctic', objective: 'collect',
+    mechanic: 'a split you cannot cross',
+    brief: 'Supplies down both sides of a gap, and they will come round it faster than you.',
+  },
+  {
+    id: 'north-station', layout: 'coast', doctrine: 'garrison', order: 48, seed: 811527, w: 116, h: 68,
+    name: 'North Station', theme: 'arctic', objective: 'rescue',
+    mechanic: 'a shore with one way up it',
+    brief: 'They are held at the station above the beach. Walk them back down to the tent.',
   },
 ];
 
@@ -892,7 +2143,11 @@ const CAMPAIGN = [
 function generate(spec) {
   const g = new Grid(spec.w, spec.h, GRASS, spec.seed);
   const place = new Placer(g);
-  BUILDERS[spec.id](g, place);
+  // A mission is either hand-written or grown from a layout. The twelve
+  // originals are the former and stay that way; everything after them is a row
+  // in the table rather than a function.
+  if (spec.layout) fromLayout(g, place, spec);
+  else BUILDERS[spec.id](g, place);
 
   // Every mission gets the same finishing pass: dissolve the marooned single
   // tiles that blob painting leaves behind. Only soft ground is touched, and
@@ -909,6 +2164,11 @@ function generate(spec) {
     `order: ${spec.order}`,
     `mechanic: ${spec.mechanic}`,
     `brief: ${spec.brief}`,
+    // `covert` already implies it, and Softly Softly's file should not change
+    // shape just because the rule behind it grew a name.
+    ...(spec.nokill && spec.objective !== 'covert' ? ['nokill: true'] : []),
+    ...(spec.timelimit ? [`timelimit: ${spec.timelimit}`] : []),
+    ...(spec.gated ? ['gated: true'] : []),
     ...(spec.dev ? ['dev: true'] : []),
     ...(spec.squad ? [`squad: ${spec.squad}`] : []),
     ...(spec.waves ? [`waves: ${spec.waves}`] : []),
@@ -934,39 +2194,146 @@ function validate(spec, grid) {
     return out;
   };
 
+  // `covert` is an alias for `reach` plus the no-kill rule, unfolded here the
+  // same way the parser unfolds it, so the validator and the game agree on what
+  // the file means. See `Modifiers` in map.ts.
+  const objective = spec.objective === 'covert' ? 'reach' : spec.objective;
+  const nokill = spec.objective === 'covert' || spec.nokill === true;
+
   const squad = find('P');
   const want = spec.squad ?? 6;
   if (squad.length !== want) problems.push(`expected ${want} player spawns, found ${squad.length}`);
   if (squad.length === 0) return problems;
 
-  const reach = grid.reachable(squad[0].x, squad[0].y);
-  const need = { eliminate: ['E', 'S', 'B'], demolish: [], rescue: ['H'], reach: ['X', TENT], survive: [] };
+  // Judged by the fill the map declares: strict by default, and the one that
+  // treats a hut as a door only for a mission built around levelling it.
+  const reach = grid.reachable(squad[0].x, squad[0].y, null, spec.gated === true);
+  const need = {
+    eliminate: ['E', 'S', 'B'], demolish: [], rescue: ['H'],
+    reach: ['X', TENT], survive: [],
+    hold: ['X', TENT], collect: [SUPPLY], assassinate: [OFFICER],
+  };
 
-  for (const ch of need[spec.objective] ?? []) {
+  for (const ch of need[objective] ?? []) {
     for (const p of find(ch)) {
       if (!reach.has(`${p.x},${p.y}`)) problems.push(`'${ch}' at ${p.x},${p.y} is unreachable`);
     }
   }
 
   const enemies = find('E').length + find('S').length + find('B').length;
-  if (spec.objective === 'eliminate' && enemies === 0) problems.push('eliminate map has no enemies');
-  if (spec.objective === 'rescue' && find('H').length === 0) problems.push('rescue map has no hostages');
+  if (objective === 'eliminate' && enemies === 0) problems.push('eliminate map has no enemies');
+  if (objective === 'rescue' && find('H').length === 0) problems.push('rescue map has no hostages');
   // A tent registers as an extraction point in the parser, so either will do.
-  if (spec.objective === 'reach' && find('X').length === 0 && find(TENT).length === 0) {
+  if (objective === 'reach' && find('X').length === 0 && find(TENT).length === 0) {
     problems.push('reach map has no extraction zone or tent');
   }
-  if (spec.objective === 'rescue' && find('X').length === 0 && find(TENT).length === 0) {
+  if (objective === 'rescue' && find('X').length === 0 && find(TENT).length === 0) {
     problems.push('rescue map has nowhere to deliver hostages to');
   }
-  if (spec.objective === 'demolish') {
+  if (objective === 'demolish') {
     const huts = find(HUT).length + find(FACTORY).length;
     if (huts === 0) problems.push('demolish map has no buildings');
   }
+  if (objective === 'hold' && find('X').length === 0 && find(TENT).length === 0) {
+    problems.push('hold map has no zone to hold');
+  }
+  if (objective === 'collect' && find(SUPPLY).length === 0) {
+    problems.push('collect map has no supply boxes');
+  }
+  if (objective === 'assassinate') {
+    // Exactly one. Two officers is not a harder mission, it is an ambiguous
+    // one -- the sidebar would say "the officer" about whichever is left.
+    const officers = find(OFFICER).length;
+    if (officers !== 1) problems.push(`assassinate map has ${officers} officers, expected exactly 1`);
+  }
+  /*
+   * A no-kill map has to be possible without killing.
+   *
+   * Anything else here proves the objective can be *got to*; this proves it can
+   * be got to without a fight, which on a no-kill mission is the same question.
+   * The fill is the ordinary walkable one with a second refusal bolted on -- no
+   * tile within eight of a sentry -- and eight is a rifleman's aggro radius of
+   * 132px over a 16px tile. Proved on the finished grid, so a seed that happens
+   * to seal the lane fails the build rather than the player.
+   *
+   * It checks every objective entity, not only the extraction. A no-kill rescue
+   * with a rifleman beside a hostage is unwinnable rather than hard: the
+   * hostage dies in the firefight the mission never allowed you to have.
+   */
+  if (nokill) {
+    const posts = [...find('E'), ...find('S'), ...find('B')];
+    const exits = [...find('X'), ...find(TENT)];
+    const AVOID = 8;
+    if (posts.length === 0) problems.push('no-kill map has nobody to avoid');
+
+    // What this mission has to reach quietly, by objective.
+    const needed = [];
+    if (objective === 'reach') {
+      if (exits.length === 0) problems.push('no-kill map has no extraction zone');
+      needed.push(...exits.map((p) => ['extraction', p]));
+    }
+    if (objective === 'rescue') {
+      needed.push(...find('H').map((p) => ['hostage', p]));
+      needed.push(...exits.map((p) => ['tent', p]));
+    }
+    if (objective === 'collect') needed.push(...find(SUPPLY).map((p) => ['supply box', p]));
+    if (objective === 'hold') needed.push(...exits.map((p) => ['zone', p]));
+
+    const clearOf = (x, y) => posts.every((p) => Math.hypot(p.x - x, p.y - y) >= AVOID);
+    const unseen = grid.reachable(squad[0].x, squad[0].y, clearOf);
+    for (const [what, p] of needed) {
+      if (!clearOf(p.x, p.y)) {
+        problems.push(`${what} at ${p.x},${p.y} is inside a garrison's aggro radius`);
+      } else if (!unseen.has(`${p.x},${p.y}`)) {
+        problems.push(`no route to the ${what} at ${p.x},${p.y} that stays ${AVOID} tiles clear of every garrison`);
+      }
+    }
+    for (const p of squad) {
+      if (!unseen.has(`${p.x},${p.y}`)) problems.push(`squad spawn at ${p.x},${p.y} starts inside a garrison`);
+    }
+  }
+
   // Every squad member has to start somewhere it can actually walk out of.
   for (const p of squad) {
     if (!reach.has(`${p.x},${p.y}`)) problems.push(`squad spawn at ${p.x},${p.y} is walled in`);
   }
   return problems;
+}
+
+/**
+ * How many seeds a mission may burn before the build gives up on it.
+ *
+ * A hand-tuned mission never needs one: the author looks at the failure and
+ * moves a hut. A generated one does -- a layout, an objective and a seed that
+ * happen not to fit is an ordinary event, not a bug, and twenty of them written
+ * from a table cannot each be nursed by hand.
+ */
+const MAX_REROLLS = 32;
+
+/**
+ * Generate a mission, rerolling the seed until it validates.
+ *
+ * The reroll is *deterministic*: seed n failing always lands on the same n+k,
+ * so `npm run levels` stays reproducible, which is the property the whole
+ * campaign table is built on. A random retry would make the same table produce
+ * different maps on different days and quietly destroy that.
+ *
+ * The attempt count is reported rather than swallowed, because a mission that
+ * took thirty seeds is telling you its layout and its objective do not fit each
+ * other -- which is a design problem, and invisible if the build only says ok.
+ */
+function build(spec) {
+  let last = [];
+  for (let attempt = 0; attempt <= MAX_REROLLS; attempt++) {
+    // An odd stride well clear of any structure in mulberry32's seeding, so
+    // consecutive attempts are unrelated maps rather than near-misses.
+    const seed = (spec.seed + attempt * 7919) >>> 0;
+    const { text, grid } = generate({ ...spec, seed });
+    const problems = validate(spec, grid);
+    if (problems.length === 0) return { text, grid, seed, attempt, problems: [] };
+    last = problems;
+  }
+  return { problems: last, attempt: MAX_REROLLS };
 }
 
 async function main() {
@@ -983,8 +2350,13 @@ async function main() {
   let failed = 0;
 
   for (const spec of specs) {
-    const { text, grid } = generate(spec);
-    const problems = validate(spec, grid);
+    const { text, grid, seed, attempt, problems } = build(spec);
+    if (problems.length) {
+      failed++;
+      console.error(`  FAIL ${spec.id} -- no valid map in ${MAX_REROLLS + 1} seeds`);
+      for (const p of problems) console.error(`       ${p}`);
+      continue;
+    }
     // Count in the grid, not the file -- the header text contains letters too.
     const tally = (ch) => {
       let n = 0;
@@ -997,18 +2369,18 @@ async function main() {
       mines: tally('*'),
     };
 
-    if (problems.length) {
-      failed++;
-      console.error(`  FAIL ${spec.id}`);
-      for (const p of problems) console.error(`       ${p}`);
-      continue;
-    }
     if (!check) await writeFile(join(DATA_DIR, `${spec.id}.map`), text, 'utf8');
     console.log(
-      `  ok   ${spec.id.padEnd(13)} ${String(spec.w).padStart(3)}x${String(spec.h).padEnd(3)}` +
-      ` ${spec.theme.padEnd(7)} ${spec.objective.padEnd(9)}` +
+      `  ok   ${spec.id.padEnd(15)} ${String(spec.w).padStart(3)}x${String(spec.h).padEnd(3)}` +
+      ` ${spec.theme.padEnd(7)} ${spec.objective.padEnd(11)}` +
       ` ${counts.enemies} enemies${counts.hostages ? `, ${counts.hostages} hostages` : ''}` +
-      `${counts.mines ? `, ${counts.mines} mines` : ''}`,
+      `${counts.mines ? `, ${counts.mines} mines` : ''}` +
+      // Demolition-gating is never allowed to be a silent property: a map whose
+      // objective is only reachable once a building comes down is judged by a
+      // weaker fill, and the build has to say which maps those are.
+      `${spec.gated ? '  [demolition-gated]' : ''}` +
+      `${spec.nokill || spec.objective === 'covert' ? '  [no-kill]' : ''}` +
+      `${attempt ? `  [seed ${seed}, ${attempt} reroll${attempt === 1 ? '' : 's'}]` : ''}`,
     );
   }
 

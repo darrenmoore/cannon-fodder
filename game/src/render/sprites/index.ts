@@ -7,14 +7,16 @@
  * apply everywhere. This module owns the atlas and the one-time bake; the
  * drawing itself is split by subject into the modules it imports.
  *
- * `npm run sheet` lays every sprite in here out on a grid, which is the only
- * practical way to look at, say, four stages of a wrecked hut without levelling
- * four huts first.
+ * Everything added here appears on the sprite gallery -- `/sprites.html` under
+ * `npm run dev` -- without the gallery being told about it, because it walks
+ * this object. `npm run sheet` dumps the same thing to a PNG. Both exist because
+ * looking at four stages of a wrecked hut should not require levelling four huts.
  */
 
 import { PALETTES } from './paint.js';
-import { bakeCabin, bakeFactory, bakeHut, bakeOutpost, bakeTent } from './buildings.js';
-import { bakeBarrel, bakeCrate, bakeGrenadeIcon, bakeHostageIcon, bakeMine, bakeMuzzleFlash } from './icons.js';
+import { bakeBunker, bakeCabin, bakeFactory, bakeHut, bakeOutpost, bakeTent } from './buildings.js';
+import { bakeBarrel, bakeCrate, bakeGrenadeIcon, bakeHostageIcon, bakeMine, bakeMuzzleFlash, bakeSupply } from './icons.js';
+import { bakeLogo, bakeLogoParts } from './logo.js';
 import { bakeBroadleaf, bakePalm, bakePine, bakeRock, bakeTallGrass, bakeTuft } from './terrain.js';
 import { FACINGS, UNIT_VARIANTS, WALK_FRAMES, bakeCorpse, bakeSoldier } from './units.js';
 import type { Foliage } from './terrain.js';
@@ -37,8 +39,10 @@ export interface Atlas {
    */
   player: Sprite[][][];
   enemy: Sprite[][][];
+  camo: Sprite[][][];
   sniper: Sprite[][][];
   bazooka: Sprite[][][];
+  officer: Sprite[][][];
   hostage: Sprite[][][];
   corpsePlayer: Sprite;
   corpseEnemy: Sprite;
@@ -55,13 +59,25 @@ export interface Atlas {
   factory: Sprite[];
   /** The building the squad holds, in its states of repair. */
   outpost: Sprite[];
+  /** One state: nothing in the game can damage it. */
+  bunker: Sprite;
   tent: Sprite;
   crate: Sprite;
+  supply: Sprite;
   barrel: Sprite;
   mine: Sprite;
   muzzle: Sprite;
   /** Badges for the floating pickup labels, keyed by `PopupIcon`. */
   icons: Record<'grenade' | 'hostage', Sprite>;
+  /**
+   * The wordmark, and the pieces it is assembled from.
+   *
+   * Here rather than in `ui/` because it is a plotted sprite like everything
+   * else in this file, and because the atlas is what the sprite gallery walks:
+   * a logo nobody can look at is a logo nobody can correct.
+   */
+  logo: Sprite;
+  logoParts: Record<string, Sprite>;
 }
 
 let cached: Atlas | null = null;
@@ -79,8 +95,10 @@ export function buildAtlas(): Atlas {
   cached = {
     player: bakeUnit(PALETTES.player, 'rifle'),
     enemy: bakeUnit(PALETTES.enemy, 'rifle'),
+    camo: bakeUnit(PALETTES.camo, 'rifle'),
     sniper: bakeUnit(PALETTES.sniper, 'long'),
     bazooka: bakeUnit(PALETTES.bazooka, 'tube'),
+    officer: bakeUnit(PALETTES.officer, 'rifle'),
     hostage: bakeUnit(PALETTES.hostage, 'none'),
     corpsePlayer: bakeCorpse(PALETTES.player),
     corpseEnemy: bakeCorpse(PALETTES.enemy),
@@ -104,12 +122,16 @@ export function buildAtlas(): Atlas {
     cabin: [0, 1, 2, 3].map(bakeCabin),
     factory: [0, 1, 2, 3].map(bakeFactory),
     outpost: [0, 1, 2, 3].map(bakeOutpost),
+    bunker: bakeBunker(),
     tent: bakeTent(),
     crate: bakeCrate(),
+    supply: bakeSupply(),
     barrel: bakeBarrel(),
     mine: bakeMine(),
     muzzle: bakeMuzzleFlash(),
     icons: { grenade: bakeGrenadeIcon(), hostage: bakeHostageIcon() },
+    logo: bakeLogo(),
+    logoParts: bakeLogoParts(),
   };
   // Debug handle, alongside `window.game`: lets tools/sheet.mjs lay every baked
   // sprite out on a grid without the game having to be played to reach them.

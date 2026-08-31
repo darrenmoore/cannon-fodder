@@ -499,3 +499,77 @@ export function bakeTent(): Sprite {
   addOutline(c, '#3a3529');
   return c;
 }
+
+/**
+ * The bunker: a thing to hold, that nothing in the game can take away.
+ *
+ * Hold the Junction asked the player to stand in a circle drawn on open road.
+ * Ground with nothing on it is not a position, it is a coordinate, and standing
+ * on a coordinate for seventy-five seconds is an instruction rather than a
+ * fight. So the zone gets an object under it -- and the object has to be one
+ * the player can see is permanent, or defending it becomes another demolition
+ * puzzle with the answer hidden.
+ *
+ * Which is why this is concrete and not sandbags. The outpost next door is made
+ * of bags and timber and it *can* be levelled; a player who has learnt that
+ * needs the difference to be visible in the silhouette before he learns it
+ * again the hard way. Squat, square-shouldered, half-sunk, with a black slit
+ * across the front: the outline says poured, not stacked.
+ *
+ * One sprite, no damage stages, because there is no damage. That is the whole
+ * point of it and it is also why it is cheap.
+ */
+export function bakeBunker(): Sprite {
+  const { c, g } = makeCanvas(34, 30);
+  const rnd = hashRnd(9137);
+
+  // Cast shadow first, hard-edged: the block sits *on* the ground, not in it.
+  rect(g, 5, 22, 26, 5, '#26261f');
+
+  // The body. Wider at the base than the top, so it reads as poured concrete
+  // with a batter rather than as a box.
+  for (let y = 6; y < 24; y++) {
+    const inset = y < 10 ? 4 : y < 16 ? 2 : 1;
+    for (let x = 2 + inset; x < 32 - inset; x++) {
+      // Vertical shading only -- a top-down block lit from the north-west, done
+      // in three flat tones and a dither seam rather than a ramp.
+      const lit = (y - 6) / 18;
+      let tone = lit < 0.28 ? '#8a8d80' : lit < 0.62 ? '#6e7167' : '#54574e';
+      if (rnd() < 0.09) tone = lit < 0.45 ? '#7c7f73' : '#494c44';
+      px(g, x, y, tone);
+    }
+  }
+
+  // Poured-in-place seams: two horizontal lines where the shuttering met.
+  for (let x = 4; x < 30; x++) {
+    if (rnd() < 0.2) continue;
+    px(g, x, 12, '#5f6259');
+    px(g, x, 18, '#4d5047');
+  }
+
+  // The firing slit. Black, unlit, and the one thing on the sprite that is not
+  // grey -- it is what stops the block reading as a rock.
+  rect(g, 9, 14, 16, 3, '#101208');
+  rect(g, 9, 13, 16, 1, '#3d4038');
+  // A lip of shadow under the slit, so it reads as recessed rather than painted.
+  for (let x = 9; x < 25; x++) px(g, x, 17, '#31342c');
+
+  // Roof lip along the top edge, catching the light.
+  for (let x = 7; x < 27; x++) px(g, x, 6, '#9ba093');
+
+  // Sandbags banked against the near corners: somebody has been living in it.
+  for (let i = 0; i < 5; i++) {
+    rect(g, 3 + i * 2, 21 - (i % 2), 3, 2, i % 2 ? '#8a7f52' : '#7a7047');
+    rect(g, 26 - i * 2, 21 - (i % 2), 3, 2, i % 2 ? '#7a7047' : '#8a7f52');
+  }
+
+  // Weathering: damp streaks down the face, never a gradient.
+  for (let i = 0; i < 22; i++) {
+    const x = 4 + ((rnd() * 26) | 0);
+    const y = 8 + ((rnd() * 12) | 0);
+    px(g, x, y, rnd() < 0.5 ? '#61645a' : '#787c70');
+  }
+
+  addOutline(c, '#141310');
+  return c;
+}

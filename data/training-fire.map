@@ -1,0 +1,43 @@
+name: Basic Training
+theme: jungle
+objective: eliminate
+doctrine: garrison
+order: 1
+mechanic: move, and then fire
+brief: Five of them, in the open. Click to march; hold right-click, or FIRE, to shoot.
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...
+TTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..T.
+TTTTTT.............TTTTTTTTTTTTTTTTTTTTTTTTTTTTT.T.T
+TTTTTT..................TTTTTTTTTT......E......T.T.T
+TTTTTT...............T.TTTT....................TTT..
+TTTTTT...................TT....................TTTTT
+TTTTTT................TTTT.....................TTTTT
+TTTTTT.................T.TT....................TTTTT
+TTTTTT..............................E..........TTTTT
+TTTTTT...P.....................................TTTTT
+TTTTT............TT............................TTTTT
+TTTT............TTT..................E.........TTTTT
+TTTT.P......P....TT............................TTTTT
+TTTT.............T.............................TTTTT
+TTTT..............................T..........T.TTTTT
+...T............................TT.............TTTTT
+TTTT............................TTT...........TTTTTT
+TTTTP....P.....................................TTTTT
+TTTTT.......P.................................T..TTT
+TTTTTT..........................................T.TT
+TTTTT.................................E.........TTTT
+TTTTT.........................T.................T..T
+TTTTT........................TTT................TTTT
+TTTTT.........................T.................TTTT
+TTTTT...........................................TTTT
+TTTTTT..............................E.....TTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTT...........TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

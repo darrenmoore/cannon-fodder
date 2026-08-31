@@ -17,9 +17,18 @@ import type { World } from '../sim/world.js';
  * bundle rather than merely hidden. Dev-only means absent.
  */
 
-/** Read by the simulation. One object, one import, one line at the call site. */
+/**
+ * Read by the simulation. One object, one import, one line at each call site.
+ *
+ * `paused` freezes the simulation without freezing the *draw*, which is what
+ * makes a moment photographable: the capture harness pauses, advances an exact
+ * number of steps by hand, and gets the same frame every run. Wall-clock
+ * timing cannot do that -- an explosion three frames in is three frames in, not
+ * "about fifty milliseconds".
+ */
 export const debug = {
   invulnerable: false,
+  paused: false,
 };
 
 const el = (tag: string, cls: string, text?: string): HTMLElement => {
@@ -54,6 +63,10 @@ export function mountDebugPanel(getWorld: () => World | null): () => void {
 
   button('invuln', () => {
     debug.invulnerable = !debug.invulnerable;
+  }, true);
+
+  button('freeze', () => {
+    debug.paused = !debug.paused;
   }, true);
 
   button('+rifle', (w) => spawnNearSquad(w, EnemyKind.Rifle));

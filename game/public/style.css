@@ -41,11 +41,22 @@
    * being "solved" by a media query that set `display: none`. Hiding the thing
    * the player needed was never the answer; sizing it was.
    */
+  /*
+   * Every size is a multiple of ten.
+   *
+   * ui/pixelface.ts builds the chrome face on a grid where one glyph pixel is
+   * exactly one CSS pixel at font-size 10px -- so 10, 20 and 30 land every
+   * glyph edge on a whole device pixel and anything between them does not,
+   * which is the softness this face exists to remove. Sizes that used to be
+   * 11, 12, 14 and 18 are now 10, 10, 20 and 20; the ladder is coarser because
+   * the face is a bitmap and a bitmap has no sizes in between.
+   */
+  --face: "Boots & Bullets Pixel", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
   --fs-micro: 10px;   /* keycaps, theatre notes -- decoration, not reading */
-  --fs-sm: 11px;      /* hints, card meta */
-  --fs-body: 12px;    /* roster plates, the objective line */
-  --fs-lg: 14px;      /* button labels, the mission name */
-  --fs-xl: 18px;      /* readout values */
+  --fs-sm: 10px;      /* hints, card meta */
+  --fs-body: 10px;    /* roster plates, the objective line */
+  --fs-lg: 20px;      /* button labels, the mission name */
+  --fs-xl: 20px;      /* readout values */
   --fs-display: 40px; /* briefing and result titles */
   --fs-title: 27px;
   --fs-brand: 58px;
@@ -96,7 +107,8 @@ html, body {
   overscroll-behavior: none;
   background: var(--edge);
   color: var(--ink);
-  font: var(--fs-body)/1 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  font: var(--fs-body)/1 var(--face);
+
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -348,6 +360,21 @@ html, body {
  * which quietly hard-coded one of the three layouts into the overlay geometry.
  * It is now a plain full-bleed overlay, and only `wide` shifts it.
  */
+/* --- the blackout: one fade for the whole screen, canvas and chrome alike.
+   Above the sidebar (3), the action bar (4) and the thumbstick (7), and below
+   the overlay -- which is raised past it for exactly this reason, so the
+   results panel and the briefing land *on* the black rather than under it.
+   Not a canvas fill: the sidebar is DOM outside the canvas and nothing painted
+   in there can ever reach it, which is the whole reason this element exists. */
+#blackout {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
 #overlay {
   position: fixed;
   inset: 0;
@@ -357,7 +384,9 @@ html, body {
   padding: max(12px, var(--safe-t)) max(12px, var(--safe-r)) max(12px, var(--safe-b)) max(12px, var(--safe-l));
   background: rgba(8, 11, 5, 0.78);
   pointer-events: none;
-  z-index: 5;
+  /* Above #blackout, so an end-of-mission panel is readable on the black
+     rather than buried under it. */
+  z-index: 12;
 }
 #overlay[hidden] { display: none; }
 /* The briefing is a caption; the result panel is a thing you click. */
@@ -755,9 +784,22 @@ html, body {
    those set a background too, and this rule is the later one. */
 .ribbon.on { opacity: 1; }
 .ribbon.on.diff-rookie { background: #6d9a4a; }
-.ribbon.on.diff-regular { background: #b3c24e; }
 .ribbon.on.diff-veteran { background: #e0a63c; }
 .ribbon.on.diff-elite { background: #d4503a; }
+
+/* --- stars: one per difficulty, lit up to the highest one cleared.
+   The row is the same element the ribbons used, so the card's layout is
+   unchanged; only what sits in it is different. */
+.m-stars { gap: 2px; align-items: center; }
+.m-stars .ribbon { display: none; }
+.star { width: 12px; height: 12px; line-height: 0; }
+.star svg { width: 12px; height: 12px; display: block; }
+/* Unearned: a hollow outline, so the gap is a shape rather than an absence. */
+.star svg polygon { fill: none; stroke: #4a4a34; stroke-width: 1; }
+.star.on svg polygon { stroke: #000; }
+.star.on.diff-rookie svg polygon { fill: #6d9a4a; }
+.star.on.diff-veteran svg polygon { fill: #e0a63c; }
+.star.on.diff-elite svg polygon { fill: #d4503a; }
 .m-best {
   margin-top: 5px;
   color: #b0975c;
@@ -1172,9 +1214,25 @@ html, body {
   height: 58px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: rgba(30, 37, 18, 0.9);
-  box-shadow: inset 0 0 0 2px var(--plate-hi), 0 3px 0 rgba(0, 0, 0, 0.5);
+  /*
+   * A plate, not a bubble.
+   *
+   * These were 58px circles with a translucent fill and a soft drop shadow,
+   * floating over the battlefield. A critic shown a frame of the game and asked
+   * for the single most un-1993 thing in it picked this without hesitation: "a
+   * smooth anti-aliased circle with a soft translucent dark fill ... it reads as
+   * a modern mobile-game touch control pasted onto the frame." Three separate
+   * breaches of the house rules in one widget -- an anti-aliased curve, alpha,
+   * and a blurred shadow -- and it is on screen in every single frame.
+   *
+   * So: hard corners, an opaque fill, a solid offset shadow, and the same 2px
+   * inset border the name plates use, which is the idiom the reference actually
+   * shows (`elements/buttons-and-troop-chevron-status.jpg`). The tap target is
+   * the same size it was; only the drawing changed.
+   */
+  border-radius: 0;
+  background: var(--plate);
+  box-shadow: inset 0 0 0 2px var(--plate-hi), 3px 3px 0 var(--edge);
   color: var(--ink);
   font: inherit;
   cursor: pointer;
@@ -1183,14 +1241,18 @@ html, body {
 }
 /* The one the thumb should find without looking. */
 .ui-action.primary { width: 76px; height: 76px; }
+/* Pressed: the plate moves onto its own shadow, the way a physical key does. */
 .ui-action:active {
-  transform: translateY(2px);
-  box-shadow: inset 0 0 0 2px var(--plate-hi), 0 1px 0 rgba(0, 0, 0, 0.5);
+  transform: translate(2px, 2px);
+  box-shadow: inset 0 0 0 2px var(--plate-hi), 1px 1px 0 var(--edge);
 }
-.ui-action.on { background: rgba(76, 96, 36, 0.95); box-shadow: inset 0 0 0 2px var(--gold); }
-.ui-action.off { opacity: 0.4; cursor: default; }
-.ui-action.tone-good { background: rgba(47, 82, 34, 0.9); }
-.ui-action.tone-warn { background: rgba(74, 39, 24, 0.9); }
+.ui-action.on { background: #4c6024; box-shadow: inset 0 0 0 2px var(--gold), 3px 3px 0 var(--edge); }
+/* Unavailable is a dimmer plate, not a faded one: `opacity` is a blend, and
+   there is no blending anywhere else in this game. */
+.ui-action.off { background: var(--plate-lo); color: var(--ink-faint); cursor: default; }
+.ui-action.off .ui-action-hint { color: var(--ink-faint); }
+.ui-action.tone-good { background: #2f5222; }
+.ui-action.tone-warn { background: #4a2718; }
 .ui-action:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .ui-action[hidden] { display: none; }
 
@@ -1470,13 +1532,16 @@ html, body {
 }
 
 /*
- * `Cannon Fodder` is one unbreakable word at 13 characters, and monospace type
- * with 0.18em of tracking needs 10.1x its own size in width to set it. At
- * 11vw on a 360px phone that is 401px in a 332px hole, which the audit found
- * as a document-level overflow -- the one thing this game cannot scroll its way
- * out of, since the body does not scroll at all.
+ * `Boots & Bullets` is held on one line by non-breaking spaces -- a game title
+ * that wraps reads as a sentence -- so it is 15 unbreakable cells, and monospace
+ * type with 0.18em of tracking needs 11.7x its own size in width to set them.
+ * The old title was 13 cells at 10.1x, and an earlier 11vw put it at 401px in a
+ * 332px hole on a 360px phone: a document-level overflow, the one thing this
+ * game cannot scroll its way out of, since the body does not scroll at all.
+ * Two more cells buy that margin back down, hence 7vw rather than 7.5 -- 25px
+ * and 294px on the same phone, and still inside the hole on a 320px one.
  */
-[data-layout="stacked"] { --fs-brand: clamp(22px, 7.5vw, 58px); }
+[data-layout="stacked"] { --fs-brand: clamp(22px, 7vw, 58px); }
 [data-layout="compact"] { --fs-brand: clamp(26px, 6vw, 58px); }
 #menu h1 { letter-spacing: var(--track-wide); }
 
@@ -1518,3 +1583,36 @@ html, body {
 }
 .debug-btn:hover { background: #3a4a20; }
 .debug-btn.on { background: #6d9a4a; color: #10140a; }
+
+/* --- locked missions: visible, legible, and plainly not yet yours.
+   Dimmed rather than hidden, because a goal you cannot see is not a goal --
+   the same argument the unlit stars on a card make. The padlock is drawn, not
+   typed: a glyph from whatever font the machine supplies is a different shape
+   everywhere and an anti-aliased one on all of them. */
+.mission.locked {
+  opacity: 0.42;
+  cursor: default;
+  filter: saturate(0.35);
+}
+.mission.locked:hover { opacity: 0.42; }
+.mission.locked .m-num::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 8px;
+  margin-left: 5px;
+  vertical-align: -1px;
+  background:
+    linear-gradient(#0000 0 0) padding-box,
+    var(--plate-hi);
+  clip-path: polygon(
+    0 3px, 2px 3px, 2px 1px, 5px 1px, 5px 3px, 7px 3px,
+    7px 8px, 0 8px);
+  box-shadow: none;
+}
+.theatre-tally {
+  margin-left: auto;
+  color: #b0975c;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
+}

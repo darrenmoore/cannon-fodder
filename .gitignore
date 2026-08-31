@@ -8,3 +8,9 @@ game/shots/
 # Personal Claude Code settings -- RENDER_URL, RENDER_API_KEY and the like.
 # .claude/settings.json and .claude/skills/ ARE tracked; this one is not.
 .claude/settings.local.json
+
+# The sprite gallery, emitted into public/ only by `npm run dev` (build.mjs).
+# Dev-only means absent: a production build deletes these rather than hiding them.
+game/public/sprites.js
+game/public/sprites.js.map
+game/public/sprites.html

@@ -2,7 +2,7 @@ name: Lone Wolf
 theme: jungle
 objective: reach
 doctrine: patrol
-order: 9
+order: 11
 mechanic: one man
 brief: One soldier. No herd to hide in, and one hit is still all it takes.
 squad: 1
