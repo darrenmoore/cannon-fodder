@@ -28,7 +28,7 @@ globalThis.localStorage = {
 };
 
 const built = await esbuild.build({
-  entryPoints: [join(ROOT, 'src', 'campaign.ts')],
+  entryPoints: [join(ROOT, 'src', 'sim', 'campaign.ts')],
   bundle: true,
   write: false,
   format: 'esm',

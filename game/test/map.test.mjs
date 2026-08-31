@@ -16,7 +16,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DATA = join(ROOT, '..', 'data');
 
 const built = await esbuild.build({
-  entryPoints: [join(ROOT, 'src', 'map.ts')],
+  entryPoints: [join(ROOT, 'src', 'sim', 'map.ts')],
   bundle: true,
   write: false,
   format: 'esm',

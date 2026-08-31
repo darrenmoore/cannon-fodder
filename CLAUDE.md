@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A browser prototype of Cannon Fodder (1993). TypeScript + Canvas 2D, bundled by
 esbuild, served by ~90 lines of `node:http`. Three dev dependencies, **no runtime
 dependencies and no asset files** — every sprite is plotted into an offscreen
-canvas at boot (`sprites.ts`), every inch of terrain is generated, and the sound
-is synthesised with WebAudio (`audio.ts`). Adding a runtime dependency, a PNG or
+canvas at boot (`render/sprites/`), every inch of terrain is generated, and the sound
+is synthesised with WebAudio (`shell/audio.ts`). Adding a runtime dependency, a PNG or
 an audio file breaks the premise; generate it instead.
 
 ## Commands
@@ -28,24 +28,31 @@ One test file at a time: `node test/map.test.mjs`, `node test/campaign.test.mjs`
 
 ## Architecture
 
-Dependency direction is one-way and worth preserving: **`world.ts` holds the
-mutable state of one mission, the systems mutate it, `game.ts` sequences them in
-a fixed order each step, `objectives.ts` judges it, and `render.ts` only reads.**
-Nothing imports `game.ts` except `main.ts`. `docs/design.md` has the module map.
+`src/` is grouped `sim/` (the mission), `render/` (reads it, never touches it),
+`ui/` (DOM chrome) and `shell/` (input, audio, the machine it runs on), with
+`main.ts`, `loop.ts`, `config.ts` and `types.ts` at the top.
+
+That grouping *is* the dependency rule, so keep it honest: **`sim/world.ts`
+holds the mutable state of one mission, the systems mutate it, `sim/game.ts`
+sequences them in a fixed order each step, `sim/objectives.ts` judges it, and
+`render/` only reads.** Nothing imports `game.ts` except `main.ts`. `game.ts`
+names `Camera`, `Renderer` and `Input`, but only as types — they erase at
+compile time, and a real runtime import there would break the boundary.
+`docs/design.md` has the full module map.
 
 - **`loop.ts`** runs a fixed 1/60s simulation with an interpolated draw, so
   steering, collision and fire rates are identical on any monitor. Never scale
   behaviour by frame time; take `dt` and trust it.
 - **`config.ts`** is the single home for every tunable — speeds, radii, ranges,
   blast sizes, camera, wind. A magic number in a system file belongs here.
-- **`difficulty.ts`** expresses difficulty as ~15 independent *levers* (hearing,
+- **`sim/difficulty.ts`** expresses difficulty as ~15 independent *levers* (hearing,
   hunters, rushers, flank, fog, spawn rate…), not one multiplier, and each
   mission's **doctrine** multiplies into that profile. Changing how hard
   something feels usually means moving a lever, not editing the AI.
 - **Terrain is derived, not authored.** `data/*.map` is one character per tile;
   distance fields, neighbour masks and mass sizes are computed at load
-  (`terrain.ts`), and the treeline, grass and crag are baked as continuous masses
-  (`ground.ts`, `canopy.ts`) rather than one sprite per tile.
+  (`render/terrain.ts`), and the treeline, grass and crag are baked as continuous
+  masses (`render/ground.ts`, `render/canopy.ts`) rather than one sprite per tile.
 - **Rendering has no alpha and no anti-aliasing** — shadows are dithered coverage
   of a darkened ground tone. A soft gradient reads as wrong immediately.
 
@@ -54,6 +61,12 @@ table; hand edits are lost on the next `npm run levels`. Change the table or the
 seed. `game/public/bundle.js` is build output and gitignored.
 
 ## Verifying a change
+
+**Port 5199 belongs to the user.** They keep `npm run dev` running there while
+you work. Never kill whatever is listening on it — from their side a force-kill
+is indistinguishable from the dev server crashing on every change, and it does
+not come back. Run your own server on another port (`PORT=5210 node server.js`)
+and point harnesses at it; kill only what you started.
 
 Tests and screenshots each only cover half of it: `npm run check` proves it
 compiles and every mission is still winnable, `tools/shoot.mjs` proves it

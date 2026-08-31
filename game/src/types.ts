@@ -32,6 +32,24 @@ export interface Actor {
   wading: boolean;
   /** True while standing on ice: steering is sluggish and skiddy. */
   sliding: boolean;
+  /**
+   * Seconds left of being blown off your feet.
+   *
+   * A man inside a blast but outside its lethal core is thrown clear rather
+   * than killed. While this is running he does not steer, shoot or take
+   * orders -- his own velocity carries him -- which is what makes an explosion
+   * something you survive *badly* rather than something that merely missed.
+   */
+  stagger: number;
+  /**
+   * Seconds since this one was killed, or -1 while alive.
+   *
+   * A man used to become a corpse decal in the same frame the round reached
+   * him: one moment upright, the next a stain, with nothing in between for the
+   * eye to catch. He now collapses first, and only then is stamped into the
+   * decal layer and forgotten about.
+   */
+  deathTime: number;
 }
 
 export enum SoldierState {
@@ -130,6 +148,12 @@ export interface Enemy extends Actor {
   investigate: Vec2 | null;
   /** Seconds spent looking around at the end of an investigation. */
   searchTime: number;
+  /**
+   * Counts down to the next idle fidget: a look around, a shift of weight, a
+   * step off the mark and back. Nobody stands still for minutes on end, and an
+   * enemy who does reads as scenery until he shoots you.
+   */
+  idleTimer: number;
   /** Grenades left, and the cooldown between throws. */
   grenades: number;
   grenadeCooldown: number;
@@ -172,8 +196,15 @@ export interface Mine {
   alive: boolean;
   /** Counts down once something steps on it; -1 while dormant. */
   fuse: number;
-  /** Mines are invisible until they are triggered or something reveals them. */
-  revealed: boolean;
+  /**
+   * Whether the mine has been *set off*, not whether it can be seen.
+   *
+   * Mines are drawn from the moment a mission starts. They were hidden until
+   * stepped on, which made a minefield indistinguishable from open ground --
+   * there was no decision to make and no skill in surviving it, only the memory
+   * of where the last one killed somebody. Visible, it is a puzzle about lanes.
+   */
+  triggered: boolean;
 }
 
 export interface Hostage {

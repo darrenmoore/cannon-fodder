@@ -155,7 +155,7 @@ data/     ASCII mission files
 game/     the game itself
   server.js   slim node:http server, zero runtime dependencies
   build.mjs   esbuild bundle + watch
-  src/        ~24 modules — see docs/design.md
+  src/        sim/ render/ ui/ shell/ — see docs/design.md
   tools/      level generator, screenshot harness, playtest, pixel stats
   test/       map and mission assertions
 ```

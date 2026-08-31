@@ -148,6 +148,8 @@ export const CONFIG = {
     preferredRange: 70,
     patrolRadius: 46,
     patrolPause: [1.2, 3.0] as [number, number],
+    /** Seconds between idle fidgets: a look around, or a step off the mark. */
+    fidgetPause: [1.1, 3.4] as [number, number],
 
     /** Rushers close to this instead of preferredRange. */
     rushRange: 26,
@@ -188,6 +190,51 @@ export const CONFIG = {
     /** Rocket flight speed and the blast it leaves. */
     rocketSpeed: 132,
     blastRadius: 26,
+  },
+
+  /**
+   * What an explosion does to a man, at any range, from any source.
+   *
+   * Every blast in the game -- grenade, barrel, crate, mine, rocket, a building
+   * coming down -- has a radius of its own, and these turn that one number into
+   * two rings. Inside `lethal` (a fraction of the radius) you die. Beyond it,
+   * out to the full radius, you are thrown clear and land badly.
+   *
+   * This is why a grenade into a bunched squad kills one man and scatters the
+   * rest instead of erasing all six. It cuts both ways deliberately: your own
+   * grenades stopped being a delete button on the same day theirs did.
+   */
+  blast: {
+    /** Fraction of a blast's radius that actually kills. */
+    lethal: 0.42,
+    /** Speed, in px/s, given to a man at the very edge of the lethal ring. */
+    knockback: 190,
+    /** Seconds spent off your feet, at the inner edge. Scales down with range. */
+    stagger: 0.55,
+    /** How fast the throw bleeds off. Higher stops him sooner. */
+    drag: 6,
+  },
+
+  /**
+   * The shape a bullet has to cross to hit a man.
+   *
+   * An actor's position is his *feet* -- it is what the steering, the collision
+   * and the sort order all work in -- but his sprite is drawn upward from
+   * there, so a circle around the position covered his boots and shins and
+   * nothing else. You could put a round through a man's head and watch him
+   * keep walking, which is the single most game-breaking thing on this list.
+   *
+   * So the target is a vertical capsule standing on the position: `rise` up
+   * from the feet, `drop` below them, `radius` wide. It covers the drawn figure
+   * and no more. Both sides use it -- enemies became easier to hit on the same
+   * day your men did.
+   */
+  body: {
+    /** Up from the feet, to the top of the helmet. */
+    rise: 11,
+    /** Below the feet, so a round at the ground still connects. */
+    drop: 1,
+    radius: 3.2,
   },
 
   bullet: {
@@ -257,12 +304,23 @@ export const CONFIG = {
   },
 
   extraction: {
-    /** Soldiers inside this radius of a zone count as extracted. */
-    radius: 22,
+    /**
+     * How close to the pickup counts as being at the pickup.
+     *
+     * It was 22px, which is barely wider than the formation the squad arrives
+     * in: six men who had plainly walked to the extraction point still had to
+     * be nudged into a huddle one at a time before the mission would end. The
+     * objective is reaching the pickup, not parking. A ring step is 18px and
+     * the outer ring of six sits about 36px out, so this comfortably holds a
+     * whole squad standing as it naturally stands.
+     */
+    radius: 46,
   },
 
   fx: {
-    bloodParticles: 14,
+    bloodParticles: 22,
+    /** How long a man takes to fall before he becomes a decal. */
+    deathTime: 0.34,
     explosionParticles: 26,
     /** Blood and corpses are burnt into a persistent decal layer. */
     decals: true,

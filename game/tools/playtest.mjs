@@ -86,6 +86,9 @@ async function main() {
   await page.evaluate(() => document.querySelector('#menu-list button[data-id="chicken-run"]').click());
   await page.waitForFunction(() => !!window.game, null, { timeout: 10000 });
   await page.waitForTimeout(300);
+  // The briefing owns the first press now, so it takes two to reach the sheet.
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
   await page.keyboard.press('Escape');
   await page.waitForSelector('.sheet-card', { timeout: 5000 });
   check('Esc pauses the mission into a sheet',
@@ -128,7 +131,35 @@ async function main() {
     }, id);
     await page.waitForFunction(() => !!window.game, null, { timeout: 10000 });
     await page.waitForTimeout(350);
+    // The briefing stays up until dismissed; every mission starts behind one.
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
   };
+
+  // --- the briefing
+  //
+  // It used to hide itself after 2.2s with the mission already live behind it,
+  // so a click meant for the panel marched the squad. Both halves are asserted
+  // here: that it waits, and that dismissing it costs you no order.
+  await page.evaluate(() => {
+    document.querySelector('#menu-list button[data-id="chicken-run"]')?.click();
+  });
+  await page.waitForFunction(() => !!window.game, null, { timeout: 10000 });
+  await page.waitForTimeout(2600);
+  check('the briefing waits rather than timing out',
+    await page.evaluate(() => !document.getElementById('overlay').hidden));
+
+  const box0 = await page.locator('canvas').boundingBox();
+  await page.mouse.click(box0.x + box0.width / 2 + 70, box0.y + box0.height / 2 + 50);
+  await page.waitForTimeout(250);
+  check('a click dismisses the briefing', await page.evaluate(() => document.getElementById('overlay').hidden));
+  check('the dismissing click does not also order the squad',
+    await page.evaluate(() => !window.game.world.orderGoal));
+
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+  await page.click('.sheet-actions .ui-btn:has-text("Mission list")');
+  await page.waitForSelector('#menu-list .m-name', { timeout: 10000 });
 
   await enter('chicken-run');
   check('a mission starts', await page.evaluate(() => !!window.game));
@@ -216,6 +247,11 @@ async function main() {
   check('"next mission" goes straight into the following mission', after === 'river-run', after);
 
   // --- and the pause sheet still comes back to the list
+  //
+  // Arriving by "next mission" means arriving behind a briefing, so the first
+  // press dismisses that and the second reaches the sheet.
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
   await page.keyboard.press('Escape');
   await page.waitForSelector('.sheet-card', { timeout: 5000 });
   await page.click('.sheet-actions .ui-btn:has-text("Mission list")');

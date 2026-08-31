@@ -1,24 +1,24 @@
-import { Camera } from './camera.js';
-import { missionResolved, missionStarted, startSession } from './analytics.js';
-import { unlockAudio } from './audio.js';
-import { Controls } from './controls.js';
-import { Game } from './game.js';
-import { closeSheet, sheetOpen, showSettings, showSheet } from './sheet.js';
-import { Layout } from './layout.js';
-import { Hud } from './hud.js';
-import { Input } from './input.js';
+import { Camera } from './render/camera.js';
+import { missionResolved, missionStarted, startSession } from './shell/analytics.js';
+import { unlockAudio } from './shell/audio.js';
+import { Controls } from './ui/controls.js';
+import { Game } from './sim/game.js';
+import { closeSheet, sheetOpen, showSettings, showSheet } from './ui/sheet.js';
+import { Layout } from './ui/layout.js';
+import { Hud } from './ui/hud.js';
+import { Input } from './shell/input.js';
 import { startLoop } from './loop.js';
-import { parseMap } from './map.js';
-import { fetchLevels, loadDifficulty, saveDifficulty, showMenu } from './menu.js';
-import { Renderer } from './render.js';
-import { showBootHill } from './boothill.js';
-import { deploy, loadCampaign, recordMission } from './campaign.js';
-import { createWorld, squadCentre } from './world.js';
-import { loadSettings, settings, updateSettings } from './settings.js';
-import { startMusic, stopMusic } from './music.js';
+import { parseMap } from './sim/map.js';
+import { fetchLevels, loadDifficulty, saveDifficulty, showMenu } from './ui/menu.js';
+import { Renderer } from './render/render.js';
+import { showBootHill } from './ui/boothill.js';
+import { deploy, loadCampaign, recordMission } from './sim/campaign.js';
+import { createWorld, squadCentre } from './sim/world.js';
+import { loadSettings, settings, updateSettings } from './ui/settings.js';
+import { startMusic, stopMusic } from './shell/music.js';
 import { Phase } from './types.js';
-import type { DifficultyId } from './difficulty.js';
-import type { LevelInfo } from './menu.js';
+import type { DifficultyId } from './sim/difficulty.js';
+import type { LevelInfo } from './ui/menu.js';
 
 /**
  * Boot and the outer shell: pick a mission from the menu, play it, come back.
@@ -229,7 +229,6 @@ async function boot(): Promise<void> {
     document.addEventListener('visibilitychange', onHide);
     pauseTeardown = (): void => document.removeEventListener('visibilitychange', onHide);
     void holdScreenAwake();
-    hud.onBootHill = (): void => { void visitBootHill(); };
 
     // The par the sidebar dangles is the record as it stood *before* this
     // attempt; it is only advanced once the attempt has been committed.
@@ -259,10 +258,31 @@ async function boot(): Promise<void> {
     const centre = squadCentre(game.world);
     if (centre) camera.centreOn(centre, map);
 
+    /**
+     * The briefing stays up until it is dismissed.
+     *
+     * It used to vanish on a 2.2 second timer, which is not long enough to read
+     * an objective and is exactly long enough to be reading one when it goes.
+     * Worse, the mission was already live behind it: a click aimed at the panel
+     * landed on the map and marched the squad somewhere before the player had
+     * seen the map. So the click that dismisses the briefing is swallowed --
+     * the squad gets its first order when the player has actually chosen one.
+     */
     hud.showBriefing(game.world);
-    window.setTimeout(() => {
-      if (game && game.world.phase === 0) hud.hideOverlay();
-    }, 2200);
+    const dismissBriefing = (e: Event): void => {
+      if (!game || game.world.phase !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      hud.hideOverlay();
+      input.swallowNextOrder();
+      teardownBriefing();
+    };
+    const teardownBriefing = (): void => {
+      window.removeEventListener('pointerdown', dismissBriefing, true);
+      window.removeEventListener('keydown', dismissBriefing, true);
+    };
+    window.addEventListener('pointerdown', dismissBriefing, true);
+    window.addEventListener('keydown', dismissBriefing, true);
 
     try {
       localStorage.setItem(LAST_PLAYED_KEY, info.id);
@@ -278,6 +298,7 @@ async function boot(): Promise<void> {
           (window as unknown as { game: Game | null }).game = null;
           hud.hideOverlay();
           closeSheet();
+          teardownBriefing();
           pauseTeardown?.();
           pauseTeardown = null;
           input.onPause = null;

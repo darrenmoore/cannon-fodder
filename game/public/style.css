@@ -182,17 +182,6 @@ html, body {
 .ui-plate-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ui-plate-value { color: var(--gold); }
 
-/* The chevron is drawn, not a glyph, so it lines up on the pixel grid. */
-.ui-chev {
-  width: 7px;
-  height: 7px;
-  flex: none;
-  border-top: 2px solid var(--ink-dim);
-  border-right: 2px solid var(--ink-dim);
-}
-.ui-chev.left { transform: rotate(-135deg); }
-.ui-chev.right { transform: rotate(45deg); }
-
 /* A dead soldier keeps his plate. That is the point of the plate. */
 .ui-plate.dead {
   background: linear-gradient(#2a1613, #1a0e0b);
@@ -201,7 +190,6 @@ html, body {
   text-decoration: line-through;
   text-decoration-color: var(--blood);
 }
-.ui-plate.dead .ui-chev { border-color: #5c2a20; }
 
 /* --- readout */
 .ui-readout { display: flex; align-items: baseline; gap: 7px; padding: 2px 7px; }
@@ -430,10 +418,22 @@ html, body {
   color: #a8756a;
   margin-bottom: 2px;
 }
-.result-roll .ui-plate .ui-chev { border-color: #5c2a20; }
 .result-perfect { margin-top: 18px; color: #a8c07a; font-size: var(--fs-sm); font-style: italic; }
 
 .result-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 22px; }
+/* Back and onward, side by side and equal weight. */
+.result-choice { display: flex; gap: 7px; }
+.result-choice .ui-btn { flex: 1 1 0; }
+/* Two buttons, an arrow and a keycap into half a panel: the label gives way. */
+.result-choice .ui-btn-label {
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  white-space: nowrap;
+}
+.ui-btn-arrow { flex: none; font-size: 0.85em; line-height: 1; color: var(--ink-dim); }
+/* The gap on .ui-btn already spaces them; these only pull them to the edges. */
+.ui-btn-arrow.back { margin-right: -2px; }
+.ui-btn-arrow.fwd { margin-left: -2px; }
 
 /* ============================================================ mission select */
 
@@ -598,7 +598,6 @@ html, body {
 
 /* --- rank marks, shared by the sidebar, the panel and the hill */
 .ui-plate.vet .ui-plate-value { color: #f0d878; font-weight: 700; }
-.ui-plate.vet .ui-chev { border-color: #8a7326; }
 /* The one soldier the player named. Marked everywhere he appears. */
 .ui-plate.own .ui-plate-label::before {
   content: '\2726';
@@ -660,9 +659,19 @@ html, body {
   letter-spacing: var(--track-tight);
   text-transform: uppercase;
 }
-.result-roll.promotions .ui-plate { background: #2f4020; }
-.result-roll.promotions .ui-plate .ui-chev { border-color: #6d8a3c; }
-.result-roll.promotions .ui-plate-value { color: #b6e06a; }
+/*
+ * Promotion is good news and has to look like it. These plates inherited the
+ * casualty styling -- dark red on a red gradient, struck through in spirit if
+ * not in fact -- so the one screen that congratulates you did it in the colour
+ * of a death notice.
+ */
+.result-roll.promotions .ui-plate {
+  background: linear-gradient(#2f4020, #1d2a13);
+  border-top-color: #4d6a2c;
+  color: #d8ecb0;
+}
+.result-roll.promotions .ui-plate-value { color: #b6e06a; font-weight: 700; }
+.result-roll.promotions .result-roll-head { color: #8fae5e; }
 .result-note {
   margin-top: 10px;
   color: var(--ink-faint);
@@ -839,7 +848,6 @@ html, body {
 /* Inside these lists a plate carries a second line, so it wraps. The right
    chevron would land in the middle of the wrap, so it goes. */
 .hill-list .ui-plate { flex-wrap: wrap; align-items: center; }
-.hill-list .ui-chev.right { display: none; }
 .hill-where {
   flex-basis: 100%;
   margin: 3px 0 0 13px;

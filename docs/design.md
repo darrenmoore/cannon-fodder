@@ -16,35 +16,55 @@ the mechanics this is reproducing.
 
 ## Module map
 
+The four directories are the dependency direction made visible: `sim` never
+imports `render` or `ui`, and `render` only reads. `game.ts` names `Camera`,
+`Renderer` and `Input`, but as types only — they erase at compile time, so no
+runtime dependency crosses out of `sim`.
+
 ```
 main.ts ── boots, level select, mission shell
-  │
-  ├─ menu.ts ──── the intro/level-select screen and difficulty picker
-  ├─ loop.ts ──── fixed 60Hz step + interpolated draw
-  ├─ game.ts ──── orders in, simulation order, phase transitions
-  │    ├─ input.ts ────── mouse and keys, queued as commands
-  │    ├─ camera.ts ───── follow, clamp, edge-scroll, shake
-  │    ├─ troops.ts ───── player squad state machine
-  │    ├─ enemies.ts ──── enemy AI (rifle / sniper / bazooka)
-  │    ├─ combat.ts ───── bullets, rockets, grenades, blasts, dying
-  │    ├─ buildings.ts ── destructible huts that spawn reinforcements
-  │    ├─ hostages.ts ─── freeing, following, delivering
-  │    ├─ mines.ts ────── triggering, fuses, chain detonation
-  │    ├─ pickups.ts ──── crate collection
-  │    ├─ objectives.ts ─ per-mission win conditions and HUD status
-  │    ├─ fog.ts ─────── what the squad can see, and what it remembers
-  │    └─ world.ts ────── the mutable state of one mission
-  ├─ render.ts ── layer order, y-sorted actors, FX, decals
-  │    ├─ terrain.ts ──── derived per-tile shape data (see "Terrain as shape")
-  │    ├─ ground.ts ───── the ground bake: dither, shores, scrub, detail
-  │    ├─ canopy.ts ───── treeline, tall grass and crag, baked as masses
-  │    └─ palette.ts ──── tone ramps, ordered dither, colour maths
-  ├─ hud.ts ───── the sidebar, the briefing, the end-of-mission panel
-  └─ ui.ts ────── the five chrome components everything else is built from
+loop.ts ── fixed 60Hz step + interpolated draw
+config.ts (every tunable) · types.ts
 
-shared: config.ts (every tunable) · difficulty.ts (levers) · types.ts
-        map.ts · tiles.ts
-        pathfind.ts (flow field + A*) · steering.ts · fx.ts · sprites.ts
+sim/     the mission, and nothing that draws it
+  game.ts ────── orders in, simulation order, phase transitions
+  world.ts ───── the mutable state of one mission
+  troops.ts ──── player squad state machine
+  enemies.ts ─── enemy AI (rifle / sniper / bazooka)
+  combat.ts ──── bullets, rockets, grenades, blasts, dying
+  buildings.ts ─ destructible huts that spawn reinforcements
+  hostages.ts ── freeing, following, delivering
+  mines.ts ───── triggering, fuses, chain detonation
+  pickups.ts ─── crate collection
+  objectives.ts  per-mission win conditions and HUD status
+  steering.ts · pathfind.ts (flow field + A*)
+  map.ts · tiles.ts · difficulty.ts (levers) · campaign.ts (the roster)
+
+render/  reads the world, never touches it
+  render.ts ──── layer order, y-sorted actors, FX, decals
+  terrain.ts ─── derived per-tile shape data (see "Terrain as shape")
+  ground.ts ──── the ground bake: dither, shores, scrub, detail
+  canopy.ts ──── treeline, tall grass and crag, baked as masses
+  palette.ts ─── tone ramps, ordered dither, colour maths
+  camera.ts · fog.ts · fx.ts · pixelfont.ts
+  sprites/ ───── the atlas, baked at boot and split by subject:
+      paint.ts (canvas, pixel, outline, palettes, noise)
+      units.ts · buildings.ts · terrain.ts · icons.ts
+      index.ts (the Atlas and the one-time bake)
+
+ui/      chrome, in the DOM
+  hud.ts ─────── the sidebar, the briefing, the end-of-mission panel
+  menu.ts ────── the intro/level-select screen and difficulty picker
+  sheet.ts ───── pause and settings, as modals
+  boothill.ts ── the graves
+  ui.ts ──────── the chrome components everything else is built from
+  controls.ts · layout.ts · settings.ts
+
+shell/   the machine the game is running on
+  input.ts ───── intent, from whatever the player is holding
+  pointer.ts ─── raw pointer events recognised into gestures
+  aim.ts ─────── where the squad is pointing, and what it will throw
+  audio.ts · music.ts · analytics.ts
 
 tools/generate-levels.mjs -- writes the whole campaign into data/
 tools/shoot.mjs           -- drives the real game and screenshots it

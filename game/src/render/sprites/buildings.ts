@@ -1,0 +1,384 @@
+/**
+ * Structures, each baked in its states of repair. Damage is drawn rather than
+ * tinted: holes through the thatch, a wall caving in, then an ash-grey wreck.
+ * A levelled building has to read as levelled from across the map.
+ */
+
+import { addOutline, hashRnd, makeCanvas, px, rect } from './paint.js';
+import type { Sprite } from './paint.js';
+
+/**
+ * A grass hut, in three states of repair. Damage is drawn, not just tinted:
+ * holes punched through the thatch, then a wall caving in, then a wreck. A
+ * levelled hut has to read as levelled from across the map.
+ */
+/**
+ * The village hut.
+ *
+ * The reference's hut is not a cottage. It is a round mud-walled drum under an
+ * enormous circular thatch roof, seen from almost directly above, so what you
+ * actually see is a disc of burnt-orange straw with a smoke hole punched in the
+ * middle and a sliver of wall and a black doorway peeking out beneath its
+ * southern rim. A pitched roof and a gable end is the wrong building entirely,
+ * and reads as a European farmhouse dropped into a jungle.
+ */
+export function bakeHut(stage: number): Sprite {
+  const { c, g } = makeCanvas(36, 36);
+  const rnd = hashRnd(97 + stage * 31);
+
+  const CX = 18, CY = 15;      // centre of the roof disc
+  const RX = 17, RY = 14;      // its radii
+
+  if (stage >= 3) {
+    // Wrecked.
+    //
+    // The whole point of this sprite is to say "dealt with" from across the map,
+    // and drawn in burnt browns it said "still a hut, but scruffier" -- the same
+    // family of colour as the thatch it used to be. Ash is grey, so the wreck
+    // goes grey: a pale bed of it where the roof came down, charcoal beams
+    // through it, and only a few embers left with any warmth in them.
+    for (let i = 0; i < 110; i++) {
+      const a = rnd() * Math.PI * 2;
+      const r = rnd() * 16;
+      px(g, CX + Math.cos(a) * r, 24 + Math.sin(a) * r * 0.6,
+        rnd() < 0.5 ? '#4a4a48' : rnd() < 0.6 ? '#63635f' : '#2e2e2c');
+    }
+    // The collapsed roof, as a mound of ash where the dome used to sit.
+    for (let y = -7; y <= 6; y++) {
+      for (let x = -13; x <= 13; x++) {
+        if ((x * x) / 169 + (y * y) / 49 > 1) continue;
+        if (rnd() < 0.24) continue;
+        const lit = -(x * 0.4 + y * 0.8) / 10;
+        px(g, CX + x, CY + y + 6,
+          lit > 0.4 ? '#8e8e88' : lit > 0.05 ? '#6e6e68' : rnd() < 0.3 ? '#3a3a38' : '#4e4e4a');
+      }
+    }
+    // A broken ring of wall, gapped where it fell in. Scorched, not burnt away.
+    for (let a = 0; a < Math.PI * 2; a += 0.09) {
+      const x = CX + Math.cos(a) * 12;
+      const y = 24 + Math.sin(a) * 6;
+      if (rnd() < 0.22) continue;
+      const h = 3 + ((rnd() * 4) | 0);
+      rect(g, x, y - h, 1, h, rnd() < 0.5 ? '#5e5a50' : '#43403a');
+      px(g, x, y - h, '#26241f');
+    }
+    // Charred roof beams laid through the ash, and a handful of embers.
+    for (let i = 0; i < 15; i++) px(g, 9 + i, 25 - ((i * 0.5) | 0), '#1c1a16');
+    for (let i = 0; i < 11; i++) px(g, 25 - i, 22 + ((i * 0.4) | 0), '#141310');
+    for (let i = 0; i < 7; i++) {
+      px(g, 8 + rnd() * 20, 20 + rnd() * 8, rnd() < 0.5 ? '#8a3410' : '#5c2008');
+    }
+    addOutline(c, '#141310');
+    return c;
+  }
+
+  // --- the wall drum, drawn first so the roof overhangs it
+  //
+  // It wants to be a real proportion of the sprite. Almost all roof and a grey
+  // sliver of wall reads as a disc lying on the ground; the reference is closer
+  // to sixty-forty, and the wall is what makes the hut a building you can walk
+  // round rather than a plate.
+  for (let y = 20; y < 33; y++) {
+    const k = (y - 20) / 12;
+    const half = Math.round(13 - k * 2.5);
+    for (let x = CX - half; x <= CX + half; x++) {
+      // Mud and stone, lit from the upper left like everything else, and
+      // greened where the wall meets the ground.
+      const across = (x - CX) / half;
+      const lit = -across * 0.55 + (1 - k) * 0.45;
+      const n = (x * 7 + y * 13) % 5;
+      let colour = lit > 0.42 ? '#8d8a70' : lit > 0.05 ? '#75705c' : lit > -0.3 ? '#5d5847' : '#453f32';
+      if (n === 0) colour = '#4e4a3a';
+      if (k > 0.82) colour = '#332f26';
+      px(g, x, y, colour);
+    }
+  }
+  // Doorway: a tall arch, black, offset a little off centre as in the original.
+  for (let y = 0; y < 11; y++) {
+    const arch = y < 3 ? 2 + y : 4;
+    for (let x = -arch; x <= arch; x++) px(g, CX - 1 + x, 22 + y, '#0b0803');
+  }
+
+  // --- the thatch dome
+  //
+  // Lit hard from the upper left, cream through rust to maroon on the far side.
+  // A flat disc with radial spokes from a centred hole is a cinnamon bun; what
+  // makes it a roof is that the tone follows a sphere.
+  for (let y = -RY; y <= RY; y++) {
+    for (let x = -RX; x <= RX; x++) {
+      const e = (x * x) / (RX * RX) + (y * y) / (RY * RY);
+      if (e > 1) continue;
+
+      // Surface normal of a dome, dotted with a light up and to the left.
+      const nx = x / RX, ny = y / RY;
+      const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      const lit = (-nx * 0.55 - ny * 0.7 + nz * 0.45);
+
+      // Straw laid in courses running down the slope, so the surface has grain
+      // without the spokes converging on a single point.
+      const a = Math.atan2(y * 1.25, x);
+      const course = Math.sin(a * 17 + e * 9) * 0.5 + 0.5;
+      const shade2 = lit + (course - 0.5) * 0.22 + (rnd() - 0.5) * 0.1;
+
+      let colour: string;
+      if (shade2 > 0.62) colour = '#ffbd5a';
+      else if (shade2 > 0.42) colour = '#e79034';
+      else if (shade2 > 0.24) colour = '#c4631f';
+      else if (shade2 > 0.06) colour = '#a03d12';
+      else if (shade2 > -0.12) colour = '#7b1c07';
+      else colour = '#511003';
+      px(g, CX + x, CY + y, colour);
+    }
+  }
+  // The smoke hole sits up on the lit slope, not dead centre.
+  for (let y = -2; y <= 1; y++) {
+    for (let x = -2; x <= 2; x++) {
+      if ((x * x) / 4 + (y * y) / 2.2 > 1) continue;
+      px(g, CX + x - 2, CY + y - 4, '#1a0d03');
+    }
+  }
+  px(g, CX - 4, CY - 6, '#ffbd5a');
+  px(g, CX - 3, CY - 6, '#ffbd5a');
+
+  // The thatch fringe: 1-3px teeth of straw overhanging the wall, with leaf
+  // specks caught in it. This is the edge that stops the roof reading as a
+  // stamped shape, so it is drawn per column rather than as an outline.
+  for (let x = -RX; x <= RX; x++) {
+    const k = x / RX;
+    const drop = Math.round(Math.sqrt(Math.max(0, 1 - k * k)) * RY);
+    if (drop <= 0) continue;
+    const teeth = 1 + ((rnd() * 3) | 0);
+    for (let s = 0; s < teeth; s++) {
+      const y = CY + drop + s;
+      px(g, CX + x, y, s === teeth - 1 ? '#3a0c02' : rnd() < 0.4 ? '#7b1c07' : '#511003');
+    }
+    if (rnd() < 0.14) px(g, CX + x, CY + drop + teeth, '#404000');
+  }
+
+  // Vegetation creeping up the wall, which is what roots the hut in the ground.
+  for (let i = 0; i < 26; i++) {
+    const a = rnd() * Math.PI;
+    const x = CX + Math.cos(a) * 13;
+    const y = 27 + Math.sin(a) * 4;
+    rect(g, x, y - 1 - ((rnd() * 3) | 0), 1, 2 + ((rnd() * 2) | 0), rnd() < 0.5 ? '#404000' : '#565608');
+  }
+
+  if (stage >= 1) {
+    // Scarred: the thatch torn open in patches, and pocks in the wall.
+    for (let i = 0; i < 26; i++) {
+      const a = rnd() * Math.PI * 2;
+      const r = 0.3 + rnd() * 0.6;
+      px(g, CX + Math.cos(a) * RX * r, CY + Math.sin(a) * RY * r, rnd() < 0.5 ? '#3a1605' : '#512008');
+    }
+    for (let i = 0; i < 14; i++) px(g, CX - 12 + rnd() * 24, 23 + rnd() * 8, '#332d20');
+  }
+
+  if (stage >= 2) {
+    // Barely standing: a hole clean through the roof, and the wall breached.
+    for (let i = 0; i < 46; i++) {
+      const a = 2.1 + rnd() * 1.5;
+      const r = 0.2 + rnd() * 0.62;
+      px(g, CX + Math.cos(a) * RX * r, CY + Math.sin(a) * RY * r, rnd() < 0.55 ? '#180d04' : '#2e1707');
+    }
+    rect(g, CX - 12, 24, 5, 7, '#100c05');
+    for (let i = 0; i < 22; i++) px(g, CX - 14 + rnd() * 28, 29 + rnd() * 4, rnd() < 0.5 ? '#4a4436' : '#61594a');
+  }
+
+  return c;
+}
+
+/**
+ * The arctic cabin.
+ *
+ * A thatched mud hut in a snowfield is a mission brief nobody wrote. The
+ * reference's arctic buildings are squat log cabins: horizontal timber courses,
+ * a snow-laden roof pitched toward the viewer, a black doorway, and a drift
+ * banked against the windward wall.
+ */
+export function bakeCabin(stage: number): Sprite {
+  const { c, g } = makeCanvas(38, 34);
+  const rnd = hashRnd(1471 + stage * 53);
+
+  if (stage >= 3) {
+    // Burnt out: a bed of ash where the cabin stood, four charred corner posts
+    // still up, and snow already starting to take it back.
+    for (let y = 16; y < 30; y++) {
+      for (let x = 5; x < 33; x++) {
+        if (rnd() < 0.2) continue;
+        const lit = -((x - 19) * 0.3 + (y - 23) * 0.8) / 9;
+        px(g, x, y, lit > 0.35 ? '#7e8288' : lit > 0 ? '#5e6266' : rnd() < 0.3 ? '#2a2c2e' : '#42464a');
+      }
+    }
+    for (let i = 0; i < 60; i++) {
+      px(g, 5 + rnd() * 28, 17 + rnd() * 13, rnd() < 0.5 ? '#1a1a1c' : '#33373a');
+    }
+    for (const x of [7, 12, 24, 30]) {
+      const h = 5 + ((rnd() * 6) | 0);
+      rect(g, x, 28 - h, 2, h, rnd() < 0.5 ? '#2a2624' : '#171514');
+      px(g, x, 28 - h, '#d2e6ee');
+    }
+    // Snow drifting back over the cold edges of it.
+    for (let i = 0; i < 26; i++) px(g, 5 + rnd() * 28, 26 + rnd() * 5, '#a8c2ce');
+    for (let i = 0; i < 5; i++) px(g, 9 + rnd() * 20, 19 + rnd() * 8, '#7a2c0c');
+    addOutline(c, '#0a0d10');
+    return c;
+  }
+
+  // Walls: horizontal log courses, each with a lit top edge and a dark seam.
+  for (let y = 14; y < 30; y++) {
+    const course = ((y - 14) / 3) | 0;
+    for (let x = 5; x < 33; x++) {
+      const lit = x < 17;
+      let colour = (y - 14) % 3 === 0 ? '#3a2a18'
+        : lit ? '#7a5630' : '#5c4022';
+      if ((x * 5 + course * 11) % 7 === 0) colour = '#4a3420';
+      px(g, x, y, colour);
+    }
+  }
+  // The end grain of the logs, poking past the corners.
+  for (let y = 14; y < 30; y += 3) {
+    px(g, 4, y + 1, '#8a6438');
+    px(g, 33, y + 1, '#5c4022');
+  }
+
+  // Roof: pitched toward the viewer, with a deep load of snow on it.
+  for (let y = 0; y < 15; y++) {
+    const inset = Math.round((14 - y) * 0.55);
+    for (let x = 2 + inset; x < 36 - inset; x++) {
+      // Snow on top, shingle showing along the eave where it has slid off.
+      const snow = y < 10 - (rnd() < 0.2 ? 1 : 0);
+      px(g, x, y, snow
+        ? (y < 4 ? '#f2fbfd' : y < 7 ? '#dcf0f6' : '#c2dde8')
+        : (x % 4 === 0 ? '#2e2418' : '#483722'));
+    }
+  }
+  // The ridge line, and icicles hanging off the eave.
+  for (let x = 2; x < 36; x++) px(g, x, 0, '#ffffff');
+  for (let x = 3; x < 35; x++) {
+    if (rnd() > 0.24) continue;
+    const len = 1 + ((rnd() * 3) | 0);
+    for (let s = 0; s < len; s++) px(g, x, 15 + s, s === len - 1 ? '#a8ccdc' : '#dceef6');
+  }
+
+  // Doorway, and a drift banked against the wall beside it.
+  rect(g, 17, 21, 6, 9, '#080a0c');
+  rect(g, 16, 21, 1, 9, '#3a2a18');
+  rect(g, 23, 21, 1, 9, '#3a2a18');
+  for (let x = 3; x < 35; x++) {
+    const drift = Math.round(3 + Math.sin(x * 0.4) * 1.6 + rnd() * 1.5);
+    for (let s = 0; s < drift; s++) px(g, x, 30 - s, s > drift - 2 ? '#b4d2de' : '#dcf0f6');
+  }
+
+  if (stage >= 1) {
+    for (let i = 0; i < 24; i++) px(g, 6 + rnd() * 26, 15 + rnd() * 14, rnd() < 0.5 ? '#33240f' : '#241a10');
+    for (let i = 0; i < 12; i++) px(g, 8 + rnd() * 20, 2 + rnd() * 9, '#7a8c96');
+  }
+  if (stage >= 2) {
+    rect(g, 7, 18, 6, 8, '#080a0c');
+    for (let i = 0; i < 30; i++) px(g, 4 + rnd() * 30, 3 + rnd() * 24, rnd() < 0.5 ? '#1c1610' : '#2e2418');
+    for (let i = 0; i < 16; i++) px(g, 5 + rnd() * 28, 28 + rnd() * 4, '#8fa8b4');
+  }
+
+  addOutline(c, '#0a0d10');
+  return c;
+}
+
+/** A concrete blockhouse: the objective on demolition maps. */
+export function bakeFactory(stage: number): Sprite {
+  const { c, g } = makeCanvas(52, 54);
+  const rnd = hashRnd(613 + stage * 47);
+
+  if (stage >= 3) {
+    // Wrecked: the shell has gone, leaving broken walls and a slab of roof.
+    // Debris first, structure over the top, so the ruin keeps its silhouette.
+    for (let i = 0; i < 110; i++) {
+      const a = rnd() * Math.PI * 2;
+      const r = rnd() * 24;
+      px(g, 26 + Math.cos(a) * r, 46 + Math.sin(a) * r * 0.4, rnd() < 0.5 ? '#20221f' : '#2e312d');
+    }
+    for (let i = 0; i < 60; i++) px(g, 3 + rnd() * 46, 36 + rnd() * 14, rnd() < 0.5 ? '#26282b' : '#41444a');
+
+    // Broken wall, taller and more varied so it reads as a gutted building.
+    for (let x = 5; x < 47; x++) {
+      const h = 9 + ((x * 13) % 15);
+      rect(g, x, 48 - h, 1, h, x % 3 === 0 ? '#54565a' : '#65676c');
+      px(g, x, 48 - h, '#33353a');
+    }
+    // Blown-out doorway and a window that survived.
+    rect(g, 20, 34, 11, 14, '#1a1c1f');
+    rect(g, 8, 32, 6, 6, '#20313d');
+    rect(g, 8, 32, 6, 1, '#2d4553');
+    rect(g, 4, 46, 44, 3, '#3e4044');
+
+    // A tilted slab of the fallen roof leaning against the wall.
+    for (let i = 0; i < 24; i++) {
+      const y = 30 + Math.floor(i * 0.45);
+      rect(g, 26 + i * 0.8, y, 2, 4, i % 3 === 0 ? '#4e5054' : '#5f6165');
+    }
+    // Twisted reinforcing bars poking out of the top.
+    for (const bx of [11, 24, 36, 44]) {
+      for (let i = 0; i < 7; i++) px(g, bx + Math.round(Math.sin(i * 0.9) * 2), 30 - i, '#7d6a44');
+    }
+    addOutline(c, '#17181b');
+    return c;
+  }
+
+  rect(g, 4, 16, 44, 32, '#6d6f74');
+  rect(g, 4, 16, 44, 2, '#84868c');
+  rect(g, 4, 44, 44, 4, '#54565a');
+  // Corrugated roof.
+  for (let y = 6; y < 17; y++) {
+    const half = Math.round(10 + ((y - 6) / 10) * 12);
+    for (let x = 26 - half; x <= 25 + half; x++) {
+      px(g, x, y, x % 3 === 0 ? '#4e5054' : '#5f6165');
+    }
+  }
+  // Windows and a big roller door.
+  for (const wx of [9, 17, 33, 41]) {
+    rect(g, wx, 24, 5, 5, '#20313d');
+    rect(g, wx, 24, 5, 1, '#2d4553');
+  }
+  rect(g, 20, 32, 12, 16, '#2a2c30');
+  rect(g, 20, 32, 12, 1, '#3c3e44');
+  for (let y = 34; y < 48; y += 3) rect(g, 20, y, 12, 1, '#232529');
+  // Chimney.
+  rect(g, 38, 2, 6, 12, '#5a5c60');
+  rect(g, 37, 1, 8, 2, '#6c6e73');
+
+  if (stage >= 1) {
+    // Scarred: shattered windows and pocked concrete.
+    rect(g, 17, 24, 5, 5, '#161d23');
+    for (let i = 0; i < 40; i++) px(g, 5 + rnd() * 42, 17 + rnd() * 30, rnd() < 0.5 ? '#5a5c60' : '#4a4c50');
+  }
+
+  if (stage >= 2) {
+    // Barely standing: a breach through the wall, roof holed, chimney down.
+    rect(g, 7, 30, 9, 16, '#1e2023');
+    for (let i = 0; i < 22; i++) px(g, 6 + rnd() * 12, 29 + rnd() * 18, '#33353a');
+    rect(g, 30, 8, 10, 6, '#2a2c30');
+    rect(g, 38, 2, 6, 8, '#00000000');
+    // Chimney lying on the roof.
+    for (let i = 0; i < 10; i++) rect(g, 33 + i, 10 + Math.floor(i * 0.3), 1, 3, '#4e5054');
+    for (let i = 0; i < 50; i++) px(g, 4 + rnd() * 44, 16 + rnd() * 32, rnd() < 0.5 ? '#26282b' : '#44464a');
+  }
+
+  addOutline(c, '#17181b');
+  return c;
+}
+
+/** MASH tent: where rescued hostages are delivered. */
+export function bakeTent(): Sprite {
+  const { c, g } = makeCanvas(30, 26);
+  for (let y = 0; y < 18; y++) {
+    const half = Math.round((y / 17) * 13);
+    for (let x = 15 - half; x <= 14 + half; x++) {
+      px(g, x, y + 6, x % 5 === 0 ? '#b0a88f' : '#cdc5ab');
+    }
+  }
+  rect(g, 11, 16, 8, 8, '#3a3529');
+  // Red cross.
+  rect(g, 13, 10, 4, 2, '#c8352a');
+  rect(g, 14, 9, 2, 4, '#c8352a');
+  addOutline(c, '#3a3529');
+  return c;
+}
