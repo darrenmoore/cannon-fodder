@@ -21,7 +21,13 @@ services:
     buildCommand: cd game && npm ci --include=dev && npm run build
     startCommand: cd game && node server.js
 
-    healthCheckPath: /
+    # /api/version is the app answering, not a static file, so a deploy that
+    # boots but cannot serve fails here instead of going live broken. It is
+    # also what /release polls to prove a given commit is the one running.
+    healthCheckPath: /api/version
+
+    # /release pushes to main and waits for the deploy. This is what starts it.
+    autoDeploy: true
 
     envVars:
       - key: NODE_VERSION

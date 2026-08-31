@@ -4,3 +4,7 @@ game/public/bundle.js.map
 
 # Screenshot output from tools/shoot.mjs and tools/playtest.mjs.
 game/shots/
+
+# Personal Claude Code settings -- RENDER_URL, RENDER_API_KEY and the like.
+# .claude/settings.json and .claude/skills/ ARE tracked; this one is not.
+.claude/settings.local.json

@@ -22,6 +22,17 @@ const MIME = {
   '.ico': 'image/x-icon',
 };
 
+// What this running process actually is. Render injects these at runtime, so
+// GET /api/version is the deployed artifact answering for itself -- the only
+// honest way to tell a finished deploy from a warm old instance still serving.
+// Null everywhere else, which is the correct answer off Render.
+const VERSION = {
+  commit: process.env.RENDER_GIT_COMMIT ?? null,
+  branch: process.env.RENDER_GIT_BRANCH ?? null,
+  service: process.env.RENDER_SERVICE_NAME ?? null,
+  startedAt: new Date().toISOString(),
+};
+
 const send = (res, status, body, type) => {
   res.writeHead(status, {
     'Content-Type': type ?? 'text/plain; charset=utf-8',
@@ -69,6 +80,12 @@ const server = createServer(async (req, res) => {
   const path = decodeURIComponent(url.pathname);
 
   try {
+    // GET /api/version -> which commit this instance is running. Cheap, and the
+    // health check target, so a deploy that boots but cannot serve fails loudly.
+    if (path === '/api/version') {
+      return send(res, 200, JSON.stringify(VERSION), MIME['.json']);
+    }
+
     // GET /api/maps -> mission metadata for the level select, ordered by the
     // `order:` header so campaign sequence lives in the map files themselves.
     if (path === '/api/maps') {

@@ -42,6 +42,31 @@ spins down after 15 minutes idle and takes ~30s to wake.
 The server binds `127.0.0.1` by default and reads `HOST` to override it, which is
 the one thing a platform health-checking the port from outside needs.
 
+## Working on it with Claude Code
+
+Two project skills live in [.claude/skills/](.claude/skills/), so they are
+checked in and work for anyone who clones this:
+
+| | |
+|---|---|
+| `/commit` | Reviews the tree and commits in the repo's voice. Stages by name rather than `git add -A`, because more than one session edits this tree at once. Never pushes. |
+| `/release` | Refuses a dirty tree, runs `npm run check` and `npm run build`, pushes `main`, then **waits until the deployed URL is serving that exact commit** before saying it is live. |
+
+`/release` does not trust a green dashboard. `GET /api/version` returns the
+commit the running process was built from — Render injects `RENDER_GIT_COMMIT`
+at runtime — so the deployed artifact identifies itself, which is the only way
+to tell a finished deploy from the old instance still serving. It is also the
+health check path, so a build that boots but cannot serve never goes live.
+
+It needs `RENDER_URL` in `.claude/settings.local.json` (gitignored):
+
+```json
+{ "env": { "RENDER_URL": "https://cannon-fodder.onrender.com" } }
+```
+
+`RENDER_API_KEY` and `RENDER_SERVICE_ID` are optional and buy better failure
+messages — the *verdict* never depends on them.
+
 ## What it looks like
 
 The bar is the Amiga original, and the screenshots in
