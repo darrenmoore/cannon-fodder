@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { sfxLose, sfxWin } from '../shell/audio.js';
+import { sfxDenied, sfxLose, sfxWin } from '../shell/audio.js';
 import { stepBuildings } from './buildings.js';
 import { stepBullets, stepDying, stepGrenades, throwGrenade } from './combat.js';
 import { stepEnemies } from './enemies.js';
@@ -191,7 +191,22 @@ export class Game {
    */
   private tryGrenade(at: { x: number; y: number }): void {
     const w = this.world;
-    if (w.grenadesHeld <= 0 || w.grenadeCooldown > 0) return;
+
+    // Say no out loud. Both of these used to be silent, so a throw that never
+    // happened was indistinguishable from a throw the input layer had dropped
+    // -- which is most of why grenades felt unreliable.
+    if (w.grenadesHeld <= 0) {
+      const from = squadCentre(w) ?? at;
+      w.fx.popup(from, 'no grenades', '#ff6a48');
+      sfxDenied();
+      return;
+    }
+    if (w.grenadeCooldown > 0) {
+      const from = squadCentre(w) ?? at;
+      w.fx.popup(from, 'reloading', '#d8a13c');
+      sfxDenied();
+      return;
+    }
 
     let thrower = this.input.aim.thrower;
     if (!thrower || !thrower.alive || thrower.wading) {

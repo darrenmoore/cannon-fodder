@@ -145,6 +145,17 @@ export const CONFIG = {
     reactionTime: 0.42,
     /** Once alerted, keeps hunting for this long after losing sight. */
     alertMemory: 5,
+    /**
+     * How far a death and a round striking scenery carry, as fractions of
+     * `hearing`.
+     *
+     * Both are quieter than the shot that caused them, which is what makes them
+     * useful rather than noisy: a man dropping is a thud, and a round hitting a
+     * hut is a distant crack that pulls a sentry the *wrong way*. That second
+     * one is the decoy -- shoot a tree over there, and they go over there.
+     */
+    deathAlarm: 0.55,
+    impactAlarm: 0.7,
     preferredRange: 70,
     patrolRadius: 46,
     patrolPause: [1.2, 3.0] as [number, number],

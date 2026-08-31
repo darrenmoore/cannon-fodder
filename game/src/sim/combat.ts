@@ -106,6 +106,10 @@ export function stepBullets(world: World, dt: number): void {
       if (struck) damageBuilding(world, struck, b.blast > 0 ? CONFIG.building.blastDamage : b.buildingDamage);
       if (b.blast > 0) detonateRound(world, b);
       else world.fx.impact(b.pos);
+      // Where the round *landed*, not where it was fired from. This is the
+      // decoy: put one into a hut across the clearing and the garrison walks
+      // to the hut.
+      raiseAlarm(world, b.pos, world.levers.hearing * CONFIG.enemy.impactAlarm);
       world.bullets.splice(i, 1);
       continue;
     }
@@ -200,6 +204,10 @@ export function damage(world: World, actor: Actor, amount = 1): void {
   actor.deathTime = 0;
   world.fx.blood(actor.pos);
   sfxDeath();
+
+  // A man going down is a noise. Shooting a sentry used to teach the man beside
+  // him nothing at all, which is why a silenced-looking kill felt like a bug.
+  raiseAlarm(world, actor.pos, world.levers.hearing * CONFIG.enemy.deathAlarm);
 
   if (actor.faction === Faction.Enemy) {
     world.kills++;

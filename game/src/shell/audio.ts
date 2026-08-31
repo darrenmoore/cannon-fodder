@@ -129,6 +129,15 @@ export const sfxPickup = (): void => {
 
 export const sfxOrder = (): void => burst({ duration: 0.045, gain: 0.16, freq: 2400, q: 3 });
 
+/**
+ * A refusal: low, short and flat, deliberately nothing like `sfxOrder`.
+ *
+ * Pressing a control and getting silence is the worst thing a control can do,
+ * and it was what happened to every grenade thrown with an empty pouch or
+ * inside the cooldown.
+ */
+export const sfxDenied = (): void => burst({ duration: 0.07, gain: 0.2, freq: 320, q: 2, sweepTo: 190 });
+
 export const sfxWin = (): void => {
   if (!ensure() || !ctx || !master) return;
   const now = ctx.currentTime;

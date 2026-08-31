@@ -150,8 +150,12 @@ export class Hud {
   }
 
   update(world: World): void {
-    if (world.map.name !== this.lastMission) {
-      this.lastMission = world.map.name;
+    // Keyed on the difficulty as well as the map. It used to be the map name
+    // alone, so replaying the *same* mission at a new setting kept the old chip
+    // -- the world was genuinely Elite and the sidebar still said Rookie.
+    const header = `${world.map.name}/${world.difficulty}`;
+    if (header !== this.lastMission) {
+      this.lastMission = header;
       fill(this.mission,
         Object.assign(document.createElement('b'), { textContent: world.map.name }),
         Object.assign(document.createElement('span'), {

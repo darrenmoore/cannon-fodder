@@ -274,7 +274,11 @@ async function boot(): Promise<void> {
       e.preventDefault();
       e.stopPropagation();
       hud.hideOverlay();
-      input.swallowNextOrder();
+      // Only a *press* has an order to swallow. Dismissing with a key used to
+      // arm the swallow anyway, and with nothing to consume it, it sat there
+      // and ate whichever move order the player gave next -- possibly minutes
+      // later, and looking exactly like the game ignoring a click.
+      if (e.type === 'pointerdown') input.swallowNextOrder();
       teardownBriefing();
     };
     const teardownBriefing = (): void => {

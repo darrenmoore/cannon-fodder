@@ -78,6 +78,8 @@ export class Input {
   private rawAim: Vec2 | null = null;
   /** A left-while-right throw is waiting to be resolved and stood down. */
   private chorded = false;
+  /** A chord was begun on the press and is waiting for the left release. */
+  private chordArmed = false;
   /**
    * Drops the next order, once.
    *
@@ -157,6 +159,20 @@ export class Input {
       this.stickDir = null;
       return;
     }
+
+    /*
+     * The chord is committed here, on the press, not judged later on the release.
+     *
+     * It used to be recognised only as a *tap* — left down and up inside twelve
+     * pixels of travel. But aiming a grenade means moving the mouse to aim it,
+     * so any throw the player took a moment over was silently discarded as a
+     * drag; and releasing right before left dropped it too. Both did nothing at
+     * all, which is why it felt random rather than wrong.
+     */
+    if (kind === 'mouse' && button === 0 && this.rightDown) {
+      this.chordArmed = true;
+      return;
+    }
     // While the grenade is armed, the canvas belongs to the reticle: a press
     // places it rather than ordering the squad anywhere.
     if (this.aim.arming) this.placeReticle(at, kind);
@@ -180,24 +196,29 @@ export class Input {
       this.queue.push({ type: 'grenade' });
       this.aim.idle();
       this.rawAim = null;
+      return;
+    }
+
+    // A chord begun on the press lands on the release, wherever the hand ended
+    // up and whichever button was let go first.
+    if (button === 0 && this.chordArmed) {
+      this.chordArmed = false;
+      this.throwAtCursor();
     }
   }
 
   private onTap(at: Vec2, kind: 'mouse' | 'touch' | 'pen', button: number): void {
+    // Middle click throws, on its own, with no chord to hold. Middle *drag*
+    // still pans, because a drag never becomes a tap.
+    if (button === 1) {
+      if (kind === 'mouse') this.throwAtCursor(this.toWorldPoint(at, kind));
+      return;
+    }
     if (button !== 0) return;
     // The throw was already queued by the release; a tap must not also order.
     if (this.aim.arming) return;
-    // Left-while-right stays the desktop grenade: an instant throw, no aiming.
-    // It borrows the reticle for exactly one step -- `syncAim` resolves it
-    // against the live world, the throw reads it, and then it stands back down.
-    if (kind === 'mouse' && this.rightDown) {
-      this.rawAim = this.toWorldPoint(at, kind);
-      this.aim.mode = 'grenade';
-      this.aim.placed = true;
-      this.chorded = true;
-      this.queue.push({ type: 'grenade' });
-      return;
-    }
+    // The chord landed on the release; this tap must not also order the squad.
+    if (kind === 'mouse' && this.rightDown) return;
     if (this.swallowOrder) { this.swallowOrder = false; return; }
     this.queue.push({ type: 'order', world: this.toWorldPoint(at, kind, 0), queue: false });
   }
@@ -295,6 +316,21 @@ export class Input {
     this.rawAim = null;
   }
 
+  /**
+   * Throws at wherever the cursor is, borrowing the reticle for one step:
+   * `syncAim` resolves it against the live world, the throw reads it, and then
+   * it stands back down. Shared by the chord and by middle click.
+   */
+  private throwAtCursor(at?: Vec2): void {
+    // `this.world` is the cursor as of the last step, which is what the chord
+    // wants; middle click passes the exact point it was clicked at instead.
+    this.rawAim = at ?? { ...this.world };
+    this.aim.mode = 'grenade';
+    this.aim.placed = true;
+    this.chorded = true;
+    this.queue.push({ type: 'grenade' });
+  }
+
   /** The next order-producing press is discarded. See `swallowOrder`. */
   swallowNextOrder(): void { this.swallowOrder = true; }
 
@@ -346,6 +382,7 @@ export class Input {
   /** A dragged-out release, a lost focus or a cancelled touch clears held state. */
   private releaseAll(): void {
     this.rightDown = false;
+    this.chordArmed = false;
     this.panning = false;
     this.stickDir = null;
     this.keyPan.x = 0;
