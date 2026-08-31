@@ -66,11 +66,11 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
   rookie: {
     id: 'rookie',
     name: 'Rookie',
-    blurb: 'They hold their ground, shoot slowly, and never call for help.',
+    blurb: 'They shoot slowly and badly, but a shot nearby brings a neighbour looking.',
     levers: {
-      spread: 1.4, fireInterval: 1.4, aggro: 0.8, reaction: 1.6, speed: 0.9, fireRange: 0.88,
+      spread: 1.4, fireInterval: 1.4, aggro: 1.05, reaction: 1.3, speed: 0.95, fireRange: 0.95,
       extraEnemies: 0, spawnInterval: 1.7, maxSpawned: 2,
-      hearing: 0, hunters: 0, rushers: 0, grenadiers: 0, flank: 0,
+      hearing: 95, hunters: 0.15, rushers: 0, grenadiers: 0, flank: 0,
       vision: 0,
       grenades: 4,
     },

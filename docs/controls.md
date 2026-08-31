@@ -33,7 +33,7 @@ levers rather than one dial.
 
 | | What changes |
 |---|---|
-| **Rookie** | They hold their ground, shoot slowly, and **never call for help**. No fog. |
+| **Rookie** | They shoot slowly and badly, and **only the nearest man** hears your gunfire. No fog. |
 | **Regular** | Gunfire carries. Some come looking, and they do not walk straight at you. |
 | **Veteran** | **Fog of war.** They hunt you across the map, flank hard, and the huts keep feeding. |
 | **Elite** | Thick fog. They swarm, they flank, and they throw grenades. |
