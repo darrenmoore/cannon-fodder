@@ -27,7 +27,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 020 | [swim-for-it](020-swim-for-it.md) | open (after 010) | |
 | 021 | [sink-waves](021-sink-waves.md) | open | |
 | 022 | [dust-devils](022-dust-devils.md) | open (after 003) | |
-| 023 | [grenade-pickups](023-grenade-pickups.md) | open | |
+| 023 | [grenade-pickups](023-grenade-pickups.md) | done | (see log) |
 | 024 | [pause-left-menu](024-pause-left-menu.md) | open | |
 | 025 | [guide-arrow](025-guide-arrow.md) | open | |
 | 026 | [win-fail-screens](026-win-fail-screens.md) | open | |

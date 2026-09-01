@@ -900,7 +900,9 @@ const BUILDERS = {
     }
     for (let i = 0; i < 3 && deck.length > 0; i++) {
       const at = deck[Math.floor(((deck.length - 1) * i) / 2)];
-      place.put('k', at.x, at.y, 0, 1);
+      // 'c', the grenade crate -- not 'k', the collect-mission supply box,
+      // which grants nothing and left veteran two grenades short of the huts.
+      place.put('c', at.x, at.y, 0, 1);
     }
 
     // The objective, on the far bank, with a thin guard -- enough that walking
