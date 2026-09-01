@@ -93,11 +93,9 @@ export function bakeHut(stage: number): Sprite {
       px(g, x, y, colour);
     }
   }
-  // Doorway: a tall arch, black, offset a little off centre as in the original.
-  for (let y = 0; y < 11; y++) {
-    const arch = y < 3 ? 2 + y : 4;
-    for (let x = -arch; x <= arch; x++) px(g, CX - 1 + x, 22 + y, '#0b0803');
-  }
+  // (The doorway is cut *after* the roof, below -- drawn here first, the dome
+  // and its fringe buried all but three rows of it, which is how the hut spent
+  // a batch reading as nothing but roof. 200-qa 008.)
 
   // --- the thatch dome
   //
@@ -162,6 +160,23 @@ export function bakeHut(stage: number): Sprite {
     const y = 27 + Math.sin(a) * 4;
     rect(g, x, y - 1 - ((rnd() * 3) | 0), 1, 2 + ((rnd() * 2) | 0), rnd() < 0.5 ? '#404000' : '#565608');
   }
+
+  /*
+   * The doorway, cut into everything above it. Drawn last so the dome, the
+   * fringe and the creepers cannot bury it -- the arch reads as a recess
+   * under the eave, which is what a door in a thatched dome actually is. The
+   * lit lintel row is the cut edge of the straw catching the light; without
+   * it the arch is a black hole floating on the roof.
+   */
+  for (let y = 0; y < 12; y++) {
+    const arch = y < 3 ? 2 + y : 4;
+    for (let x = -arch; x <= arch; x++) px(g, CX - 1 + x, 21 + y, '#0b0803');
+  }
+  for (let x = -3; x <= 3; x++) px(g, CX - 1 + x, 20, '#ffbd5a');
+  px(g, CX - 5, 21, '#e79034');
+  px(g, CX + 3, 21, '#a03d12');
+  // A few straw ends drooping over the opening, so the cut stays thatch.
+  for (const x of [-3, 0, 2]) px(g, CX - 1 + x, 21, '#7b1c07');
 
   if (stage >= 1) {
     // Scarred: the thatch torn open in patches, and pocks in the wall.

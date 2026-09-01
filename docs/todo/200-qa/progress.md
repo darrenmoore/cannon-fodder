@@ -12,7 +12,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 005 | [idle-face-mouse](005-idle-face-mouse.md) | done | 28e117b |
 | 006 | [factory-sprite](006-factory-sprite.md) | open | |
 | 007 | [cabin-white-line](007-cabin-white-line.md) | done | fd329dd |
-| 008 | [hut-door](008-hut-door.md) | open | |
+| 008 | [hut-door](008-hut-door.md) | done | (see log) |
 | 009 | [tent-sprite](009-tent-sprite.md) | open | |
 | 010 | [spawn-distance](010-spawn-distance.md) | done | f30507e |
 | 011 | [cold-keep-note](011-cold-keep-note.md) | done -- no work, noted | |
