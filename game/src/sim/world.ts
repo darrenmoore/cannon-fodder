@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { RECRUITS } from './campaign.js';
+import { RECRUITS } from './names.js';
 import { resolveLevers } from './difficulty.js';
 import { Fog } from '../render/fog.js';
 import { Fx } from '../render/fx.js';
@@ -481,7 +481,8 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     repathTimer: 0,
     lastTargetPos: null,
     shake: 0,
-    grenadesHeld: levers.grenades,
+    // The mission may say; otherwise the difficulty does.
+    grenadesHeld: map.startGrenades >= 0 ? map.startGrenades : levers.grenades,
     grenadeCooldown: 0,
     phase: Phase.Playing,
     phaseTime: 0,

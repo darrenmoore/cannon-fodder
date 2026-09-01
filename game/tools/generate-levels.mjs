@@ -2235,6 +2235,9 @@ const CAMPAIGN = [
    * grenades lying on it and two huts that rifles will not touch.
    */
   {
+    // No grenades at all: this mission is about marching and shooting, and a
+    // full pouch is a third thing to think about while learning the first two.
+    grenades: 0,
     id: 'training-fire', doctrine: 'garrison', order: 1, seed: 110001, w: 52, h: 34,
     name: 'Basic Training', theme: 'jungle', objective: 'eliminate',
     mechanic: 'move, and then fire',
@@ -2245,6 +2248,10 @@ const CAMPAIGN = [
     brief: 'Five of them, in the open. Nothing between you and them.',
   },
   {
+    // None to start with either -- the whole mission is the grenades you walk
+    // over on the bridge, and arriving with four makes that pickup mean
+    // nothing at all.
+    grenades: 0,
     id: 'training-bridge', doctrine: 'garrison', order: 2, seed: 110002, w: 46, h: 60,
     name: 'Over the Water', theme: 'jungle', objective: 'demolish',
     mechanic: 'the bridge, and what is on it',
@@ -2577,6 +2584,9 @@ function generate(spec) {
     ...(spec.nokill && spec.objective !== 'covert' ? ['nokill: true'] : []),
     ...(spec.timelimit ? [`timelimit: ${spec.timelimit}`] : []),
     ...(spec.gated ? ['gated: true'] : []),
+    // Only when the mission overrides the difficulty's number. `0` is a real
+    // answer, so the test is against undefined rather than against falsiness.
+    ...(spec.grenades !== undefined ? [`grenades: ${spec.grenades}`] : []),
     ...(spec.dev ? ['dev: true'] : []),
     ...(spec.squad ? [`squad: ${spec.squad}`] : []),
     ...(spec.waves ? [`waves: ${spec.waves}`] : []),

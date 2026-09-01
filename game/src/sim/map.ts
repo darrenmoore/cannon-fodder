@@ -126,6 +126,18 @@ export interface GameMap {
    */
   timeLimit: number;
   /**
+   * Grenades the squad starts with, or -1 to take the difficulty's number.
+   *
+   * A per-mission override rather than a lever, because the reason to want it
+   * is a *teaching* reason: the first mission is about marching and shooting,
+   * and a pouch full of grenades is a third thing to think about; the second
+   * mission is about the grenades you walk over on the bridge, and starting
+   * with four makes that pickup mean nothing (owner's ask).
+   *
+   * -1 rather than 0 as the "unset" value, because 0 is a real answer.
+   */
+  startGrenades: number;
+  /**
    * The only route to something runs through a building that must be levelled.
    *
    * Declared, never inferred. Levelling a hut turns its tiles into walkable
@@ -238,6 +250,7 @@ export function parseMap(src: string, id = 'level'): GameMap {
     objective: askedFor === 'covert' ? 'reach' : askedFor,
     nokill: askedFor === 'covert' || header.nokill === 'true',
     timeLimit: Math.max(0, Number(header.timelimit) || 0),
+    startGrenades: header.grenades === undefined ? -1 : Math.max(0, Number(header.grenades) || 0),
     gated: header.gated === 'true',
     doctrine: isDoctrineId(header.doctrine ?? '') ? (header.doctrine as DoctrineId) : 'garrison',
     duration: Number(header.duration) || 90,

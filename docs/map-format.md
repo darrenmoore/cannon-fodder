@@ -50,6 +50,7 @@ perfectly valid — it is simply ignored by the other.
 | `nokill` | `true` loses the mission at the first body. See [Modifiers](#modifiers) | `false` | both |
 | `timelimit` | Seconds before the mission is lost. See [Modifiers](#modifiers) | none | both |
 | `gated` | `true` when the only route runs through a building you must level. See [Modifiers](#modifiers) | `false` | mission |
+| `grenades` | Grenades the squad starts with, overriding the difficulty's number. `0` is a real answer; omit it to take the difficulty's | difficulty's | mission |
 | `brief` | One line shown on the menu and in the opening banner | — | both |
 | `mechanic` | Short label for the new idea this mission introduces | — | both |
 | `duration` | Seconds to hold out, for `survive`; seconds to stand in the zone, for `hold` | `90` | mission |

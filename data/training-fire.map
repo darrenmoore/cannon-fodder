@@ -5,6 +5,7 @@ doctrine: garrison
 order: 1
 mechanic: move, and then fire
 brief: Five of them, in the open. Nothing between you and them.
+grenades: 0
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

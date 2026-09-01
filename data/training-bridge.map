@@ -5,6 +5,7 @@ doctrine: garrison
 order: 2
 mechanic: the bridge, and what is on it
 brief: Both huts, and rifles will barely mark them. There are grenades on the bridge -- walk over them, then use them.
+grenades: 0
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTT
