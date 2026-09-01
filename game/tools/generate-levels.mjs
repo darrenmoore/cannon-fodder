@@ -1536,6 +1536,60 @@ const BUILDERS = {
   },
 
   /**
+   * A forest narrows (200-qa 019): The Narrows' spirit under a canopy.
+   *
+   * One green corridor, no room, and a garrison you mostly cannot see --
+   * every man tucked against the treeline or standing in the grass pockets
+   * that fray the corridor's edges, with ambush doctrine holding their fire
+   * until the squad is nearly on them. No clock: The Narrows owns the clock,
+   * and this one trades it for dread. The lesson is the edges.
+   */
+  'the-choke'(g, place) {
+    g.fillRect(0, 0, g.w, g.h, TREE);
+
+    // The corridor, winding, pinching to under three tiles at its throats.
+    const floor = [];
+    let y = g.h * 0.5;
+    for (let x = 2; x < g.w - 2; x++) {
+      y += Math.sin(x / 11) * 0.6 + (g.rnd() - 0.5) * 0.4;
+      y = Math.max(7, Math.min(g.h - 8, y));
+      const half = 2.6 + Math.sin(x / 13) * 1.8;
+      for (let k = -half; k <= half; k++) g.set(x, Math.round(y + k), GRASS);
+      floor.push({ x, y: Math.round(y), half: Math.round(half) });
+    }
+    // Grass pockets fraying the edges: the cover the garrison hides in, and
+    // the cover the squad can steal.
+    for (const f of floor) {
+      if (g.rnd() < 0.25) g.paint(f.x, f.y - f.half, TALL, [GRASS]);
+      if (g.rnd() < 0.25) g.paint(f.x, f.y + f.half, TALL, [GRASS]);
+      if (g.rnd() < 0.08) g.disc(f.x, f.y + (g.rnd() < 0.5 ? -f.half : f.half), 1.8, TALL, [GRASS, TREE]);
+    }
+
+    const spawn = clearing(g, 7, floor[5].y, 4);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+    place.put('c', 13, floor[11].y, 4);
+
+    // The extraction, at the far end.
+    const end = floor[floor.length - 1];
+    g.disc(end.x - 2, end.y, 4, GRASS, [TREE, TALL]);
+    g.fillRect(end.x - 3, end.y - 1, 2, 2, TENT);
+
+    // The garrison hugs the rim: each man dropped at the corridor's edge,
+    // alternating sides, half of them standing in the grass itself.
+    for (let i = 0; i < 13; i++) {
+      const f = floor[Math.round(floor.length * (0.2 + i * 0.058))];
+      const side = i % 2 === 0 ? -1 : 1;
+      place.put('E', f.x, f.y + side * (f.half + 1), 3, 3);
+    }
+    const mid = floor[Math.round(floor.length * 0.45)];
+    place.put('o', mid.x, mid.y, 6);
+    const deep = floor[Math.round(floor.length * 0.6)];
+    place.put('c', deep.x, deep.y, 5);
+  },
+
+  /**
    * Not a Sound's loud twin (200-qa 018).
    *
    * The owner liked the quiet map's bones and asked for them again, rotated
@@ -2378,6 +2432,12 @@ const CAMPAIGN = [
     name: 'Loud and Clear', theme: 'jungle', objective: 'eliminate',
     mechanic: 'the quiet map, armed',
     brief: 'The same grass, the other way round. This time nobody is walking past anybody: clear it.',
+  },
+  {
+    id: 'the-choke', doctrine: 'ambush', order: 20, seed: 411387, w: 150, h: 54,
+    name: 'The Choke', theme: 'jungle', objective: 'reach',
+    mechanic: 'edges you cannot read',
+    brief: 'One green corridor to the far end. They are in the grass at its edges, and they will let you get close.',
   },
   {
     id: 'through-the-wall', doctrine: 'garrison', order: 16, seed: 155038, w: 96, h: 64, gated: true,
