@@ -1783,7 +1783,8 @@ html, body {
   min-height: 100%;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 40px 24px 56px;
+  /* The bottom is deep enough to clear #front-foot, which is pinned there. */
+  padding: 40px 24px 84px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1796,6 +1797,50 @@ html, body {
   justify-content: center;
   padding-top: 24px;
 }
+
+/* --- the credit at the foot of the front end
+ *
+ * Not a flex child of #front-inner: the intro pane centres its contents in the
+ * viewport, so a flowed footer would land in the middle of the screen, and an
+ * auto margin to push it down would take the centring with it.
+ *
+ * And `fixed`, not `absolute`. #front is itself the scroll container, so an
+ * absolutely positioned child scrolls with the mission list and disappears off
+ * the top the moment you reach the bottom of the desert -- which is exactly
+ * what the first version did. Fixed pins it to the viewport on both panes.
+ * (#front's opacity transition makes a stacking context but not a containing
+ * block, so fixed still means fixed in here.)
+ *
+ * Faint on purpose: it is a credit, not an action. #front-inner carries extra
+ * bottom padding so the last mission card cannot end up underneath it, and
+ * pointer-events are off everywhere except the link itself, so the strip never
+ * eats a click meant for the card behind it.
+ */
+#front-foot {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--safe-b) + 12px);
+  margin: 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+#front-foot a {
+  pointer-events: auto;
+  color: inherit;
+  text-decoration: none;
+}
+#front-foot a:hover,
+#front-foot a:focus-visible {
+  color: var(--ink-dim);
+  text-decoration: underline;
+  outline: none;
+}
+#front-foot a:focus-visible { color: var(--gold); }
 
 /* --- the logo, which never unmounts
  *
