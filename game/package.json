@@ -8,7 +8,7 @@
     "dev": "node build.mjs --watch",
     "build": "node build.mjs",
     "start": "node server.js",
-    "check": "tsc --noEmit && node tools/generate-levels.mjs --check && node test/map.test.mjs && node test/campaign.test.mjs && node test/docs.test.mjs && node tools/check-links.mjs",
+    "check": "tsc --noEmit && node tools/generate-levels.mjs --check && node test/map.test.mjs && node test/waves.test.mjs && node test/campaign.test.mjs && node test/docs.test.mjs && node tools/check-links.mjs",
     "levels": "node tools/generate-levels.mjs",
     "shots": "node tools/shoot.mjs --fit",
     "moments": "node tools/moment.mjs",

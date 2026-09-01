@@ -1894,13 +1894,24 @@ function populate(g, place, spec, at) {
       break;
   }
 
-  // The garrison, spread over the hubs rather than over the map, so every part
-  // of the layout that was worth building is a part somebody is holding.
-  for (let i = 0; i < guards; i++) {
+  /*
+   * The garrison, spread over the hubs rather than over the map, so every part
+   * of the layout that was worth building is a part somebody is holding.
+   *
+   * **Unless the mission is made of waves.** On a `waves:` map the schedule is
+   * the mission and the field is meant to be empty until the first one lands --
+   * a standing garrison on top of it is a different mission happening first,
+   * and it was the original complaint about Last Stand. That was fixed for Last
+   * Stand alone; the brief said to check them all and six other wave maps were
+   * still opening with ten men on the ground. So it is a rule here rather than
+   * an edit there, and a wave map added tomorrow inherits it.
+   */
+  const waveMission = spec.waves != null;
+  for (let i = 0; !waveMission && i < guards; i++) {
     const h = pick(i);
     place.put('E', h.x, h.y, 7, 3);
   }
-  for (let i = 0; i < Math.max(1, Math.round(guards / 5)); i++) {
+  for (let i = 0; !waveMission && i < Math.max(1, Math.round(guards / 5)); i++) {
     const h = pick(i * 2 + 1);
     place.put(i % 2 === 0 ? 'S' : 'B', h.x, h.y, 6, 4);
   }
