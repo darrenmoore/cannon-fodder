@@ -4,6 +4,7 @@ import { grenadeArc } from '../sim/combat.js';
 import { lerp } from '../loop.js';
 import { tileAt } from '../sim/map.js';
 import { buildAtlas, facingIndex, SOLDIER_ANCHOR, WALK_FRAMES } from './sprites/index.js';
+import { bakeGuideArrow } from './sprites/icons.js';
 import { bakeCanopy } from './canopy.js';
 import { paintGround } from './ground.js';
 import { textSprite } from './pixelfont.js';
@@ -33,6 +34,20 @@ const ENEMY_INK: Record<EnemyKind, string> = {
   [EnemyKind.Sniper]: '#b8bcc4',
   [EnemyKind.Bazooka]: '#d46ad4',
   [EnemyKind.Officer]: '#ffd24a',
+};
+
+/**
+ * The far-off version of an edge-arrow ink: the same hue at 55%, derived
+ * rather than picked so the four kinds stay recognisably themselves. A tone
+ * step is the lawful replacement for the alpha fade this used to be.
+ */
+const dimInk = (hex: string): string => {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v: number) => Math.round(v * 0.55);
+  const r = f((n >> 16) & 0xff);
+  const g = f((n >> 8) & 0xff);
+  const b = f(n & 0xff);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 };
 
 /**
@@ -153,6 +168,8 @@ export class Renderer {
   private map!: GameMap;
   /** Solid-black copies of sprites, for drop shadows. Built on first use. */
   private readonly silhouettes = new Map<Sprite, Sprite>();
+  /** Sixteen headings of off-screen arrow per ink, baked at first use. */
+  private readonly guideArrows = new Map<string, Sprite[]>();
   private decals!: HTMLCanvasElement;
   private decalCtx!: CanvasRenderingContext2D;
   private scenery: SceneryItem[] = [];
@@ -695,14 +712,28 @@ export class Renderer {
    * frame -- something that effectively cannot happen on a desktop. Without
    * these the small-screen build is not merely different, it is unfair.
    */
+  private guideArrow(ink: string, dir: number): Sprite {
+    let set = this.guideArrows.get(ink);
+    if (!set) {
+      set = [];
+      for (let i = 0; i < 16; i++) set.push(bakeGuideArrow(ink, (i * Math.PI * 2) / 16));
+      this.guideArrows.set(ink, set);
+    }
+    return set[dir];
+  }
+
   private drawOffscreen(
     world: World, camera: Camera, zoom: number,
     viewL: number, viewT: number, viewR: number, viewB: number,
   ): void {
     const ctx = this.ctx;
     const px = 1 / zoom;
-    /** Inset from the true edge, so an arrow is not half off the screen. */
-    const pad = 14 * px;
+    /*
+     * Inset from the true edge, in world pixels: the arrow sprite is 26 wide,
+     * so eighteen keeps it whole plus its four-pixel beckon. The `14 * px`
+     * floor matters only at sub-1 zoom, where world pixels shrink on screen.
+     */
+    const pad = Math.max(18, 14 * px);
     const l = viewL + pad;
     const t = viewT + pad;
     const r = viewR - pad;
@@ -710,22 +741,29 @@ export class Renderer {
     const cx = (viewL + viewR) / 2;
     const cy = (viewT + viewB) / 2;
 
-    const mark = (at: Vec2, ink: string, alpha: number): void => {
+    /*
+     * A baked sprite per ink and heading, not a filled path: the canvas
+     * rasteriser anti-aliases path edges and `globalAlpha` is banned inside
+     * the world, so the old 7px translucent triangle broke two laws at once
+     * -- and was too small to read as a signpost anyway (200-qa 025). The
+     * beckon is a whole-pixel nudge along the heading on a stepped cycle,
+     * quantised the way this hardware would have animated it.
+     */
+    const mark = (at: Vec2, ink: string): void => {
       // Clamp the target to the edge box, and point the arrow along the line
       // from the middle of the view -- which is where the squad is.
       const x = Math.max(l, Math.min(r, at.x));
       const y = Math.max(t, Math.min(b, at.y));
       const a = Math.atan2(at.y - cy, at.x - cx);
-      const size = 7 * px;
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = ink;
-      ctx.beginPath();
-      ctx.moveTo(x + Math.cos(a) * size, y + Math.sin(a) * size);
-      ctx.lineTo(x + Math.cos(a + 2.5) * size, y + Math.sin(a + 2.5) * size);
-      ctx.lineTo(x + Math.cos(a - 2.5) * size, y + Math.sin(a - 2.5) * size);
-      ctx.closePath();
-      ctx.fill();
-      ctx.globalAlpha = 1;
+      const dir = ((Math.round((a * 16) / (Math.PI * 2)) % 16) + 16) % 16;
+      const sp = this.guideArrow(ink, dir);
+      const qa = (dir * Math.PI * 2) / 16;
+      const nudge = [0, 2, 4, 2][((this.time * 5) | 0) % 4];
+      ctx.drawImage(
+        sp,
+        Math.round(x + Math.cos(qa) * nudge - sp.width / 2),
+        Math.round(y + Math.sin(qa) * nudge - sp.height / 2),
+      );
     };
 
     const outside = (p: Vec2): boolean => p.x < l || p.x > r || p.y < t || p.y > b;
@@ -738,13 +776,16 @@ export class Renderer {
       if (!world.fog.isVisible(e.pos.x, e.pos.y)) continue;
       const d = Math.hypot(e.pos.x - cx, e.pos.y - cy);
       if (d > e.stats.fireRange * 1.35) continue;
-      mark(e.pos, ENEMY_INK[e.kind] ?? '#ff6a48', Math.max(0.35, 1 - d / 400));
+      // The distance fade used to be alpha; now it is a tone step -- bright
+      // inside fire range, dimmed beyond it. Two states, no blending.
+      const ink = ENEMY_INK[e.kind] ?? '#ff6a48';
+      mark(e.pos, d > e.stats.fireRange ? dimInk(ink) : ink);
     }
 
     // Objectives: the reason a 220-tile map is navigable at phone zoom at all.
-    for (const z of world.extraction) if (outside(z)) mark(z, '#8fd44a', 0.75);
+    for (const z of world.extraction) if (outside(z)) mark(z, '#8fd44a');
     for (const h of world.hostages) {
-      if (h.alive && !h.delivered && outside(h.pos)) mark(h.pos, '#8fb0d4', 0.75);
+      if (h.alive && !h.delivered && outside(h.pos)) mark(h.pos, '#8fb0d4');
     }
     void camera;
   }

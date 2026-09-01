@@ -128,3 +128,37 @@ export function bakeMuzzleFlash(): Sprite {
   for (const [x, y] of [[1, 3], [5, 3], [3, 1], [3, 5], [2, 2], [4, 4], [2, 4], [4, 2]]) px(g, x, y, '#ff9b2e');
   return c;
 }
+
+/**
+ * The off-screen pointer: a solid triangle, big enough to read as a signpost.
+ *
+ * Rasterised by a point-in-triangle test on the integer grid rather than by
+ * `fill()` on a path, because the canvas rasteriser anti-aliases its edges and
+ * this game's laws say no soft edge ever touches the world. Sixteen headings,
+ * baked once per ink at first use and cached by the renderer -- rotation at
+ * draw time would mean resampling, which is the same sin by another route.
+ */
+export function bakeGuideArrow(ink: string, angle: number): Sprite {
+  const S = 26;
+  const { c, g } = makeCanvas(S, S);
+  const cx = S / 2;
+  const cy = S / 2;
+  const R = 11;
+  const SPREAD = 2.5; // the proportions the 7px original had, scaled up
+  const v = [angle, angle + SPREAD, angle - SPREAD].map((a) => ({
+    x: cx + Math.cos(a) * R,
+    y: cy + Math.sin(a) * R,
+  }));
+  const edge = (a: { x: number; y: number }, b: { x: number; y: number }, x: number, y: number): number =>
+    (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const d0 = edge(v[0], v[1], x + 0.5, y + 0.5);
+      const d1 = edge(v[1], v[2], x + 0.5, y + 0.5);
+      const d2 = edge(v[2], v[0], x + 0.5, y + 0.5);
+      if ((d0 >= 0 && d1 >= 0 && d2 >= 0) || (d0 <= 0 && d1 <= 0 && d2 <= 0)) px(g, x, y, ink);
+    }
+  }
+  addOutline(c, '#141005');
+  return c;
+}
