@@ -25,7 +25,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | done | |
 | 010 | [hiding-in-cover](010-hiding-in-cover.md) | open -- Q2 answered | |
 | 011 | [end-of-mission-stats](011-end-of-mission-stats.md) | open | |
-| 012 | [shell-casings](012-shell-casings.md) | open | |
+| 012 | [shell-casings](012-shell-casings.md) | done | |
 | 013 | [wading-sfx](013-wading-sfx.md) | done | |
 | 014 | [wounded-scream](014-wounded-scream.md) | done | |
 | 015 | [wave-klaxon](015-wave-klaxon.md) | done | |

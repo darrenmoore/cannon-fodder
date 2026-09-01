@@ -67,7 +67,7 @@ export class Fx {
       p.pos.y += p.vel.y * dt;
       // Drag, so debris settles rather than sliding away. Smoke keeps rising
       // instead, which is what separates a plume from a shower of dirt.
-      if (p.maxLife > 2) {
+      if (p.rise) {
         p.vel.x *= Math.exp(-0.7 * dt);
         p.vel.y = Math.max(-34, p.vel.y - 6 * dt);
       } else {
@@ -224,6 +224,7 @@ export class Fx {
       vel: { x: (Math.random() - 0.5) * 9, y: -14 - Math.random() * 16 * heat },
       life: 0.9 + Math.random() * 1.5,
       maxLife: 2.4,
+      rise: true,
       color: dark ? '#3a3630' : Math.random() < 0.5 ? '#6b6459' : '#8d867a',
       size: Math.random() < 0.55 ? 2 : 1,
     });
@@ -238,6 +239,37 @@ export class Fx {
         size: 1,
       });
     }
+  }
+
+  /**
+   * One spent case, flicked out of the breech.
+   *
+   * The original left the ground covered in what had happened on it; ours
+   * tidied up after every shot, which is most of why a firefight here reads as
+   * cleaner than the game it is copying.
+   *
+   * Strictly one pixel and strictly a particle -- not a decal, because a decal
+   * is permanent and a floor of brass after a long mission would be a different
+   * kind of wrong. It is thrown to the shooter's right, perpendicular to the
+   * barrel, and the ordinary drag brings it to a stop inside about a fifth of a
+   * second; after that it simply lies there until its life runs out. `rise` is
+   * left off, which is the entire reason that flag now exists.
+   */
+  casing(pos: Vec2, angle: number): void {
+    // Out of the ejection port, which is to the right of the barrel, with
+    // enough spread that a burst does not lay them in a line.
+    const a = angle + Math.PI / 2 + (Math.random() - 0.5) * 0.9;
+    const speed = 30 + Math.random() * 22;
+    this.particles.push({
+      pos: { x: pos.x, y: pos.y },
+      vel: { x: Math.cos(a) * speed, y: Math.sin(a) * speed * 0.6 },
+      // Under two seconds, which also keeps the count down in a long firefight:
+      // six rifles on automatic is a lot of brass.
+      life: 1.4 + Math.random() * 0.5,
+      maxLife: 1.9,
+      color: Math.random() < 0.3 ? '#8a6c30' : '#6b5424',
+      size: 1,
+    });
   }
 
   /** Rings on the surface when someone wades through the river. */

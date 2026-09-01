@@ -341,6 +341,16 @@ export interface Particle {
   maxLife: number;
   color: string;
   size: number;
+  /**
+   * Rises and spreads instead of settling: smoke, not debris.
+   *
+   * This used to be inferred from `maxLife > 2`, which was an undeclared rule
+   * that happened to be true because smoke was the only long-lived particle in
+   * the game. The first one that was not -- a shell casing meant to lie where
+   * it lands for a couple of seconds -- floated up the screen like a plume
+   * (201-qa 012). Say it rather than imply it.
+   */
+  rise?: boolean;
 }
 
 export enum Phase {

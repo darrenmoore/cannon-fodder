@@ -47,6 +47,11 @@ export function fire(world: World, shooter: Actor, target: Vec2, spread: number)
 
   world.fx.muzzle({ x: muzzleX, y: muzzleY }, angle);
   if (shooter.faction === Faction.Player) {
+    // Brass, from your own men only. Every enemy on the map ejecting cases,
+    // most of them under fog, is litter the player cannot read anything from;
+    // from the squad it says plainly where the shooting has been (201-qa 012).
+    // Rockets do not eject anything.
+    if (!rocket) world.fx.casing({ x: muzzleX, y: muzzleY }, angle);
     sfxShot();
     // Your own gunfire is the loudest thing on the map. On the difficulties
     // where they can hear it, shooting is a decision, not a freebie.
