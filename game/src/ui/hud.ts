@@ -329,6 +329,64 @@ export class Hud {
         : failureReason(world),
     }));
 
+    /*
+     * The three numbers, on both a win and a loss.
+     *
+     * On a loss especially: accuracy is what makes the retry feel earned
+     * rather than arbitrary, and the sim counts it either way (201-qa 011).
+     *
+     * Accuracy is suppressed below a handful of rounds, because two shots and
+     * one hit is not "50%" in any sense the player means, and a covert clear
+     * that fired nothing must not read as 0% -- it fired nothing, which is the
+     * best possible outcome on that mission.
+     */
+    const stats = document.createElement('div');
+    stats.className = 'result-stats';
+    const stat = (label: string, value: string): void => {
+      const row = document.createElement('div');
+      row.className = 'result-stat';
+      row.appendChild(Object.assign(document.createElement('span'), {
+        className: 'result-stat-k', textContent: label,
+      }));
+      row.appendChild(Object.assign(document.createElement('span'), {
+        className: 'result-stat-v', textContent: value,
+      }));
+      stats.appendChild(row);
+    };
+
+    if (world.map.objective !== 'covert' && !world.map.nokill) {
+      stat('kills', `${world.kills} of ${world.enemyTotal}`);
+    }
+    const fired = world.shotsFired;
+    stat('shots', fired === 0 ? 'none fired'
+      : fired < 5 ? String(fired)
+      : `${fired}  ·  ${Math.round((world.shotsHit / fired) * 100)}% on target`);
+
+    /*
+     * Time, against the mark that stood before this attempt -- which is why
+     * Aftermath carries it: the campaign's own copy has already been updated.
+     *
+     * `after.time` rather than `world.time`. The world goes on stepping while
+     * the end banner holds, so by the time this panel is built the live clock
+     * has run a second or two past the moment the mission was decided. That is
+     * the number that went into the record, so a panel reading the live clock
+     * printed a time two seconds slower than the "fastest" ribbon sitting
+     * directly underneath it.
+     */
+    const elapsed = after?.time ?? world.time;
+    const best = after?.prevBestTime ?? Infinity;
+    if (won && Number.isFinite(best)) {
+      const delta = Math.round(elapsed - best);
+      stat('time', delta === 0 ? `${formatTime(elapsed)}  ·  matched best`
+        : delta < 0 ? `${formatTime(elapsed)}  ·  ${Math.abs(delta)}s inside best`
+        : `${formatTime(elapsed)}  ·  ${delta}s off best`);
+    } else if (won) {
+      stat('time', `${formatTime(elapsed)}  ·  first clear`);
+    } else {
+      stat('time', formatTime(elapsed));
+    }
+    card.appendChild(stats);
+
     // Records first: they are the thing that makes a win with casualties still
     // feel like it went somewhere.
     if (won && after) {

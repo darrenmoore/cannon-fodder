@@ -90,6 +90,16 @@ export interface World {
   time: number;
   kills: number;
   enemyTotal: number;
+  /**
+   * Rifle rounds the squad has fired, and how many of them found a body.
+   *
+   * Counted only for the player, and only in `fire()` -- so grenades and
+   * bazooka rounds never reach it, which is deliberate: a grenade that kills
+   * four is not four hits, and a ratio that counted them would flatter the
+   * player for the shot that needed the least aim (201-qa 011).
+   */
+  shotsFired: number;
+  shotsHit: number;
   /** Counts down for `survive` missions. */
   timeLeft: number;
   /**
@@ -477,6 +487,8 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     phaseTime: 0,
     time: 0,
     kills: 0,
+    shotsFired: 0,
+    shotsHit: 0,
     screams: [],
     enemyTotal: enemies.length,
     timeLeft: map.duration,

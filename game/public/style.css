@@ -469,6 +469,30 @@ html, body {
   color: #a8756a;
   margin-bottom: 2px;
 }
+/* --- the three numbers, under the sub-line.
+ *
+ * A key/value list rather than a row of chips: the values are different widths
+ * and a chip row wraps into a ragged block the moment one of them is long. The
+ * keys sit faint and the values bright, so the eye lands on the numbers. */
+.result-stats {
+  margin: 16px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 480px;
+  width: 100%;
+}
+.result-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+}
+.result-stat-k { color: var(--ink-faint); text-transform: uppercase; }
+.result-stat-v { color: var(--ink); text-align: right; }
+
 .result-perfect { margin-top: 18px; color: #a8c07a; font-size: var(--fs-sm); }
 
 .result-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 22px; }

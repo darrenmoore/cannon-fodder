@@ -149,6 +149,19 @@ export interface Aftermath {
   /** Set when this clear was the first on this difficulty. */
   newClear: boolean;
   time: number;
+  /**
+   * The marks that stood *before* this attempt: `Infinity` and 0 when there
+   * were none.
+   *
+   * Carried here because they cannot be read from the campaign afterwards.
+   * `recordMission` mutates the stored `MissionRecord` in place -- `record` is
+   * the same object as `prev` -- and main.ts then re-points `hud.record` at the
+   * updated one, so by the time the end panel is built, "your best" is already
+   * this run. Printing it would compare a personal best against itself and
+   * report a dead heat on precisely the run worth celebrating (201-qa 011).
+   */
+  prevBestTime: number;
+  prevBestHome: number;
 }
 
 /**
@@ -342,8 +355,16 @@ export function recordMission(
     };
   });
 
+  const standing = state.records[missionId];
+  const prevBestTime = standing?.bestTime ?? Infinity;
+  const prevBestHome = standing?.bestHome ?? 0;
+
   if (!won) {
-    return { won, survivors, buried, recordHome: false, recordTime: false, newClear: false, time };
+    return {
+      won, survivors, buried, time,
+      recordHome: false, recordTime: false, newClear: false,
+      prevBestTime, prevBestHome,
+    };
   }
 
   // Promote the living and bury the dead in one pass, so a name cannot end up
@@ -368,7 +389,10 @@ export function recordMission(
   state.records[missionId] = record;
 
   saveCampaign(state);
-  return { won, survivors, buried, recordHome, recordTime, newClear, time };
+  return {
+    won, survivors, buried, recordHome, recordTime, newClear, time,
+    prevBestTime, prevBestHome,
+  };
 }
 
 /**

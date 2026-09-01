@@ -47,6 +47,7 @@ export function fire(world: World, shooter: Actor, target: Vec2, spread: number)
 
   world.fx.muzzle({ x: muzzleX, y: muzzleY }, angle);
   if (shooter.faction === Faction.Player) {
+    world.shotsFired++;
     // Brass, from your own men only. Every enemy on the map ejecting cases,
     // most of them under fog, is litter the player cannot read anything from;
     // from the squad it says plainly where the shooting has been (201-qa 012).
@@ -180,6 +181,9 @@ function resolveBulletHit(world: World, b: Bullet): boolean {
   for (const a of world.actors) {
     if (!a.alive || a.faction === b.faction) continue;
     if (bulletHitsBody(b, a.pos, CONFIG.body.radius)) {
+      // Counted here rather than in damage(), which has no idea who fired and
+      // is also reached by blasts, mines and falling buildings.
+      if (b.faction === Faction.Player) world.shotsHit++;
       if (b.blast > 0) detonateRound(world, b);
       else damage(world, a);
       return true;
