@@ -273,3 +273,270 @@ reason** — the tree was not quiet. Gathering them does not fix that. If the
 answer is "run it anyway while another session works", that is a legitimate
 call, but it should be made on purpose and written into the run's boundary,
 because it changes what a verdict is worth.
+
+---
+
+# Addendum — 1 September 2026
+
+Written after a second brief from the owner, and after auditing whether the
+first one ever made it into this document. Everything below was checked against
+the running game before it was written down; where a claim held, the cause is
+named.
+
+## The audit: what [101-ui.md](101-ui.md) asked for, and where it went
+
+The brief is one table row. **Item 6 — "Level select: layout, groups, cards,
+stars, dialog" — is standing in for roughly a dozen separate asks**, and the
+specifics have no home: nothing in this document records them, and nothing
+states when any of them is done. That is the gap the owner suspected.
+
+| the brief asked for | state |
+|---|---|
+| Level select is an extension of the intro, attract world still running behind | in item 5/6 as a sentence, no criteria |
+| Fade in and out; the logo shrinks and moves up | **absent** — no item covers a transition |
+| The back button moves somewhere else | **absent** |
+| Left rail of groups: portrait, total missions, how many done | in item 6, uncosted |
+| Clicking a group highlights it — "joyful, but immediate" | **absent** |
+| Groups created now even if empty, aligned to what we have | **absent** |
+| Mission card: big yellow number, name in caps | in item 6 |
+| Description, 8–10 words, **NOT italic** | **absent**, and currently violated |
+| Stars: always three, unearned ones hollow | drawn (`bakeStar`); the row is not specced |
+| Locked missions use the disabled state, muted text, a padlock | drawn (`bakeLock`); the rule is not specced |
+| Mission dialog: number, name, description, **no small fonts** | **absent**, and currently violated |
+| Dialog shows stars earned, then difficulty choice, and closes | **absent** |
+| "These things should be components so they can be reused" | satisfied by the `ui` tab |
+
+So: **the brief is referenced, not carried.** Six of its asks appear nowhere,
+and two of those — no italic, no small fonts — are rules the game currently
+breaks. This addendum states them.
+
+## Findings — the second brief, checked
+
+### The overlay does not cover the sidebar, and the dialog is not centred
+
+**Both true, one cause, and it is one line.**
+
+[`style.css:968`](../../game/public/style.css) says:
+
+```css
+[data-layout="wide"] #overlay { inset: 0 0 0 var(--sidebar-w); }
+```
+
+Measured on a 1280×800 viewport with the mission-failed panel up: `#overlay` is
+`x: 188, w: 1092` — inset from the left by exactly the sidebar width. So:
+
+- **The black bar.** The scrim starts after the sidebar, leaving a 188px strip
+  uncovered. `#blackout` sits underneath at full opacity, so what shows there is
+  pure black. The sidebar *is* under it and does show faintly through the 0.78
+  scrim everywhere else, which is the "still there kind of".
+- **The off-centre dialog.** The card centres inside the overlay, at x 734.
+  The viewport centre is 640. It is 94px right of where it looks like it should
+  be, on every wide layout.
+
+Not DOM order — the stacking is correct (`#blackout` 8, `#overlay` 12, both
+`position: fixed`, both direct children of `<body>`). It was a deliberate choice
+to keep the sidebar readable under a briefing, and it is wrong for a modal.
+
+### Italic is used in six places
+
+`font-style: italic` at `style.css` lines 412 (`.briefing-line`), 450
+(`.result-perfect`), 522, 589 (`.m-mech` — the mission description), 708 and
+905. The result panel's own note is italic, which is the line the owner could
+not read.
+
+### The type is half the size the owner wants, and the dialog with it
+
+Measured on the mission-failed panel: the card is **440×439 in a 1280×800
+viewport**. Its sub-line and note are `--fs-sm` and `--fs-micro` — both 10px
+after the font work. The buttons inside it (`TRY AGAIN`, `MISSION LIST`) set
+their captions at `--fs-sm`, 10px, *smaller* than a button elsewhere in the
+game. Nothing here is a bug; it is a scale that was chosen for a system-font
+chrome and never revisited when the chrome became a bitmap face.
+
+### Three screens do not exist at all
+
+- **No loading screen.** Nothing in `ui/`, nothing in `index.html`, no boot
+  element. Item 11 is untouched.
+- **No intro or attract screen.** A cold boot lands on the mission list.
+- **No between-missions title card.** `ui/blackout.ts` fades both surfaces
+  through black, which is 004 H2's *transition*, but nothing draws a mission
+  title on that black. Item 2 is half done and the half that remains is the
+  picture.
+
+### What already exists and should not be rebuilt
+
+- **Groups are real data.** `groupByTheatre()` in `ui/menu.ts` buckets levels
+  into theatres and the menu already renders a section per theatre. The level
+  select needs a *rail*, not a grouping mechanism.
+- **The unlock rule is built.** `sim/unlock.ts`: three free per theatre plus one
+  per clear. "Locked" is a question with an answer already.
+- **Stars are a settled rule.** A star is the highest tier cleared, 1–3.
+- **The chrome exists.** Plates, buttons in four states, frame, banner, stars,
+  padlock, and a 5×7 face shared by DOM and canvas.
+
+## Decisions taken
+
+**The front end stays DOM; the generated sprites dress it.** Plates, buttons and
+frames become `border-image` and backgrounds cut from the same canvases the
+`ui` tab shows. Text layout, list scrolling, focus and keyboard keep working,
+and the attract world shows through because the canvas is already behind. The
+alternative — drawing the screens on canvas — is truer to the pixel grid and
+costs a re-implementation of every one of those, which is not a trade worth
+making for chrome that looks identical either way.
+
+**The type ladder becomes 20 / 30 / 40.** Body and labels 20px, headings and
+names 30px, titles 40px — double today. The chrome face is only sharp at whole
+multiples of 10px, so those are the only sizes available; there is no 24. Every
+box that holds text grows with it, which is the same ask stated twice.
+
+**No italic anywhere in the chrome.** Not a preference: a bitmap face has no
+italic, so the browser synthesises one by shearing the glyphs, which puts a
+diagonal edge on letters made of squares. It is unreadable *because* it is
+out of lore.
+
+## New items
+
+Numbered from 14 so the existing table is not renumbered under another session.
+
+| # | item | from |
+|---|---|---|
+| 14 | The modal layer: cover the whole screen, centre on the whole screen | second brief |
+| 15 | The type scale, and every box that holds text | second brief |
+| 16 | Italic removed everywhere | second brief |
+| 17 | Every button becomes the generated plate | second brief |
+| 18 | Dialogs restyled — briefing, result, pause, confirm | second brief |
+| 19 | The loading screen | 100 M0 / item 11 |
+| 20 | The intro screen, and how it arrives | 101, second brief |
+| 21 | Level select: the screen, the rail, the cards, the dialog | [101-ui.md](101-ui.md) |
+| 22 | The mission screen, from `next-mission.jpg` | 004 H2 / item 2 |
+| 23 | The transitions between all four screens | second brief |
+
+### 14 · The modal layer
+
+Delete the `[data-layout="wide"]` inset. The scrim covers the viewport and the
+card centres on the viewport. The briefing — which is a caption, not a modal,
+and is the reason the inset existed — keeps the sidebar readable by being
+*positioned* over the play area rather than by shrinking the layer everything
+else uses.
+
+> **Done when** on a 1280×800 wide layout the overlay's bounding box is
+> `0,0,1280,800`, the card's centre is within 1px of the viewport centre, no
+> strip of sidebar or blackout is visible beside a result panel, and the
+> briefing still does not obscure the sidebar.
+
+### 15 · The type scale
+
+`--fs-body` 20, `--fs-lg` 30, `--fs-display`/`--fs-title` 40, micro and sm fold
+into 20. Then every container that was sized around 10px type is re-measured:
+the result card, the briefing, the pause sheet, the mission rows, the roster
+plates.
+
+> **Done when** no rule in `style.css` sets a font size that is not a multiple
+> of 10; the mission-failed card is at least 640px wide on a 1280×800 viewport;
+> and no text clips or overflows its box at 360px, 768px and 1280px wide.
+
+### 16 · Italic
+
+> **Done when** `grep -c "font-style: *italic" game/public/style.css` returns 0
+> and no element sets it inline.
+
+### 17 · Buttons
+
+One button, everywhere: the four-state plate from `sprites/plates.ts`, applied
+through `border-image` so it stretches to any label. Replaces `.ui-btn`, the
+difficulty tabs, the menu actions, the result choices and the pause sheet's
+rows.
+
+> **Done when** every clickable control in the DOM chrome resolves to one CSS
+> class; hover, active, disabled and pressed are the four generated states; and
+> a capture of the menu, the pause sheet and the result panel shows no control
+> using the old bevel.
+
+### 18 · Dialogs
+
+Briefing, result, pause and a new confirm share one shell: a frame, a banner
+heading, body text at 20px, and a row of buttons. The result panel loses its
+italic note and gains the room the bigger type needs.
+
+> **Done when** all four are built from the same shell; the mission-failed panel
+> reads at arm's length on a laptop; and every string in them is 20px or larger.
+
+### 19 · The loading screen
+
+The first thing anybody sees. Free hand, but it is the game's first impression
+and it must not be a spinner: the logo assembling itself out of its own pieces
+is in reach, because the pieces are separate sprites already.
+
+> **Done when** a cold load shows it before the bundle's first frame, it never
+> shows for less than 400ms (a flash is worse than nothing), and a failure to
+> boot says so on it rather than leaving it up forever.
+
+### 20 · The intro screen
+
+Attract world behind, vignette over it, logo, and a column of arcade-sized
+buttons. The logo arrives — drops, settles — rather than appearing.
+
+> **Done when** a cold boot lands here rather than on the mission list; the
+> attract world runs five minutes with no page error and both sides still have
+> men; and the buttons are at least 44px tall with 30px captions.
+
+### 21 · Level select
+
+The whole of [101-ui.md](101-ui.md), which is listed in the audit above and not
+repeated here. Groups exist for every theatre whether or not they have missions;
+portraits may be placeholders. **The rail remembers which group was last open**,
+in the same store the campaign already uses.
+
+> **Done when** every row of the audit table is either built or explicitly
+> deferred in writing; a locked mission cannot be started and says why; the
+> remembered group survives a reload; and no text in the mission dialog is under
+> 20px.
+
+### 22 · The mission screen
+
+`docs/original-images/elements/next-mission.jpg`: black, a big underlined
+serif mission number, a rule, the mission name underlined, and a boxed BRIEFING
+panel with the objectives in caps. `render/bigfont.ts` is that face and was
+built for this screen. No phase line — 004 decision 4 settled that.
+
+> **Done when** it appears on the black between missions, uses `bigfont`, and a
+> critic with no history puts it beside the reference and calls the composition
+> a match.
+
+### 23 · Transitions
+
+Loading → intro → level select → mission, each eased rather than cut, all
+driven from one clock so a capture can freeze them.
+
+> **Done when** every screen change passes through the existing blackout rather
+> than swapping; no transition is shorter than 200ms or longer than 600ms; and
+> `tools/moment.mjs` can photograph the midpoint of each one.
+
+## Scale, honestly
+
+**This is not a few hours and it is not one run.** Ten new items on top of
+thirteen. Items 14, 15 and 16 are an evening between them — they are deletions
+and constants. Item 17 is a sitting. Items 19 to 23 are a screen each, and 21 is
+two.
+
+Ordered by value per hour, which is not the same as the order above:
+
+| | |
+|---|---|
+| **first** | 14, 16, 15 — reported bugs, cheap, and everything else is judged on top of them |
+| **then** | 17, 18 — the chrome the screens are made of |
+| **then** | 22, 19 — the two screens with a fixed reference and no invention |
+| **last** | 20, 21, 23 — the most work and the most taste |
+
+## What I will not do
+
+**I will not run `/gauntlet`.** It is blocked from model invocation by design
+and the block is right: this document says twice that the batch cannot be judged
+by the session that builds it. Building these items and then grading them myself
+would be the same failure with more steps. `/grill` on a finished screen is the
+most I should do, and it is not a substitute.
+
+**I will not invent the group portraits yet.** Six small paintings is a
+different kind of work from chrome, the brief says a placeholder is acceptable,
+and doing them badly in a hurry would set a bar the real ones then have to
+match.

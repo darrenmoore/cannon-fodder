@@ -45,21 +45,26 @@
    * Every size is a multiple of ten.
    *
    * ui/pixelface.ts builds the chrome face on a grid where one glyph pixel is
-   * exactly one CSS pixel at font-size 10px -- so 10, 20 and 30 land every
+   * exactly one CSS pixel at font-size 10px -- so 10, 20, 30 and 40 land every
    * glyph edge on a whole device pixel and anything between them does not,
-   * which is the softness this face exists to remove. Sizes that used to be
-   * 11, 12, 14 and 18 are now 10, 10, 20 and 20; the ladder is coarser because
-   * the face is a bitmap and a bitmap has no sizes in between.
+   * which is the softness this face exists to remove. There is no 24 here and
+   * asking for one gets a blurred 20.
+   *
+   * The ladder doubled on 1 September: everything was set for a system font
+   * and never revisited when the chrome became a bitmap face, which left the
+   * result panel telling you a hostage had died in ten-pixel type. Body is 20
+   * now, headings 30, titles 40 -- and every box that holds text had to grow
+   * with it, which is the same instruction stated twice.
    */
   --face: "Boots & Bullets Pixel", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
-  --fs-micro: 10px;   /* keycaps, theatre notes -- decoration, not reading */
-  --fs-sm: 10px;      /* hints, card meta */
-  --fs-body: 10px;    /* roster plates, the objective line */
-  --fs-lg: 20px;      /* button labels, the mission name */
-  --fs-xl: 20px;      /* readout values */
+  --fs-micro: 20px;   /* keycaps, theatre notes -- decoration, not reading */
+  --fs-sm: 20px;      /* hints, card meta */
+  --fs-body: 20px;    /* roster plates, the objective line */
+  --fs-lg: 30px;      /* button labels, the mission name */
+  --fs-xl: 30px;      /* readout values */
   --fs-display: 40px; /* briefing and result titles */
-  --fs-title: 27px;
-  --fs-brand: 58px;
+  --fs-title: 40px;
+  --fs-brand: 60px;
 
   /*
    * Tracking is a legibility cost that rises as type shrinks. Uppercase at 9px
@@ -409,12 +414,12 @@ html, body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
-.briefing-line { margin-top: 10px; color: var(--ink-dim); font-size: var(--fs-body); font-style: italic; }
+.briefing-line { margin-top: 10px; color: var(--ink-dim); font-size: var(--fs-body); }
 
 /* --- result */
 .result {
-  width: min(440px, 90vw);
-  padding: 26px 26px 22px;
+  width: min(680px, 92vw);
+  padding: 34px 34px 30px;
   background: linear-gradient(#242c14, #171d0d);
   border-top: 2px solid var(--plate-hi);
   border-left: 2px solid var(--plate-hi);
@@ -433,7 +438,7 @@ html, body {
 .result.lose .result-title { color: #e07050; text-shadow: 0 3px 0 #52180d; }
 .result-sub { margin-top: 10px; color: var(--ink-dim); font-size: var(--fs-sm); letter-spacing: var(--track-tight); }
 
-.result-roll { margin: 20px auto 0; max-width: 240px; }
+.result-roll { margin: 20px auto 0; max-width: 420px; }
 .result-roll-head {
   margin-bottom: 7px;
   color: var(--blood);
@@ -447,7 +452,7 @@ html, body {
   color: #a8756a;
   margin-bottom: 2px;
 }
-.result-perfect { margin-top: 18px; color: #a8c07a; font-size: var(--fs-sm); font-style: italic; }
+.result-perfect { margin-top: 18px; color: #a8c07a; font-size: var(--fs-sm); }
 
 .result-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 22px; }
 /* Back and onward, side by side and equal weight. */
@@ -455,7 +460,7 @@ html, body {
 .result-choice .ui-btn { flex: 1 1 0; }
 /* Two buttons, an arrow and a keycap into half a panel: the label gives way. */
 .result-choice .ui-btn-label {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-lg);
   letter-spacing: var(--track-tight);
   white-space: nowrap;
 }
@@ -519,7 +524,6 @@ html, body {
   text-align: center;
   color: #a3b47c;
   font-size: var(--fs-sm);
-  font-style: italic;
   min-height: 14px;
 }
 
@@ -548,8 +552,14 @@ html, body {
 
 .theatre-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 8px;
+  /*
+   * 460, not 290. The cards were measured for ten-pixel type; at twenty a
+   * mission name wrapped to three lines and the meta column collided with it.
+   * A box does not stay the right size when the type inside it doubles, which
+   * is the half of "make it bigger" that is not a font size.
+   */
+  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  gap: 10px;
 }
 
 /*
@@ -557,9 +567,11 @@ html, body {
  * colour stripe is repeating information the heading already carries.
  */
 .mission {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  display: grid;
+  /* number | body | meta -- a grid so the meta cannot ride over the name. */
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
   width: 100%;
   padding: 13px 15px;
   background: linear-gradient(#232b14, #1a2010);
@@ -581,12 +593,12 @@ html, body {
 .mission:active { transform: translateY(0); }
 .mission.last { box-shadow: inset 0 0 0 1px #6b7d40; }
 
-.m-num { font-size: 22px; font-weight: 700; color: #56703a; min-width: 30px; line-height: 1.1; }
+.m-num { font-size: 40px; font-weight: 700; color: #56703a; min-width: 54px; line-height: 1; }
 .mission:hover .m-num { color: var(--gold); }
 .m-body { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
 .m-name { font-size: var(--fs-lg); font-weight: 700; letter-spacing: var(--track-tight); text-transform: uppercase; }
 .m-obj { color: var(--ink-dim); font-size: var(--fs-micro); letter-spacing: var(--track-tight); text-transform: uppercase; }
-.m-mech { color: #a3b47c; font-size: var(--fs-sm); font-style: italic; line-height: 1.4; }
+.m-mech { color: #a3b47c; font-size: var(--fs-sm); line-height: 1.4; }
 .m-levers { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
 .lever {
   padding: 2px 6px;
@@ -598,13 +610,24 @@ html, body {
   letter-spacing: var(--track-tight);
   text-transform: uppercase;
 }
+/*
+ * The meta runs under the card, not beside it.
+ *
+ * As a third column it needed a fixed width no card could spare once the type
+ * doubled: it is nowrap by nature -- "GARRISON 88X56 OPEN" cannot break -- so
+ * it squeezed the name column to nothing and then overflowed across it. A row
+ * beneath the body has the whole card to wrap into and cannot collide with
+ * anything.
+ */
 .m-meta {
+  grid-column: 1 / -1;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
   color: var(--ink-faint);
-  font-size: var(--fs-micro);
+  font-size: var(--fs-sm);
   letter-spacing: var(--track-tight);
   text-transform: uppercase;
   white-space: nowrap;
@@ -705,7 +728,6 @@ html, body {
   margin-top: 10px;
   color: var(--ink-faint);
   font-size: var(--fs-micro);
-  font-style: italic;
   line-height: 1.5;
 }
 
@@ -824,7 +846,7 @@ html, body {
 .hill-head { text-align: center; margin-bottom: 10px; }
 .hill-head h2 {
   margin: 0;
-  font-size: 34px;
+  font-size: 40px;
   font-weight: 700;
   letter-spacing: var(--track-wide);
   text-transform: uppercase;
@@ -902,7 +924,6 @@ html, body {
   margin: 10px 0 0;
   color: var(--ink-faint);
   font-size: var(--fs-micro);
-  font-style: italic;
   line-height: 1.6;
 }
 
@@ -965,7 +986,21 @@ html, body {
 
 /* --------------------------------------------------------------- wide */
 
-[data-layout="wide"] #overlay { inset: 0 0 0 var(--sidebar-w); }
+/*
+ * A caption sits over the battlefield; a modal owns the screen.
+ *
+ * This inset used to apply to the whole overlay, on the reasoning that the
+ * sidebar should stay readable underneath a briefing. It does -- and it also
+ * applied to the result panel, which is not a caption. Two faults fell out of
+ * that and the owner reported both: the scrim started after the sidebar, so
+ * the full-width blackout underneath showed as a black bar down the left; and
+ * the card centred inside the shortened layer, landing 94px right of the
+ * middle of a 1280px screen.
+ *
+ * So it applies to the briefing only, which is what `:not(.interactive)`
+ * means here -- `hud.ts` adds that class for the panel you can click.
+ */
+[data-layout="wide"] #overlay:not(.interactive) { inset: 0 0 0 var(--sidebar-w); }
 
 /* ------------------------------------------------------------ compact */
 
@@ -977,7 +1012,7 @@ html, body {
   --fs-xl: 22px;
   --fs-display: clamp(24px, 6vw, 40px);
   --fs-title: clamp(20px, 5vw, 27px);
-  --fs-brand: clamp(30px, 8vw, 58px);
+  --fs-brand: 40px;
   --tap: 48px;
   /* Tracking that reads at 11px is a smear at 14px on a phone held at arm's
      length, so the touch layouts tighten it as the type grows. */
@@ -1055,7 +1090,7 @@ html, body {
   --fs-xl: 24px;
   --fs-display: clamp(26px, 8vw, 44px);
   --fs-title: clamp(22px, 6.5vw, 27px);
-  --fs-brand: clamp(30px, 11vw, 58px);
+  --fs-brand: 30px;
   --tap: 48px;
   --track-wide: 0.14em;
   --track: 0.08em;
@@ -1257,7 +1292,7 @@ html, body {
 .ui-action[hidden] { display: none; }
 
 .ui-action-glyph { font-size: 20px; line-height: 1; }
-.ui-action.primary .ui-action-glyph { font-size: 26px; }
+.ui-action.primary .ui-action-glyph { font-size: 30px; }
 .ui-action-label {
   font-size: var(--fs-micro);
   font-weight: 700;
@@ -1416,7 +1451,6 @@ html, body {
   margin: 14px 0 0;
   color: var(--ink-faint);
   font-size: var(--fs-sm);
-  font-style: italic;
   line-height: 1.5;
 }
 
@@ -1521,7 +1555,7 @@ html, body {
 /* `min(100%, 290px)` rather than a bare 290px: a fixed track minimum overflows
    the moment the viewport is narrower than one card plus its padding, and a
    grid overflowing is the one thing a phone cannot scroll its way out of. */
-.theatre-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); }
+.theatre-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); }
 .mission { min-height: var(--tap); }
 #menu-difficulty { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 #menu-difficulty::-webkit-scrollbar { display: none; }
@@ -1532,10 +1566,10 @@ html, body {
   max-height: 88vh;
   max-height: 88dvh;
   overflow-y: auto;
-  padding: clamp(18px, 4vw, 26px);
+  padding: clamp(20px, 4vw, 34px);
 }
 .result-actions .ui-btn { justify-content: center; }
-.hill-head h2 { font-size: clamp(22px, 6vw, 34px); }
+.hill-head h2 { font-size: clamp(30px, 6vw, 40px); }
 #hill-inner { padding: clamp(20px, 5vw, 40px) clamp(14px, 4vw, 24px) 56px; }
 .hill-actions { flex-wrap: wrap; }
 .hill-actions .ui-btn { min-width: min(170px, 100%); }
@@ -1586,9 +1620,20 @@ html, body {
  * Two more cells buy that margin back down, hence 7vw rather than 7.5 -- 25px
  * and 294px on the same phone, and still inside the hole on a 320px one.
  */
-[data-layout="stacked"] { --fs-brand: clamp(22px, 7vw, 58px); }
-[data-layout="compact"] { --fs-brand: clamp(26px, 6vw, 58px); }
+/*
+ * The brand, on the grid like everything else.
+ *
+ * These were clamps -- 22px at one width, 27 at another -- which is exactly
+ * what a bitmap face cannot do: every size between the multiples of ten puts
+ * a glyph edge between two pixels. Three fixed steps instead, and the smallest
+ * is 20 because fifteen unbreakable cells of it come to 233px, which fits a
+ * 390px phone beside the music button and a 320px one without it.
+ */
+[data-layout="stacked"] { --fs-brand: 20px; }
+[data-layout="compact"] { --fs-brand: 30px; }
 #menu h1 { letter-spacing: var(--track-wide); }
+/* Clear of the music toggle, which is fixed to the same corner. */
+[data-layout="stacked"] #menu-inner { padding-top: 72px; }
 
 /* --- the dev panel
  *
@@ -1613,7 +1658,7 @@ html, body {
 .debug-title {
   width: 100%;
   color: #8fae5e;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 2px;
   text-align: right;
 }
