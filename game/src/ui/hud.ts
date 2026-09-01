@@ -312,6 +312,16 @@ export class Hud {
       className: 'result-title',
       textContent: won ? 'Mission accomplished' : 'Mission failed',
     }));
+    // The rung it happened on, said outright -- the sidebar chip is gone by
+    // the time this panel is being read, and Replay is about to offer the
+    // other rungs (200-qa 026).
+    const diffLine = document.createElement('div');
+    diffLine.className = 'result-diffline';
+    diffLine.appendChild(Object.assign(document.createElement('span'), {
+      className: `hud-diff diff-${world.difficulty}`,
+      textContent: `on ${DIFFICULTIES[world.difficulty].name}`,
+    }));
+    card.appendChild(diffLine);
     card.appendChild(Object.assign(document.createElement('div'), {
       className: 'result-sub',
       textContent: won

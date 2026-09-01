@@ -25,6 +25,7 @@ import { createWorld, squadCentre } from './sim/world.js';
 import { loadSettings, settings, updateSettings } from './ui/settings.js';
 import { preloadMusic, startMusic, stopMusic } from './shell/music.js';
 import { Phase } from './types.js';
+import { DIFFICULTIES, DIFFICULTY_ORDER } from './sim/difficulty.js';
 import type { DifficultyId } from './sim/difficulty.js';
 import type { LevelInfo } from './ui/menu.js';
 
@@ -257,7 +258,11 @@ async function boot(): Promise<void> {
    * Runs one mission. Resolves with what the player asked for next: back to the
    * list, or straight on to the following mission.
    */
-  const play = async (info: LevelInfo, difficulty: DifficultyId): Promise<'menu' | 'next'> => {
+  const play = async (
+    info: LevelInfo, difficulty: DifficultyId,
+  ): Promise<'menu' | 'next' | { replay: DifficultyId }> => {
+    /** Set when the player picks a *different* difficulty from the end panel. */
+    let replayAt: DifficultyId | null = null;
     // Front-screen music only. Also covers the mission-to-mission hand-off,
     // which never passes back through the menu.
     stopMusic();
@@ -286,23 +291,48 @@ async function boot(): Promise<void> {
     hud.onNext = (): void => { if (game) game.nextRequested = true; };
     hud.onRetry = (): void => {
       if (!game) return;
-      game.restart();
-      hud.hideOverlay();
       /*
-       * Straight back into it, out of the black.
-       *
-       * A retry is a mission opening in every way that matters -- and it was
-       * not treated as one: the panel was hidden, the world rebuilt, and
-       * *nothing put the screen back*, so the blackout stayed at full from the
-       * end-of-mission fade and the player was left looking at a black
-       * rectangle with a live mission running under it. It never recovered.
-       *
-       * It does not get the briefing, though, which the first fix gave it. You
-       * have just read that briefing and just failed the mission it describes;
-       * a card between you and trying again is a card in the way. So: the fade,
-       * and none of the ceremony.
+       * Replay asks *at what difficulty*, the way the level select does --
+       * one button per rung, the one just played wearing the primary plate
+       * and named in the body, so nobody finishes a campaign never knowing
+       * the rungs existed (200-qa 026). The same rung restarts in place; a
+       * different one relaunches through the mission loop, because
+       * difficulty is fixed at Game construction and everything derived
+       * from it has to be rebuilt.
        */
-      void fadeIn(CONFIG.banner.fade);
+      void confirm({
+        title: 'Play it again — on what setting?',
+        body: `You just played ${map.name} on ${DIFFICULTIES[difficulty].name}.`,
+        buttons: DIFFICULTY_ORDER.map((id) => ({
+          label: DIFFICULTIES[id].name.toUpperCase(),
+          value: id as string,
+          variant: (id === difficulty ? 'primary' : 'normal') as 'primary' | 'normal',
+        })),
+        dismiss: 'back',
+      }).then((v) => {
+        if (v === 'back' || !game) return;
+        if (v !== difficulty) {
+          replayAt = v as DifficultyId;
+          return;
+        }
+        game.restart();
+        hud.hideOverlay();
+        /*
+         * Straight back into it, out of the black.
+         *
+         * A retry is a mission opening in every way that matters -- and it was
+         * not treated as one: the panel was hidden, the world rebuilt, and
+         * *nothing put the screen back*, so the blackout stayed at full from
+         * the end-of-mission fade and the player was left looking at a black
+         * rectangle with a live mission running under it. It never recovered.
+         *
+         * It does not get the briefing, though, which the first fix gave it.
+         * You have just read that briefing and just failed the mission it
+         * describes; a card between you and trying again is a card in the
+         * way. So: the fade, and none of the ceremony.
+         */
+        void fadeIn(CONFIG.banner.fade);
+      });
     };
     hud.onMissions = (): void => { if (game) game.exitRequested = true; };
 
@@ -489,9 +519,11 @@ async function boot(): Promise<void> {
       // Private browsing: remembering the last mission is not worth failing over.
     }
 
-    return new Promise<'menu' | 'next'>((resolve) => {
+    return new Promise<'menu' | 'next' | { replay: DifficultyId }>((resolve) => {
       const check = (): void => {
-        const done = game?.exitRequested ? 'menu' : game?.nextRequested ? 'next' : null;
+        const done = game?.exitRequested ? 'menu'
+          : game?.nextRequested ? 'next'
+            : replayAt ? { replay: replayAt } : null;
         if (done) {
           game = null;
           (window as unknown as { game: Game | null }).game = null;
@@ -519,7 +551,7 @@ async function boot(): Promise<void> {
   let difficulty = loadDifficulty(DIFFICULTY_KEY);
   let queued: LevelInfo | null = null;
   for (;;) {
-    let info = queued;
+    let info: LevelInfo | null = queued;
     queued = null;
 
     if (!info) {
@@ -548,6 +580,14 @@ async function boot(): Promise<void> {
     }
 
     const outcome = await play(info, difficulty);
+    if (typeof outcome === 'object') {
+      // The end panel's "replay at another difficulty": same mission, new
+      // rung, straight back in through the front door of the loop.
+      difficulty = outcome.replay;
+      saveDifficulty(DIFFICULTY_KEY, difficulty);
+      queued = info;
+      continue;
+    }
     if (outcome === 'next') {
       const at = campaignLevels.findIndex((l) => l.id === info.id);
       queued = at >= 0 ? campaignLevels[at + 1] ?? null : null;

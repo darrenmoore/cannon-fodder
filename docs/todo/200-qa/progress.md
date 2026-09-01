@@ -30,7 +30,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 023 | [grenade-pickups](023-grenade-pickups.md) | done | e553ec2 |
 | 024 | [pause-left-menu](024-pause-left-menu.md) | done | (see log) |
 | 025 | [guide-arrow](025-guide-arrow.md) | done | (see log) |
-| 026 | [win-fail-screens](026-win-fail-screens.md) | open | |
+| 026 | [win-fail-screens](026-win-fail-screens.md) | done | (see log) |
 
 ## Log
 

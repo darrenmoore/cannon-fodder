@@ -437,18 +437,22 @@ html, body {
 }
 .briefing-line { margin-top: 10px; color: var(--ink-dim); font-size: var(--fs-body); }
 
-/* --- result */
+/* --- result
+ *
+ * Wears the plotted chrome like every other modal (200-qa 026) -- this was
+ * the last CSS-gradient box in the game, sitting on the screen a player sees
+ * most often after the battlefield itself. */
 .result {
   width: min(680px, 92vw);
   padding: 34px 34px 30px;
-  background: linear-gradient(#242c14, #171d0d);
-  border-top: 2px solid var(--plate-hi);
-  border-left: 2px solid var(--plate-hi);
-  border-right: 2px solid var(--edge);
-  border-bottom: 2px solid var(--edge);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+  background: none;
+  border: 18px solid transparent;
+  border-image: var(--sk-frame) var(--sk-slice-frame) fill / 18px round;
+  image-rendering: pixelated;
+  box-shadow: none;
   text-align: center;
 }
+.result-diffline { margin-top: 8px; }
 .result-title {
   font-size: var(--fs-title);
   font-weight: 700;
@@ -476,6 +480,17 @@ html, body {
 .result-perfect { margin-top: 18px; color: #a8c07a; font-size: var(--fs-sm); }
 
 .result-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 22px; }
+/* The panel's buttons wear the baked plates, same rules as the sheets. */
+.result-actions .ui-btn {
+  background: none;
+  border: 10px solid transparent;
+  border-image: var(--sk-btn) var(--sk-slice-btn) fill / 10px round;
+  image-rendering: pixelated;
+}
+.result-actions .ui-btn:hover, .result-actions .ui-btn:focus-visible {
+  border-image-source: var(--sk-btn-hot);
+}
+.result-actions .ui-btn:active { border-image-source: var(--sk-btn-down); }
 /* Back and onward, side by side and equal weight. */
 .result-choice { display: flex; gap: 7px; }
 .result-choice .ui-btn { flex: 1 1 0; }
