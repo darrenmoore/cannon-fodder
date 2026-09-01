@@ -9,7 +9,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 002 | [mud-render](002-mud-render.md) | open | |
 | 003 | [veteran-balance](003-veteran-balance.md) | blocked on Q2 | |
 | 004 | [house-circle](004-house-circle.md) | open | |
-| 005 | [idle-face-mouse](005-idle-face-mouse.md) | open | |
+| 005 | [idle-face-mouse](005-idle-face-mouse.md) | done | (see log) |
 | 006 | [factory-sprite](006-factory-sprite.md) | open | |
 | 007 | [cabin-white-line](007-cabin-white-line.md) | done | (this commit) |
 | 008 | [hut-door](008-hut-door.md) | open | |

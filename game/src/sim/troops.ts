@@ -181,7 +181,7 @@ function reslot(world: World, s: Soldier): void {
   if (best) s.slot = best;
 }
 
-export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null): void {
+export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null, cursor: Vec2 | null = null): void {
   const cfg = CONFIG.soldier;
   footsteps(world, dt);
 
@@ -238,7 +238,7 @@ export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null
       world.fx.splash(s.pos, t === Tile.Quicksand);
     }
 
-    updateFiring(world, s, manualFireAt, cfg);
+    updateFiring(world, s, manualFireAt, cfg, cursor);
   }
 }
 
@@ -277,7 +277,7 @@ function chooseMoveTarget(world: World, s: Soldier): Vec2 | null {
   return via ?? s.slot;
 }
 
-function updateFiring(world: World, s: Soldier, manualFireAt: Vec2 | null, cfg: typeof CONFIG.soldier): void {
+function updateFiring(world: World, s: Soldier, manualFireAt: Vec2 | null, cfg: typeof CONFIG.soldier, cursor: Vec2 | null): void {
   // Wading soldiers hold their weapons clear of the water and cannot shoot.
   if (s.wading) {
     if (Math.hypot(s.vel.x, s.vel.y) > 2) s.angle = Math.atan2(s.vel.y, s.vel.x);
@@ -298,7 +298,16 @@ function updateFiring(world: World, s: Soldier, manualFireAt: Vec2 | null, cfg: 
   }
 
   if (!aim) {
-    if (Math.hypot(s.vel.x, s.vel.y) > 2) s.angle = Math.atan2(s.vel.y, s.vel.x);
+    if (Math.hypot(s.vel.x, s.vel.y) > 2) {
+      s.angle = Math.atan2(s.vel.y, s.vel.x);
+    } else if (cursor) {
+      // Standing with nothing to shoot at: watch the cursor. Pure legibility
+      // -- the squad visibly attends to where the player is looking. The dead
+      // zone stops a cursor crossing directly over a man from spinning him.
+      const dx = cursor.x - s.pos.x;
+      const dy = cursor.y - s.pos.y;
+      if (Math.hypot(dx, dy) > 12) s.angle = Math.atan2(dy, dx);
+    }
     return;
   }
 

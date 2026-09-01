@@ -110,7 +110,11 @@ export class Game {
     // Aimed with a cursor on a mouse and a thumbstick on a phone; the
     // simulation only ever sees the resolved point.
     const manualAim = this.input.firing ? this.input.aim.point : null;
-    stepSoldiers(w, dt, manualAim);
+    // The cursor's world point, for idle soldiers to watch -- gated on the
+    // pointer actually being over the canvas so a parked cursor on another
+    // monitor doesn't pin the whole squad's gaze at one stale spot.
+    const cursor = this.input.inside ? this.input.world : null;
+    stepSoldiers(w, dt, manualAim, cursor);
     stepEnemies(w, dt);
 
     // Hard no-overlap pass, after everyone has moved and slid along walls.
