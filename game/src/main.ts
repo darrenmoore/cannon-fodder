@@ -20,7 +20,7 @@ import { startLoop } from './loop.js';
 import { parseMap } from './sim/map.js';
 import { fetchLevels, groupByTheatre, loadDifficulty, saveDifficulty } from './ui/menu.js';
 import { showFront } from './ui/front.js';
-import type { ArenaGame } from './sim/arena-game.js';
+import { ArenaGame } from './sim/arena-game.js';
 import { Renderer } from './render/render.js';
 import { showBootHill } from './ui/boothill.js';
 import { deploy, loadCampaign, recordMission } from './sim/campaign.js';
@@ -345,14 +345,9 @@ async function boot(): Promise<void> {
    * fighting over the same pointer, which edge-scroll wins by being invisible.
    */
   const startBackdrop = async (): Promise<void> => {
-    // Folded away entirely by esbuild in a production build, which takes the
-    // dynamic import below -- and so the whole arena -- with it. Dev-only means
-    // absent, not merely unreachable; the same rule the debug panel follows.
-    if (!__DEV__) return;
     if (!backdropWanted()) return;
     try {
       if (!backdrop) {
-        const { ArenaGame } = await import('./sim/arena-game.js');
         const res = await fetch(`/api/maps/${ARENA_MAP}`);
         if (!res.ok) return;
         backdropMap = parseMap(await res.text(), ARENA_MAP);
@@ -747,19 +742,6 @@ async function boot(): Promise<void> {
    * will use.
    */
   const playArena = async (): Promise<void> => {
-    /*
-     * Imported here rather than at the top, so that a production build does not
-     * carry it.
-     *
-     * `__DEV__` folds to a literal `false`, which lets esbuild drop this whole
-     * branch -- and with it `arena-game.ts`, `arena.ts` and everything they
-     * pull in. The same trick the debug panel uses, for the same reason: dev
-     * only should mean *absent*, not merely unreachable. When the arena becomes
-     * the intro backdrop it stops being dev-only and this goes back to being an
-     * ordinary import.
-     */
-    if (!__DEV__) return;
-    const { ArenaGame } = await import('./sim/arena-game.js');
     stopMusic();
     const res = await fetch(`/api/maps/${ARENA_MAP}`);
     if (!res.ok) throw new Error(`could not load the arena: ${res.status}`);
@@ -859,16 +841,20 @@ async function boot(): Promise<void> {
 
     if (!info) {
       /*
-       * `#arena`: the full-size arena, for working on it.
+       * `#arena`: the battle full-size, with nothing drawn on top of it.
        *
-       * A developer's door, not a player's -- the BATTLE button that used to be
-       * on the front screen is gone, because the arena's home is now *behind*
-       * that screen and a front page offering to go and look at its own
-       * wallpaper is a front page explaining itself. Checked before the front
-       * is drawn, and the fragment is cleared on the way out or the next reload
-       * walks straight back in.
+       * Not advertised anywhere -- the BATTLE button that used to be on the
+       * front screen is gone, because the arena's home is *behind* that screen
+       * and a front page offering a look at its own wallpaper is a front page
+       * explaining itself. It ships all the same: the code is in the bundle for
+       * the backdrop regardless, so gating the fragment would hide something
+       * that is already there rather than save anything, and it is the only way
+       * to look at the mode on the live site.
+       *
+       * Checked before the front is drawn, and the fragment is cleared on the
+       * way out or the next reload walks straight back in.
        */
-      if (__DEV__ && window.location.hash === '#arena') {
+      if (window.location.hash === '#arena') {
         history.replaceState(null, '', window.location.pathname);
         stopBackdrop();
         await playArena();

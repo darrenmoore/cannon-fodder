@@ -122,10 +122,16 @@ incremental.
 
 **Built, and the button did not survive.** `playArena()` stays — a full-size
 view is what you want while working on the mode — but it moved to the `#arena`
-fragment, `__DEV__`-only, and the front screen's BATTLE button was removed on
-the owner's say-so once the backdrop landed. A front page offering a look at its
-own wallpaper is a front page explaining itself. The two are mutually exclusive
-by construction: `stopBackdrop()` runs before either a mission or `playArena`.
+fragment, and the front screen's BATTLE button was removed on the owner's
+say-so once the backdrop landed. A front page offering a look at its own
+wallpaper is a front page explaining itself. The two are mutually exclusive by
+construction: `stopBackdrop()` runs before either a mission or `playArena`.
+
+**And none of it is `__DEV__`-gated any more.** The plan assumed the arena would
+stay a dev toy; the owner's call is that the backdrop is part of the live front
+end, so it ships, and the fragment ships with it -- the code is in the bundle
+regardless, and gating the door would hide something already present rather than
+save anything.
 
 ### 5. Performance
 

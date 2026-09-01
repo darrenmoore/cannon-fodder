@@ -21,8 +21,8 @@ import type { World } from './world.js';
  * the ordered pass over a world, and that lives in `step.ts` where both can
  * call it.
  *
- * It is also the shape the intro backdrop wants: run a world, draw it, take no
- * input at all. That is `Input`'s `sealed` mode and one flag away from here.
+ * It is also the shape the intro backdrop uses: run a world, draw it, take no
+ * input at all -- `Input`'s `sealed` mode, and `alwaysLocked` below.
  */
 export class ArenaGame {
   readonly world: World;

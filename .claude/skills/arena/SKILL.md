@@ -42,9 +42,12 @@ Two ways to see it, and they are different views of the same thing. It is
 **already running behind the front screen** — that is the mode's real job, and
 looking at the front screen is the only way to judge whether it works as a
 backdrop. For working on the battle itself, **`/#arena`** opens it full-size;
-that fragment is `__DEV__`-only and is the door `arena-shot.mjs` walks in
-through. A BATTLE button used to sit on the front screen; the owner had it
-removed once the backdrop landed.
+that is the door `arena-shot.mjs` walks in through.
+
+**This ships.** Nothing here is `__DEV__`-gated, so a change you make reaches
+players. A BATTLE button used to sit on the front screen; the owner had it
+removed once the backdrop landed, so the fragment is unadvertised rather than
+hidden.
 
 ### 3. Establish the baseline *before* editing
 
@@ -108,7 +111,10 @@ you will see it whether or not it reached the screen.
 - **Do not put a door to the arena on the front screen.** There was a BATTLE
   button and it was removed on purpose: the arena is the thing running *behind*
   that screen, and a front page offering a look at its own wallpaper is a front
-  page explaining itself. `#arena` is the developer's door.
+  page explaining itself. `#arena` is the unadvertised way in.
+- **Remember it is live.** This is not a dev toy any more — it is the first
+  thing a player sees, running under the logo. Judge a change on the front
+  screen, not only at `#arena`.
 - **Do not let the backdrop be owned by the front screen.** `main.ts` owns it
   for the life of the page, because that screen is shown, hidden and shown again
   and the battle must not restart with it.

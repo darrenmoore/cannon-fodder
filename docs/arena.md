@@ -10,14 +10,19 @@ the background still keeps animating, cpu vs cpu"*
 ([101's brief](todo/101-ui/brief.md)). Nearly every rule below follows from the
 second of those.
 
-**Getting to it.** It is already running: under `npm run dev` the front screen
-draws over a live battle, which is the mode's real job. To see it full-size --
-which is what you want while working on it -- open
-**`http://localhost:5199/#arena`**. The fragment is a developer's door and is
-`__DEV__`-only, so it does nothing in a production build; there was a BATTLE
-button on the front screen and the owner had it removed once the backdrop
-landed, because a front page offering a look at its own wallpaper is a front
-page explaining itself.
+**Getting to it.** It is already running: the front screen draws over a live
+battle, which is the mode's real job. To see it full-size -- which is what you
+want while working on it -- open **`/#arena`**.
+
+**It ships.** None of this is `__DEV__`-gated: the backdrop is part of the live
+front end, and the `#arena` fragment goes with it, because the code is in the
+bundle either way and gating the fragment would hide something that is already
+there rather than save anything. It is unadvertised rather than hidden -- there
+was a BATTLE button on the front screen and the owner had it removed once the
+backdrop landed, since a front page offering a look at its own wallpaper is a
+front page explaining itself. The **map** stays `dev: true`, which is a
+different thing: that keeps it out of the player's mission list, where it does
+not belong.
 
 ---
 
@@ -200,7 +205,9 @@ canvas until something has been prepared. Getting that order wrong fails
 silently into a front screen with no battle behind it.
 
 Not run on `compact` or `stacked` layouts — a phone's front end is a tight fit
-already.
+already, and a forty-man simulation drawn behind it buys a small screen nothing.
+That is a performance decision rather than a gate, and it is the one line to
+change if a phone should have it too.
 
 ## Watching options
 
