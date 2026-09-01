@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 import { Camera } from './render/camera.js';
 import { missionResolved, missionStarted, startSession } from './shell/analytics.js';
 import { unlockAudio } from './shell/audio.js';
+import { bootBegin, bootEnd, bootFailed, bootStep } from './ui/boot.js';
 import { installPixelFace } from './ui/pixelface.js';
 import { Controls } from './ui/controls.js';
 import { Game } from './sim/game.js';
@@ -41,9 +42,12 @@ const DIFFICULTY_KEY = 'cf.difficulty';
 const DEFAULT_SQUAD = 6;
 
 async function boot(): Promise<void> {
+  bootBegin();
+
   // Before anything reads a preference. Nothing branches on whether settings
   // were ever saved, only on their values, so this is safe to do first.
   loadSettings();
+  bootStep('boot');
 
   // Starts the clock on how long this visit lasts. Registers two listeners and
   // nothing else -- no request is made until the page goes away.
@@ -80,7 +84,11 @@ async function boot(): Promise<void> {
   const ctx = canvas.getContext('2d', { alpha: false })!;
 
   const camera = new Camera();
+  // Building the renderer bakes the atlas -- every sprite in the game, plotted
+  // pixel by pixel -- which is the longest step in the boot and the one the
+  // player would otherwise spend watching nothing.
   const renderer = new Renderer(ctx);
+  bootStep('sprites');
   // One owner for every size in the game. The layout measures the viewport,
   // sizes the canvas backing store, picks the zoom and publishes the mode the
   // stylesheet branches on; everything else subscribes rather than measuring.
@@ -143,6 +151,7 @@ async function boot(): Promise<void> {
   };
 
   const levels = await fetchLevels();
+  bootStep('missions');
   if (levels.length === 0) throw new Error('no missions found in data/');
 
   /**
@@ -449,6 +458,11 @@ async function boot(): Promise<void> {
       // the last mission's fade would sit over it.
       setBlackout(0);
       startMusic();
+      // The menu is up and painted, which is the first moment there is anything
+      // behind the loading screen worth revealing. Ending it here rather than
+      // when boot() returns means it never lifts onto an empty page.
+      bootStep('ready');
+      void bootEnd();
       const chosen = await showMenu(levels, last, difficulty, (d) => {
         difficulty = d;
         saveDifficulty(DIFFICULTY_KEY, d);
@@ -468,6 +482,10 @@ async function boot(): Promise<void> {
 
 boot().catch((err: unknown) => {
   console.error(err);
+  // Say so on the screen the player is already looking at. Without this a
+  // thrown error leaves the loading screen up forever, which reads as a slow
+  // connection and gets blamed on their line rather than on us.
+  bootFailed(err);
   const overlay = document.getElementById('overlay');
   const title = document.getElementById('overlay-title');
   const sub = document.getElementById('overlay-sub');
