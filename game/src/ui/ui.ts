@@ -60,12 +60,11 @@ export function button(label: string, opts: ButtonOptions = {}): HTMLButtonEleme
   if (opts.hint) body.appendChild(el('span', 'ui-btn-hint', opts.hint));
   b.appendChild(body);
   if (opts.arrow === 'forward') b.appendChild(el('span', 'ui-btn-arrow fwd', '▶'));
-  // Recorded on the element as well as drawn, so `bindKeys` can make the cap
-  // mean something rather than leaving it as decoration that lies.
-  if (opts.key) {
-    b.dataset.key = opts.key;
-    b.appendChild(el('kbd', 'ui-key', opts.key));
-  }
+  // The key is recorded but never drawn: the owner had the shortcut caps
+  // stripped from the sheets first and then from every button (200-qa
+  // follow-up) -- they crowded the labels and pushed the result panel into a
+  // horizontal scroll. `bindKeys` reads `data-key`, so the keys still work.
+  if (opts.key) b.dataset.key = opts.key;
 
   if (opts.onClick) b.addEventListener('click', opts.onClick);
   return b;
@@ -203,8 +202,10 @@ export function action(opts: ActionOptions): ActionButton {
   const label = el('span', 'ui-action-label', opts.label);
   const badge = el('i', 'ui-action-badge');
   badge.hidden = true;
+  // No shortcut hint under the label any more -- same owner call as the
+  // button caps. The `hint` option stays accepted so call sites read as
+  // documentation of which key drives the plate.
   root.append(ring, glyph, label, badge);
-  if (opts.hint) root.append(el('span', 'ui-action-hint', opts.hint));
 
   return {
     root,

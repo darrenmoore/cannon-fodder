@@ -172,16 +172,8 @@ html, body {
 }
 .ui-btn-hint { color: var(--ink-dim); font-size: var(--fs-micro); letter-spacing: var(--track-tight); }
 
-.ui-key {
-  padding: 3px 6px;
-  background: var(--well);
-  border: 1px solid var(--plate-hi);
-  border-radius: 2px;
-  color: var(--ink-dim);
-  font: inherit;
-  font-size: var(--fs-micro);
-  letter-spacing: var(--track-tight);
-}
+/* (The .ui-key keycap styling lived here until the owner had the shortcut
+   caps stripped from every button; button() no longer renders one.) */
 
 /* --- plate: chevrons instead of a border, which is how the original does it */
 .ui-plate {
@@ -1202,8 +1194,6 @@ html, body {
  * because these are statements about fingers, not about width.
  */
 
-/* A keycap reading "Enter" beside a button nobody can press is pure noise. */
-[data-input="touch"] .ui-key { display: none; }
 /* A crosshair cursor on a device with no cursor. */
 [data-input="touch"] #screen { cursor: default; }
 [data-input="touch"] .ui-plate { min-height: var(--tap); }
@@ -1325,7 +1315,6 @@ html, body {
 /* Unavailable is a dimmer plate, not a faded one: `opacity` is a blend, and
    there is no blending anywhere else in this game. */
 .ui-action.off { background: var(--plate-lo); color: var(--ink-faint); cursor: default; }
-.ui-action.off .ui-action-hint { color: var(--ink-faint); }
 .ui-action.tone-good { background: #2f5222; }
 .ui-action.tone-warn { background: #4a2718; }
 .ui-action:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -1339,18 +1328,6 @@ html, body {
   letter-spacing: var(--track-tight);
   text-transform: uppercase;
 }
-/* The keyboard shortcut, for the desktop where the bar is an alternative to a
-   chord rather than the only way in. */
-.ui-action-hint {
-  position: absolute;
-  top: calc(100% + 3px);
-  color: var(--ink-faint);
-  font-size: var(--fs-micro);
-  letter-spacing: var(--track-tight);
-  white-space: nowrap;
-}
-#controls[data-mode="touch"] .ui-action-hint { display: none; }
-
 .ui-action-badge {
   position: absolute;
   top: -2px;
@@ -2267,9 +2244,6 @@ html, body {
 .sheet-actions .ui-btn:hover, .sheet-actions .ui-btn:focus-visible {
   border-image-source: var(--sk-btn-hot);
 }
-/* No key caps in the sheets: the owner asked for the shortcut text gone, and
-   a cap on DONE was the last of it. The keys themselves still work. */
-.sheet-card .ui-key { display: none; }
 
 /* The pause sheet's shape: resume large and alone, the small print sharing
    one row beneath it (200-qa 024). */

@@ -419,16 +419,15 @@ export class Hud {
     this.overlay.classList.add('interactive');
 
     /*
-     * The caps this panel draws have to be real.
+     * The keys this panel accepts have to be real.
      *
-     * `button()` renders a `data-key` cap beside each label, and `bindKeys` is
-     * what turns one into a key you can press -- but it was called by sheet.ts
-     * and by nothing else, so the end panel printed `R`, `Enter` and `Esc` and
-     * honoured none of them. Measured, one at a time: Enter did nothing at all,
-     * R restarted only because input.ts happens to bind R itself, and Esc
-     * reached the pause handler and stacked a second modal on top of the win
-     * panel. A player who presses the key the game has just printed at him is
-     * owed the thing it says.
+     * `button()` records a `data-key` on each button (the visible caps are
+     * gone by owner's request, but R, Enter and Esc still drive the panel)
+     * and `bindKeys` is what turns one into a key you can press -- it was
+     * once called by sheet.ts and nothing else, so this panel honoured none
+     * of the keys it claimed: Enter did nothing, R worked only because
+     * input.ts binds R itself, and Esc stacked the pause sheet on top of the
+     * win panel.
      *
      * It binds in capture and stops the press, which is also what keeps Esc
      * from reaching `input.onPause` underneath.
