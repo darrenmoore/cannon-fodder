@@ -71,6 +71,15 @@ export interface World {
   lastTargetPos: Vec2 | null;
   /** Pending camera shake, drained each step. */
   shake: number;
+  /**
+   * Where a wounded man cried out this step, drained by `game.ts`.
+   *
+   * Banked rather than sounded on the spot for the same reason as `shake`: the
+   * cry has to be panned toward the body to be worth anything, panning needs
+   * the camera, and `sim/` does not get to know where the camera is. Cleared
+   * every step whether or not anybody drained it (201-qa 014).
+   */
+  screams: Vec2[];
 
   grenadesHeld: number;
   grenadeCooldown: number;
@@ -468,6 +477,7 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     phaseTime: 0,
     time: 0,
     kills: 0,
+    screams: [],
     enemyTotal: enemies.length,
     timeLeft: map.duration,
     heldFor: 0,

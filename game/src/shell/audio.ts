@@ -165,6 +165,86 @@ export const sfxEnemyShot = (): void => {
   loudAt = performance.now() / 1000;
   burst({ duration: 0.1, gain: 0.4, freq: vary(950), q: 1.3, sweepTo: vary(320) });
 };
+/**
+ * A wounded man calling for help.
+ *
+ * `stepWounded` has always run a real mechanic: a downed enemy raises an alarm
+ * on a repeating timer, pulling the garrison onto his body. It did it in total
+ * silence, so the player was being hunted by a sound they could not hear and
+ * had no way to learn the rule from (201-qa 014).
+ *
+ * There is no voice synthesis here and there is not going to be, so the cry is
+ * built the way `ambience.ts` builds bird calls: a couple of swept oscillator
+ * syllables. Sawtooth for rasp, falling rather than rising because a cry for
+ * help sags, and a short noise burst under the attack for the breath -- that
+ * last part is what stops it reading as a synthesiser and starts it reading as
+ * a throat.
+ *
+ * **`pan` is the whole point.** The value of this sound is telling the player
+ * *where* the noise drawing enemies is coming from; without that it is mood.
+ * -1 is hard left, +1 hard right, computed against the camera by `game.ts`,
+ * which is the layer that knows where the camera is.
+ *
+ * Not `loudAt`. Gunfire scatters the birds; a man on the ground does not.
+ */
+export const sfxScream = (pan: number): void => {
+  // Several wounded men on one map share a timer often enough to land together,
+  // and two screams at once is a sound effect rather than a person.
+  if (!gate('scream', 0.22)) return;
+  if (!settings().sound) return;
+  if (!ensure() || !ctx || !master || !noise) return;
+  const now = ctx.currentTime;
+
+  const out = ctx.createStereoPanner();
+  out.pan.value = Math.max(-1, Math.min(1, pan));
+  out.connect(master);
+
+  // Two syllables, the second lower and shorter: a call, then it gives out.
+  const base = vary(520, 0.12);
+  for (const [i, [from, to, dur, gain]] of ([
+    [base, base * 0.62, 0.34, 0.17],
+    [base * 0.78, base * 0.5, 0.22, 0.1],
+  ] as Array<[number, number, number, number]>).entries()) {
+    const t = now + i * 0.4;
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(from, t);
+    osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+
+    // A throat, not a horn: roll the top off and let it close as it fades.
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(1800, t);
+    f.frequency.exponentialRampToValueAtTime(700, t + dur);
+
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(gain, t + 0.03);
+    env.gain.exponentialRampToValueAtTime(0.0005, t + dur);
+
+    osc.connect(f).connect(env).connect(out);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  // The breath on the front of the first syllable.
+  const air = ctx.createBufferSource();
+  air.buffer = noise;
+  air.loop = true;
+  air.loopStart = Math.random() * 0.3;
+  air.loopEnd = air.loopStart + 0.2;
+  const airF = ctx.createBiquadFilter();
+  airF.type = 'bandpass';
+  airF.frequency.value = 1100;
+  airF.Q.value = 0.8;
+  const airEnv = ctx.createGain();
+  airEnv.gain.setValueAtTime(0.05, now);
+  airEnv.gain.exponentialRampToValueAtTime(0.0005, now + 0.1);
+  air.connect(airF).connect(airEnv).connect(out);
+  air.start(now);
+  air.stop(now + 0.14);
+};
+
 export const sfxDeath = (): void => burst({ duration: 0.22, gain: 0.5, freq: vary(320), q: 0.7, sweepTo: 120, type: 'lowpass' });
 
 export const sfxExplosion = (): void => {

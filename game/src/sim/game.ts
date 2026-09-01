@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { sfxDenied, sfxLose, sfxWin } from '../shell/audio.js';
+import { sfxDenied, sfxLose, sfxScream, sfxWin } from '../shell/audio.js';
 import { stepBuildings, stepWaves } from './buildings.js';
 import { stepBullets, stepDying, stepGrenades, throwGrenade } from './combat.js';
 import { stepEnemies } from './enemies.js';
@@ -259,5 +259,23 @@ export class Game {
       this.world.shake = 0;
     }
     this.camera.update(dt, squadCentre(this.world), this.map);
+
+    /*
+     * The wounded, drained after the camera has moved so the pan is against
+     * where the player is actually looking this frame rather than last.
+     *
+     * Same arrangement as `shake` above: the simulation banks the event, and
+     * this layer -- the one that owns the camera -- turns it into something the
+     * player hears. Cleared unconditionally, so a mission that runs with the
+     * sound off does not accumulate an array all game (201-qa 014).
+     */
+    if (this.world.screams.length > 0) {
+      const halfW = this.camera.viewW / 2;
+      const cx = this.camera.x + halfW;
+      for (const at of this.world.screams) {
+        sfxScream(halfW > 0 ? (at.x - cx) / halfW : 0);
+      }
+      this.world.screams.length = 0;
+    }
   }
 }

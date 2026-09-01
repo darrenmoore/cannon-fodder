@@ -129,6 +129,10 @@ function stepWounded(world: World, e: Enemy, dt: number): void {
   e.screamTimer = CONFIG.enemy.screamInterval * (0.8 + Math.random() * 0.4);
   raiseAlarm(world, e.pos, world.levers.hearing * CONFIG.enemy.woundAlarm);
   world.fx.blood(e.pos);
+  // The noise itself. Blood on a body that is already bleeding is easy to miss,
+  // and the alarm this raises was silent -- so a player who shot someone, moved
+  // on, and was then swarmed from three sides had been told nothing about why.
+  world.screams.push({ x: e.pos.x, y: e.pos.y });
 }
 
 export function stepEnemies(world: World, dt: number): void {
