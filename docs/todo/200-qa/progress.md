@@ -6,7 +6,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | # | issue | status | commit |
 |---|---|---|---|
 | 001 | [sink-no-spawn](001-sink-no-spawn.md) | done | 9c841c6 |
-| 002 | [mud-render](002-mud-render.md) | open | |
+| 002 | [mud-render](002-mud-render.md) | done | (see log) |
 | 003 | [veteran-balance](003-veteran-balance.md) | done | 98ec576 |
 | 004 | [house-circle](004-house-circle.md) | done | 7365517 |
 | 005 | [idle-face-mouse](005-idle-face-mouse.md) | done | 28e117b |

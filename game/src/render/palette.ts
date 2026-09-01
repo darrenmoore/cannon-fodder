@@ -90,6 +90,9 @@ const SURFACES: Record<Theme, Partial<Record<Material, Surface>>> = {
     [Material.Built]: surface(ramp('#241f14', '#3a3221', '#544a32', '#6e6144', '#877858'), { grain: 0.6 }),
     [Material.Ice]: surface(ramp('#88aebc', '#a3c6d1', '#bcdce4', '#d2ecf1', '#e8f8fa'), { grain: 0.14 }),
     [Material.Road]: surface(ramp('#3a3325', '#514736', '#6a5e48', '#84765c', '#9c8d70'), { scale: 0.16, grain: 0.75 }),
+    // Bog: darker and coarser than anything walkable around it. The short
+    // drift wavelength is the point -- mud churns where sand sweeps.
+    [Material.Mud]: surface(ramp('#2e2414', '#43351d', '#584627', '#6d5833', '#826a41'), { scale: 0.13, contrast: 0.8, grain: 0.75 }),
   },
   desert: {
     [Material.Ground]: surface(DESERT_GRASS, { scale: 0.045, contrast: 0.52, bias: 0.62, grain: 0.42 }),
@@ -101,6 +104,10 @@ const SURFACES: Record<Theme, Partial<Record<Material, Surface>>> = {
     [Material.Built]: surface(ramp('#332b1a', '#4c4128', '#665738', '#7f6e4a', '#98865f'), { grain: 0.6 }),
     [Material.Ice]: surface(ramp('#a9bfc7', '#bacfd6', '#cadde3', '#d9e9ee', '#e8f4f7'), { grain: 0.12 }),
     [Material.Road]: surface(ramp('#514026', '#6b5a36', '#87744a', '#a08c60', '#b8a37a'), { scale: 0.16, grain: 0.75 }),
+    // The sink's surface. Tops out at the same khaki the wading clods use
+    // (fx.ts), well under the sand's brightness, so the bog reads as a
+    // stain on the desert before a single ring is drawn on it.
+    [Material.Mud]: surface(ramp('#4a3d1e', '#63522a', '#7c6838', '#957e48', '#a89355'), { scale: 0.13, contrast: 0.85, grain: 0.7 }),
   },
   /**
    * Arctic. Snow is not white — the reference washes it blue in shadow and
@@ -123,6 +130,8 @@ const SURFACES: Record<Theme, Partial<Record<Material, Surface>>> = {
     // separated only by a soft edge read as a translucent overlay.
     [Material.Ice]: surface(ramp('#2f6d8e', '#4a8cad', '#6fabc7', '#98c9de', '#c8e8f4'), { scale: 0.15, contrast: 1, bias: 0.62, grain: 0.05 }),
     [Material.Road]: surface(ramp('#3d4a52', '#54636b', '#6b7b84', '#82929b', '#99a9b2'), { scale: 0.16, grain: 0.55 }),
+    // Slush: cold grey-brown, the one warm-ish smear in an arctic frame.
+    [Material.Mud]: surface(ramp('#2f2b24', '#443f34', '#5a5445', '#706a57', '#867f69'), { scale: 0.13, contrast: 0.8, grain: 0.6 }),
   },
 };
 

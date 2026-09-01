@@ -1,10 +1,11 @@
 import { CONFIG } from '../config.js';
 import { fire, throwGrenade } from './combat.js';
-import { hasLineOfFire, hasLineOfSight, nearestWalkable } from './map.js';
+import { hasLineOfFire, hasLineOfSight, nearestWalkable, tileAt } from './map.js';
 import { hunts } from './pressure.js';
 import { circleBlocked, findPath, hasWalkableLine } from './pathfind.js';
 import { bankFrom, moveWithCollision, steer, stumble, unstick } from './steering.js';
 import { EnemyState, Faction } from '../types.js';
+import { Tile } from './tiles.js';
 import type { SteerOpts } from './steering.js';
 import type { Actor, Enemy, Vec2 } from '../types.js';
 import type { World } from './world.js';
@@ -201,6 +202,15 @@ export function stepEnemies(world: World, dt: number): void {
     steer(e, moveTarget, world.hash, world.map, steerOpts(e), dt);
     moveWithCollision(e, world.map, dt);
     unstick(e, world.map);
+
+    // The garrison wades with the same splash the squad gets -- it was
+    // player-only, so an enemy crossing the sink moved in eerie silence
+    // (200-qa 002). Same rule as troops.ts: sim decides which liquid, fx
+    // decides what that looks like.
+    if (e.wading && Math.random() < 0.08 && Math.hypot(e.vel.x, e.vel.y) > 8) {
+      const wt = tileAt(world.map, Math.floor(e.pos.x / world.map.tile), Math.floor(e.pos.y / world.map.tile));
+      world.fx.splash(e.pos, wt === Tile.Quicksand);
+    }
 
     // No progress while trying to move means it is snagged on scenery.
     const speed = Math.hypot(e.vel.x, e.vel.y);

@@ -32,13 +32,22 @@ export enum Material {
   Built = 4,
   Ice = 5,
   Road = 6,
+  /**
+   * Quicksand. Its own material and not sand's (200-qa 002): sharing sand's
+   * meant the sink's 693-tile bog took sand's near-smooth ramp *and* its wind
+   * ripples, and the domain warp could not fray a boundary between two tiles
+   * of the same material -- so the hazard was invisible except for its crust
+   * rings, which tiled.
+   */
+  Mud = 7,
 }
 
 /** The surface painted under a tile, ignoring anything standing on it. */
 export function materialOf(tile: Tile): Material {
   switch (tile) {
     case Tile.Water: case Tile.DeepWater: return Material.Wet;
-    case Tile.Sand: case Tile.Quicksand: return Material.Sand;
+    case Tile.Sand: return Material.Sand;
+    case Tile.Quicksand: return Material.Mud;
     case Tile.Rock: return Material.Stone;
     case Tile.Rubble: case Tile.Bridge: case Tile.Tent: return Material.Built;
     // A hut's sprite covers its own footprint, so the ground under it is just

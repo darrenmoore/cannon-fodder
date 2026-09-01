@@ -710,13 +710,21 @@ function paintDetails(
          * tiles -- because an unbroken field of *anything* tiles, however
          * varied each one is.
          */
+        /*
+         * Since 200-qa 002 the bog carries its own Material -- a dark coarse
+         * ramp the warp can fray against the sand -- so the rings stopped
+         * being the only thing telling mud from ground and could get rarer.
+         * They spill past their tile's edges and vary from a dimple to a
+         * wide sag, because a motif locked inside a 16px window is a lattice
+         * however well each instance is jittered.
+         */
         const seed = detail.at(x + 3, y + 7);
-        if (seed > 0.34) {
-          const cx = x + 3 + ((seed * 53) % (t - 6) | 0);
-          const cy = y + 3 + ((seed * 191) % (t - 6) | 0);
-          const rings = seed > 0.72 ? 3 : 2;
+        if (seed > 0.62) {
+          const cx = x - 2 + ((seed * 53) % (t + 4) | 0);
+          const cy = y - 2 + ((seed * 191) % (t + 4) | 0);
+          const rings = seed > 0.9 ? 3 : seed > 0.76 ? 2 : 1;
           for (let k = 0; k < rings; k++) {
-            const r = 2 + k * 2 + ((seed * 7) % 2 | 0);
+            const r = 2 + k * 2 + ((seed * 13) % 4 | 0);
             g.fillStyle = k % 2 === 0 ? '#5c4f28' : '#a08a4e';
             // Stepped circle: one span per row, squashed to read as ground.
             for (let dy = -r; dy <= r; dy++) {
