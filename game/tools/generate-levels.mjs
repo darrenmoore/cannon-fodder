@@ -1536,6 +1536,67 @@ const BUILDERS = {
   },
 
   /**
+   * Not a Sound's loud twin (200-qa 018).
+   *
+   * The owner liked the quiet map's bones and asked for them again, rotated
+   * and armed: the lane runs east to west this time and drifts harder, there
+   * is no pen, no tent, no rule against a body -- fifteen men hold the grass
+   * and every one of them is the mission. No huts, per the brief: what is on
+   * the field at the whistle is all there is.
+   */
+  'loud-and-clear'(g, place) {
+    g.fillRect(0, 0, g.w, g.h, GRASS);
+    g.frame(TREE, { min: 3, max: 7 });
+    forest(g, 26, [3, 6]);
+    scatter(g, TALL, 60, [4, 8]);
+
+    // The lane, east to west, drifting harder than the original's.
+    const lane = [];
+    let y = Math.floor(g.h * 0.55);
+    let drift = 0;
+    for (let x = g.w - 7; x >= 6; x--) {
+      drift = Math.max(-1.2, Math.min(1.2, drift + (g.rnd() - 0.5) * 0.9));
+      y = Math.max(9, Math.min(g.h - 10, Math.round(y + drift)));
+      lane.push({ x, y });
+      for (let dy = -2; dy <= 2; dy++) g.paint(x, y + dy, TALL, [TREE, ROCK, GRASS, SAND]);
+    }
+
+    const start = lane[1];
+    squad(g, place, start);
+    place.used.push(start);
+    place.confineTo(start.x, start.y);
+    place.put('c', start.x - 8, start.y, 5);
+
+    // Five fighting groups down the lane's flanks, alternating sides, two of
+    // them marching three-node beats the player can time between.
+    const heads = [];
+    for (let i = 0; i < 5; i++) {
+      const anchor = lane[Math.round((lane.length * (i + 0.55)) / 5.5)];
+      const head = place.put('E', anchor.x, anchor.y + (i % 2 === 0 ? -7 : 7), 6, 3);
+      if (!head) continue;
+      heads.push(head);
+      for (let k = 0; k < 2; k++) place.put('E', head.x, head.y, 5, 3);
+    }
+    for (const head of [heads[1], heads[3]]) {
+      if (!head) continue;
+      for (let i = -1; i <= 1; i++) {
+        const nx = head.x + i * 9;
+        if (nx < 5 || nx > g.w - 6) continue;
+        g.disc(nx, head.y, 1.6, GRASS, [TREE, ROCK, TALL]);
+        g.set(nx, head.y, 'p');
+      }
+    }
+
+    // A bazooka overwatching mid-lane, barrels to answer him with, and a
+    // second crate deep enough that reaching it is a decision.
+    const mid = lane[Math.round(lane.length * 0.55)];
+    place.put('B', mid.x, mid.y - 9, 6, 4);
+    for (let i = 0; i < 2; i++) place.put('o', mid.x, mid.y, 9, 5);
+    const deep = lane[Math.round(lane.length * 0.75)];
+    place.put('c', deep.x, deep.y, 6);
+  },
+
+  /**
    * The Narrows, hand-cut (200-qa 012).
    *
    * The generated canyon gave four minutes for what the owner ran in sixty
@@ -2311,6 +2372,12 @@ const CAMPAIGN = [
     name: 'Not a Sound', theme: 'jungle', objective: 'rescue', nokill: true,
     mechanic: 'a rescue nobody hears',
     brief: 'Walk three prisoners home through the grass. One body and it is over.',
+  },
+  {
+    id: 'loud-and-clear', doctrine: 'garrison', order: 17, seed: 3315870, w: 108, h: 58,
+    name: 'Loud and Clear', theme: 'jungle', objective: 'eliminate',
+    mechanic: 'the quiet map, armed',
+    brief: 'The same grass, the other way round. This time nobody is walking past anybody: clear it.',
   },
   {
     id: 'through-the-wall', doctrine: 'garrison', order: 16, seed: 155038, w: 96, h: 64, gated: true,

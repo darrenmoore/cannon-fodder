@@ -22,7 +22,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 015 | [veteran-fire-range](015-veteran-fire-range.md) | done | 92b72ca |
 | 016 | [patrols](016-patrols.md) | done | 66babf6 |
 | 017 | [through-the-wall](017-through-the-wall.md) | done | (see log) |
-| 018 | [not-a-sound-variant](018-not-a-sound-variant.md) | open | |
+| 018 | [not-a-sound-variant](018-not-a-sound-variant.md) | done | (see log) |
 | 019 | [narrows-forest](019-narrows-forest.md) | open | |
 | 020 | [swim-for-it](020-swim-for-it.md) | done | 3032db4 |
 | 021 | [sink-waves](021-sink-waves.md) | done | e04472d |
