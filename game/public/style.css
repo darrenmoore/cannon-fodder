@@ -2639,11 +2639,47 @@ html, body {
    not being played. Hidden here rather than by not building it, so the arena
    and a mission share one HUD. */
 [data-mode="spectator"] #hud,
-[data-mode="spectator"] #controls { display: none; }
+[data-mode="spectator"] #controls,
+[data-mode="backdrop"] #hud,
+[data-mode="backdrop"] #controls { display: none; }
 /* ...and the column it occupied has to collapse, or the canvas keeps a
    sidebar's width of nothing beside it. `#stage` is a grid, so hiding the
    sidebar is not enough on its own -- the track is still there. */
-[data-mode="spectator"] #stage { grid-template-columns: minmax(0, 1fr); }
+[data-mode="spectator"] #stage,
+[data-mode="backdrop"] #stage { grid-template-columns: minmax(0, 1fr); }
+
+/* ------------------------------------------------- the attract world
+   The battle running behind the front end. `#front` already sits over
+   `#stage` and its background was the ground the whole screen stood on;
+   with a battle down there it becomes a vignette instead -- dark at the
+   edges so the plates and the mission list stay readable, thin in the
+   middle so the fighting shows through.
+
+   This is the one soft gradient in the game and it is allowed because it
+   is *DOM chrome*, not drawing: it never touches the canvas and so cannot
+   put a soft edge into a dithered image. The visual laws are about what
+   is plotted. Do not "fix" this by dithering it -- a dithered vignette
+   over live pixels crawls.
+
+   It is deliberately heavy. A menu you cannot read is a worse outcome
+   than no attract world, and the battlefield is a busy mid-green with
+   muzzle flashes going off in it. */
+[data-mode="backdrop"] #front {
+  background:
+    radial-gradient(ellipse at 50% 40%,
+      rgba(9, 13, 6, 0.42) 0%,
+      rgba(9, 13, 6, 0.74) 46%,
+      rgba(7, 10, 4, 0.93) 100%);
+}
+/* The level select is a wall of small text where the intro is a logo and
+   three buttons, so it takes another step of darkening. */
+[data-mode="backdrop"] #front.on-select {
+  background:
+    radial-gradient(ellipse at 50% 40%,
+      rgba(9, 13, 6, 0.66) 0%,
+      rgba(9, 13, 6, 0.86) 46%,
+      rgba(7, 10, 4, 0.96) 100%);
+}
 
 /* The spectator readout. Thin on purpose: the mission sidebar is all about a
    squad you own and a task you were set, and a watcher has neither. */
@@ -2675,3 +2711,68 @@ html, body {
    goes away with them when the bar is hidden -- which is correct: somebody
    who has just pressed H knows what H does. */
 .ab-keys { opacity: 0.4; font-size: 9px; margin-left: 4px; }
+
+/* ------------------------------------------- "play some awesome music"
+   The offer that turns the browser's autoplay rule into part of the game.
+   See ui/musicprompt.ts for why it exists at all.
+
+   Deliberately NOT a plate. PLAY NOW is what the intro is for, and a third
+   plated button under it would compete with the two that matter -- so this
+   is a line of text with a speaker on it, smaller and warmer, reading as a
+   note under the menu rather than an item in it. */
+.fx-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+  padding: 7px 16px;
+  background: none;
+  border: 0;
+  /* Not `--ink-faint`: that is tuned for a plate, and this sits over a
+     vignetted battlefield where it vanishes. */
+  color: #a9b47c;
+  font: var(--fs-sm)/1 var(--face);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  cursor: pointer;
+  image-rendering: pixelated;
+  /* Two stepped frames, not a pulse: it should look plotted, not animated. */
+  animation: cta-breathe 1.8s steps(2, end) infinite;
+}
+.fx-cta svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.fx-cta .cone { fill: currentColor; }
+.fx-cta .wave { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.fx-cta:hover, .fx-cta:focus-visible {
+  color: #ffe9a0;
+  outline: none;
+  animation: none;
+}
+.fx-cta:active { transform: translateY(1px); }
+
+@keyframes cta-breathe {
+  0%   { color: #a9b47c; }
+  50%  { color: #e2d290; }
+  100% { color: #a9b47c; }
+}
+
+/* The send-off. Short, loud, and stepped -- an element that merely vanishes
+   reads as a page glitch, and this is the only thing moving on screen at the
+   moment it happens. `steps()` keeps it chunky rather than a smooth fade,
+   which is the house rule about how things move here. */
+.fx-cta.going {
+  animation: cta-go 0.42s steps(7, end) forwards;
+  pointer-events: none;
+}
+@keyframes cta-go {
+  0%   { transform: scale(1);    color: #fffbe8; }
+  30%  { transform: scale(1.18); color: #fffbe8; }
+  60%  { transform: scale(1.05); color: #ffe9a0; }
+  100% { transform: scale(0.55); color: #ffe9a0; opacity: 0; }
+}
+
+/* Somebody who has asked for less movement gets the button and none of the
+   fidgeting; it still pops once on the way out, because that pop is feedback
+   for their own click rather than decoration. */
+@media (prefers-reduced-motion: reduce) {
+  .fx-cta { animation: none; }
+}

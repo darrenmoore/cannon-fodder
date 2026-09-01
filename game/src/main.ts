@@ -20,7 +20,6 @@ import { startLoop } from './loop.js';
 import { parseMap } from './sim/map.js';
 import { fetchLevels, groupByTheatre, loadDifficulty, saveDifficulty } from './ui/menu.js';
 import { showFront } from './ui/front.js';
-import { isArenaChoice } from './ui/menu.js';
 import type { ArenaGame } from './sim/arena-game.js';
 import { Renderer } from './render/render.js';
 import { showBootHill } from './ui/boothill.js';
@@ -31,6 +30,7 @@ import { preloadMusic, startMusic, stopMusic } from './shell/music.js';
 import { Phase } from './types.js';
 import { DIFFICULTIES, DIFFICULTY_ORDER } from './sim/difficulty.js';
 import type { DifficultyId } from './sim/difficulty.js';
+import type { GameMap } from './sim/map.js';
 import type { LevelInfo } from './ui/menu.js';
 
 /**
@@ -44,6 +44,8 @@ import type { LevelInfo } from './ui/menu.js';
  * meta-game auditable.
  */
 
+/** The one reserved arena map. See `docs/arena.md`. */
+const ARENA_MAP = 'arena-forest';
 const LAST_PLAYED_KEY = 'cf.lastPlayed';
 const DIFFICULTY_KEY = 'cf.difficulty';
 /** Used only before a map is loaded; a real mission uses its own spawn count. */
@@ -221,8 +223,30 @@ async function boot(): Promise<void> {
   const visitBootHill = (): Promise<void> => showBootHill(campaign, missionNames, DEFAULT_SQUAD);
 
   let game: Game | null = null;
-  /** Non-null only while the arena is up. Mutually exclusive with `game`. */
+  /** Non-null only while the arena is up full-size. Mutually exclusive with `game`. */
   let arena: ArenaGame | null = null;
+
+  /*
+   * The attract world: the same arena, running behind the front end.
+   *
+   * 101 asked for it in one line -- "when they click on level select, the
+   * background still keeps animating, cpu vs cpu" -- and the shape that matters
+   * is that **it is owned here rather than by the front screen**. The front end
+   * is shown, hidden and shown again: from boot, from the end of a mission,
+   * from Boot Hill, from backing out of the level select. A battle owned by
+   * that screen would restart on every one of those, which is precisely the
+   * thing the brief asked not to happen. Owned here, the battle is simply
+   * always there and the front end is something that appears over it.
+   *
+   * The world therefore outlives a mission. What does *not* is the renderer's
+   * per-map bake -- terrain, scenery, the decal canvas, the fog mask are fields
+   * on the one `Renderer`, so a mission and the backdrop cannot both be
+   * prepared. Coming back to the front end re-prepares it against the world
+   * that has been sitting there all along.
+   */
+  let backdrop: ArenaGame | null = null;
+  let backdropMap: GameMap | null = null;
+  let backdropOn = false;
   /** Drops the mission's own listeners when it ends. */
   let pauseTeardown: (() => void) | null = null;
 
@@ -235,6 +259,16 @@ async function boot(): Promise<void> {
         if (settings().arenaShowScore) hud.showArena(arena.readout(), settings().arenaLockCamera);
         return;
       }
+      /*
+       * The attract world steps only while it is the thing on screen, and only
+       * while somebody is looking at the page.
+       *
+       * `loop.ts` already clamps the delta so a backgrounded tab cannot
+       * stampede the simulation, but not stampeding is not the same as not
+       * running: a front screen left open in another tab would otherwise spend
+       * an afternoon fighting a battle nobody can see.
+       */
+      if (backdropOn && backdrop && !document.hidden) backdrop.step(dt);
       controls.update(game?.world ?? null, camera.isManual);
       // A sheet is a modal: the world behind it holds still rather than being
       // fought blind through a panel. The briefing is the same promise made at
@@ -262,6 +296,11 @@ async function boot(): Promise<void> {
         // this can be said by leaving it out.
         renderer.draw(arena.world, camera, alpha, frameDt);
         updateAmbience(camera, renderer.windTime, frameDt, true);
+      } else if (backdropOn && backdrop) {
+        // Drawn even when the tab is hidden is pointless, but drawn while a
+        // modal is up is not: the front end's own dialogs sit over it and the
+        // battle carrying on behind them is the entire point.
+        renderer.draw(backdrop.world, camera, alpha, frameDt);
       } else if (game) {
         renderer.draw(game.world, camera, alpha, frameDt, input.aim);
         // The bed rides the draw, not the step: it needs the camera as drawn
@@ -283,6 +322,86 @@ async function boot(): Promise<void> {
       }
     },
   );
+
+  /**
+   * Is a battle behind the menu worth running on this device at all?
+   *
+   * Not on a phone. `wide` is a desktop or a large tablet in landscape; the
+   * other two layouts are small screens whose front end is already a tight fit,
+   * and a forty-man simulation drawn behind it buys them nothing. The brief
+   * asked for this on a desktop front end. A still frame would do as well on a
+   * phone, and is a separate decision if anybody wants it.
+   */
+  const backdropWanted = (): boolean => layout.state.mode === 'wide';
+
+  /**
+   * Brings the attract world up behind the front end.
+   *
+   * Built once and then only re-prepared. `input.mode = 'sealed'` is the whole
+   * of the promise this screen makes: not one gesture reaches the simulation
+   * *or the camera*, because every one of them belongs to the menu drawn on
+   * top. `spectator` would be wrong here -- it keeps the camera for the viewer,
+   * and the front end's buttons and the battlefield's edge-scroll would be
+   * fighting over the same pointer, which edge-scroll wins by being invisible.
+   */
+  const startBackdrop = async (): Promise<void> => {
+    // Folded away entirely by esbuild in a production build, which takes the
+    // dynamic import below -- and so the whole arena -- with it. Dev-only means
+    // absent, not merely unreachable; the same rule the debug panel follows.
+    if (!__DEV__) return;
+    if (!backdropWanted()) return;
+    try {
+      if (!backdrop) {
+        const { ArenaGame } = await import('./sim/arena-game.js');
+        const res = await fetch(`/api/maps/${ARENA_MAP}`);
+        if (!res.ok) return;
+        backdropMap = parseMap(await res.text(), ARENA_MAP);
+        /*
+         * Prepared *before* the game is built, and this order is not
+         * cosmetic: `prepare` is what creates the decal canvas, and every
+         * constructor here clears the decals as its first act. At boot
+         * nothing has been prepared yet, so building the arena first throws
+         * on an undefined context -- silently, into the catch below, leaving
+         * a front screen with no battle behind it and no clue why. `play`
+         * has always done it in this order for the same reason.
+         */
+        renderer.prepare(backdropMap, createWorld(backdropMap, 'veteran'));
+        backdrop = new ArenaGame(backdropMap, camera, input, () => renderer.clearDecals(), true);
+      }
+      // Every time, not just the first: a mission in between will have baked
+      // its own terrain over the top of this one.
+      renderer.prepare(backdropMap!, backdrop.world);
+    } catch (err) {
+      /*
+       * A backdrop is decoration. If it cannot be had -- the map missing, the
+       * import failing -- the front end is still a working front end, and
+       * failing loudly here would take the whole game down for a picture.
+       *
+       * It says so in a dev build, though. The first version swallowed this
+       * without a word and the symptom was a front screen that looked
+       * completely normal, which is the worst way to hide a broken feature.
+       */
+      if (__DEV__) console.warn('attract world did not start:', err);
+      return;
+    }
+    // Dev handle, the same audience as `window.game`: the attract world is the
+    // one thing on screen that no click can reach, so a driver has to be able
+    // to ask it questions directly.
+    if (__DEV__) (window as unknown as { __bd: ArenaGame | null }).__bd = backdrop;
+    input.mode = 'sealed';
+    document.body.dataset.mode = 'backdrop';
+    layout.apply();
+    backdropOn = true;
+  };
+
+  /** Puts it away again, keeping the world for next time. */
+  const stopBackdrop = (): void => {
+    if (!backdropOn) return;
+    backdropOn = false;
+    input.mode = 'play';
+    delete document.body.dataset.mode;
+    layout.apply();
+  };
 
   /**
    * Runs one mission. Resolves with what the player asked for next: back to the
@@ -641,8 +760,6 @@ async function boot(): Promise<void> {
      */
     if (!__DEV__) return;
     const { ArenaGame } = await import('./sim/arena-game.js');
-    /** The one reserved arena map. See `docs/todo/300-cpu-vs-cpu/`. */
-    const ARENA_MAP = 'arena-forest';
     stopMusic();
     const res = await fetch(`/api/maps/${ARENA_MAP}`);
     if (!res.ok) throw new Error(`could not load the arena: ${res.status}`);
@@ -741,6 +858,23 @@ async function boot(): Promise<void> {
     queued = null;
 
     if (!info) {
+      /*
+       * `#arena`: the full-size arena, for working on it.
+       *
+       * A developer's door, not a player's -- the BATTLE button that used to be
+       * on the front screen is gone, because the arena's home is now *behind*
+       * that screen and a front page offering to go and look at its own
+       * wallpaper is a front page explaining itself. Checked before the front
+       * is drawn, and the fragment is cleared on the way out or the next reload
+       * walks straight back in.
+       */
+      if (__DEV__ && window.location.hash === '#arena') {
+        history.replaceState(null, '', window.location.pathname);
+        stopBackdrop();
+        await playArena();
+        continue;
+      }
+
       let last: string | null = null;
       try {
         last = localStorage.getItem(LAST_PLAYED_KEY);
@@ -751,6 +885,9 @@ async function boot(): Promise<void> {
       // dropping it here opened a beat of naked stage before the screen faded
       // in. Music starts under the black, which is fine -- it is music.
       startMusic();
+      // Before the front is drawn, so it comes up over a battle already in
+      // progress rather than fading in and then having one appear behind it.
+      await startBackdrop();
       // The menu is up and painted, which is the first moment there is anything
       // behind the loading screen worth revealing. Ending it here rather than
       // when boot() returns means it never lifts onto an empty page.
@@ -760,10 +897,9 @@ async function boot(): Promise<void> {
         difficulty = d;
         saveDifficulty(DIFFICULTY_KEY, d);
       }, campaign, visitBootHill);
-      if (isArenaChoice(chosen)) {
-        await playArena();
-        continue;
-      }
+      // The front end is going away and a mission is about to take the
+      // renderer's per-map bake.
+      stopBackdrop();
       difficulty = chosen.difficulty;
       info = levels.find((l) => l.id === chosen.id) ?? null;
       if (!info) continue;
@@ -802,4 +938,6 @@ boot().catch((err: unknown) => {
     sub.textContent = err instanceof Error ? err.message : String(err);
   }
 });
+
+
 

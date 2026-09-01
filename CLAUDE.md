@@ -34,6 +34,7 @@ npm run check     # tsc --noEmit, level validation, map + campaign tests
 npm run build     # one-off bundle into public/bundle.js
 npm run levels    # regenerate data/*.map from the campaign table
 npm run playtest  # drive the mission shell in headless Chromium (needs a server)
+npm run music     # does the music start for a first-time visitor? (needs a server)
 npm run shots     # screenshot every mission (needs a server)
 npm run moments   # screenshot the moments a mission shot cannot reach
 PORT=5200 npm run dev

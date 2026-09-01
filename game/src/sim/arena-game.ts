@@ -38,6 +38,15 @@ export class ArenaGame {
     readonly camera: Camera,
     readonly input: Input,
     private readonly onClearDecals: () => void,
+    /**
+     * Hold the camera still whatever the viewer's preference says.
+     *
+     * The backdrop sets this. `settings().arenaLockCamera` is a *taste* -- how
+     * somebody who walked into the arena likes to watch it -- and the backdrop
+     * is not a matter of taste: text sits on it, and a background that chases
+     * the fighting reads as the menu sliding about.
+     */
+    private readonly alwaysLocked = false,
   ) {
     this.world = this.newWorld();
     this.arena = new Arena(this.world);
@@ -108,7 +117,7 @@ export class ArenaGame {
      * rather than applied, because a still frame that jolts on every explosion
      * is not a locked camera.
      */
-    if (settings().arenaLockCamera) {
+    if (this.alwaysLocked || settings().arenaLockCamera) {
       this.input.consumePan(this.camera.zoom);
       this.input.edgeScroll(dt);
       this.world.shake = 0;

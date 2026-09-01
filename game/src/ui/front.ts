@@ -28,13 +28,14 @@ import { DIFFICULTIES, DIFFICULTY_ORDER, DOCTRINES, isDifficultyId, isDoctrineId
 import { confirm } from './confirm.js';
 import { formatTime } from '../sim/campaign.js';
 import { flipMusic, mountMusicToggle } from './musictoggle.js';
+import { mountMusicPrompt } from './musicprompt.js';
 import { setBlackout } from './blackout.js';
 import { groupByTheatre, starsFor } from './menu.js';
 import { installSkin } from './skin.js';
 import { resolveUnlocks } from '../sim/unlock.js';
 import type { CampaignState } from '../sim/campaign.js';
 import type { DifficultyId } from '../sim/difficulty.js';
-import type { FrontChoice, LevelInfo } from './menu.js';
+import type { LevelInfo, MenuChoice } from './menu.js';
 
 /**
  * Which theatre the rail was left on.
@@ -100,7 +101,7 @@ export function showFront(
   onDifficultyChange: (d: DifficultyId) => void,
   campaign: CampaignState,
   _onBootHill: () => Promise<void>,
-): Promise<FrontChoice> {
+): Promise<MenuChoice> {
   installSkin();
 
   const root = document.getElementById('front')!;
@@ -116,10 +117,10 @@ export function showFront(
   const unlocks = resolveUnlocks(levels, campaign);
   const groups = groupByTheatre(levels);
 
-  return new Promise<FrontChoice>((resolve) => {
+  return new Promise<MenuChoice>((resolve) => {
     let settled = false;
-    /** Leaves the front screen, whatever is on the other side of it. */
-    const leave = (with_: FrontChoice): void => {
+    /** Leaves the front screen for the mission on the other side of it. */
+    const leave = (with_: MenuChoice): void => {
       if (settled) return;
       settled = true;
       /*
@@ -134,6 +135,7 @@ export function showFront(
       root.classList.add('leaving');
       window.setTimeout(() => {
         unmountToggle();
+        unmountPrompt();
         document.removeEventListener('keydown', onKey);
         root.hidden = true;
         root.classList.remove('leaving');
@@ -174,17 +176,23 @@ export function showFront(
     }));
     introActions.appendChild(button('LEVEL SELECT', '', () => goto('select')));
     /*
-     * The way into the CPU-vs-CPU arena, and dev-only for now.
-     *
-     * `__DEV__` is a literal `false` under `npm run build`, so esbuild folds
-     * this branch away and the button is *absent* from a production bundle
-     * rather than hidden in it -- the same rule the debug panel follows. The
-     * arena's real home is behind this screen rather than in front of it: see
-     * `docs/todo/300-cpu-vs-cpu/`.
+     * ...and, only when the browser is sitting on the autoplay permission, the
+     * offer to start the music. It is deliberately not a third menu button:
+     * see `musicprompt.ts`. Mounted after LEVEL SELECT so it reads as a note
+     * under the menu rather than an item in it.
      */
-    if (__DEV__) {
-      introActions.appendChild(button('BATTLE', '', () => leave({ arena: true })));
-    }
+    const unmountPrompt = mountMusicPrompt(introActions);
+    /*
+     * There was a BATTLE button here, and it is gone on the owner's say-so.
+     *
+     * It was the door into the arena full-size, and it made sense while the
+     * arena was a thing you went to look at. The arena's home is *behind* this
+     * screen now -- it is the battle running under these buttons -- and a
+     * front page offering a way to go and watch the wallpaper is a front page
+     * explaining itself. The full-size view is still there for working on the
+     * mode; it moved to the `#arena` fragment, which is a developer's door and
+     * not a player's. See `docs/arena.md`.
+     */
     // BOOT HILL left this screen on the owner's say-so. Note what that means:
     // the graves are reachable from nowhere until somebody rehomes the door --
     // the same hole the old menu's comment records being caught by a playtest.

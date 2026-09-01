@@ -1,5 +1,9 @@
 # The attract world: the arena behind the front end
 
+> **Built.** Shipped in the commit after this file was written. What follows
+> is the plan as it stood, corrected in place where the building disagreed
+> with it — see [docs/arena.md](../../arena.md) for what it actually is now.
+
 101 asked for it in one line — *"when they click on level select, the background
 still keeps animating, cpu vs cpu"* ([101's brief](../101-ui/brief.md)) — and
 [101's spec](../101-ui/spec.md) item 5 has been holding it open ever since,
@@ -116,9 +120,12 @@ incremental.
 
 ### 4. Routing
 
-The BATTLE button and `playArena()` stay as they are: a way to look at the
-arena full-size, still `__DEV__`-only. The backdrop is separate and always on.
-They must not both be running — assert it rather than hoping.
+**Built, and the button did not survive.** `playArena()` stays — a full-size
+view is what you want while working on the mode — but it moved to the `#arena`
+fragment, `__DEV__`-only, and the front screen's BATTLE button was removed on
+the owner's say-so once the backdrop landed. A front page offering a look at its
+own wallpaper is a front page explaining itself. The two are mutually exclusive
+by construction: `stopBackdrop()` runs before either a mission or `playArena`.
 
 ### 5. Performance
 

@@ -3,12 +3,14 @@
  *
  * The mission harnesses (`shoot.mjs`, `moment.mjs`) both start from a mission
  * and a squad; the arena has neither, so it needs its own door. Walks in
- * through the BATTLE button -- which is the same route a person takes, and
- * therefore also a test that the button works -- lets the battle build for a
- * while, and photographs it.
+ * through `#arena` -- the dev fragment, since the front screen's BATTLE button
+ * was removed once the arena became the thing running *behind* that screen --
+ * lets the battle build for a while, and photographs it.
  *
  *   node tools/arena-shot.mjs [seconds] [out.png]
  *   URL=http://localhost:5210/ node tools/arena-shot.mjs
+ *
+ * The fragment is appended for you; pass the bare origin.
  */
 import { chromium } from 'playwright';
 
@@ -23,9 +25,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 
-await page.goto(URL, { waitUntil: 'networkidle' });
-await page.waitForFunction(() => !document.getElementById('front')?.hidden, { timeout: 30000 });
-await page.locator('#intro-actions button', { hasText: 'BATTLE' }).click();
+await page.goto(`${URL.replace(/#.*$/, '').replace(/\/$/, '')}/#arena`, { waitUntil: 'networkidle' });
 await page.waitForFunction(() => !!window.arena, { timeout: 30000 });
 
 await page.waitForTimeout(SECONDS * 1000);

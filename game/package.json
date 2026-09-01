@@ -13,6 +13,7 @@
     "shots": "node tools/shoot.mjs --fit",
     "moments": "node tools/moment.mjs",
     "playtest": "node tools/playtest.mjs",
+    "music": "node tools/music-check.mjs",
     "measure": "node tools/measure.mjs",
     "sheet": "node tools/sheet.mjs",
     "pixelate": "node tools/pixelate.mjs"

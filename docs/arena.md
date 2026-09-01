@@ -10,8 +10,14 @@ the background still keeps animating, cpu vs cpu"*
 ([101's brief](todo/101-ui/brief.md)). Nearly every rule below follows from the
 second of those.
 
-**Getting to it:** `npm run dev`, then **BATTLE** on the front screen. The button
-is `__DEV__`-only, so it is absent from a production build.
+**Getting to it.** It is already running: under `npm run dev` the front screen
+draws over a live battle, which is the mode's real job. To see it full-size --
+which is what you want while working on it -- open
+**`http://localhost:5199/#arena`**. The fragment is a developer's door and is
+`__DEV__`-only, so it does nothing in a production build; there was a BATTLE
+button on the front screen and the owner had it removed once the backdrop
+landed, because a front page offering a look at its own wallpaper is a front
+page explaining itself.
 
 ---
 
@@ -53,7 +59,8 @@ One file, [`data/arena-forest.map`](../data/arena-forest.map), 48x34 tiles.
 | [`render/sprites/tint.ts`](../game/src/render/sprites/tint.ts) | Repaints a baked sprite one exact colour for another. How the green roof exists. |
 | [`data/arena-forest.map`](../data/arena-forest.map) | The map. |
 | [`test/sim.test.mjs`](../game/test/sim.test.mjs) | The headless soak, missions and arena both. |
-| [`tools/arena-shot.mjs`](../game/tools/arena-shot.mjs) | Photographs it. |
+| [`tools/arena-shot.mjs`](../game/tools/arena-shot.mjs) | Photographs it, through `#arena`. |
+| [`main.ts`](../game/src/main.ts) | Owns the backdrop: one world for the life of the page, `startBackdrop` / `stopBackdrop`. |
 
 `ArenaGame` is deliberately **not** a subclass of `Game`. A mission is orders,
 an aim, grenades, a briefing, an objective and an end; inheriting all of that in
@@ -161,6 +168,39 @@ reticle, still shows a crosshair, and still grows a queue nobody drains.
 `world.field` and `world.orderMarker` are written by the order path and by
 nothing else, so all three staying null/zero for a whole battle proves nothing
 got in.
+
+## The backdrop
+
+The arena's real job. `main.ts` owns one `ArenaGame` for the life of the page
+and brings it up behind the front end; the front screen never starts or stops
+it, because that screen is shown, hidden and shown again — from boot, from the
+end of a mission, from backing out of the level select — and a battle owned by
+it would restart on every one of those.
+
+Three things it does differently from the full-size view:
+
+- **`input.mode = 'sealed'`**, not `spectator`. The camera is not the viewer's
+  either: every gesture belongs to the menu drawn on top, and a front end whose
+  buttons fight the battlefield's edge-scroll for the pointer loses.
+- **The camera is locked** by the constructor's `alwaysLocked`, not by the
+  user's `arenaLockCamera` preference. That setting is a taste; this is not one.
+  Text sits on this, and a background that chases the fighting reads as the menu
+  sliding about.
+- **`data-mode="backdrop"`** turns `#front`'s opaque background into a vignette
+  and collapses the sidebar column. That gradient is the one soft edge in the
+  game and it is allowed because it is DOM chrome that never touches the canvas.
+
+**The sharp edge: `Renderer.prepare` is per-map and single-instance.** Terrain,
+scenery, the decal canvas and the fog mask are fields on the one renderer, so a
+mission and the backdrop cannot both be prepared. The *world* survives a mission
+— that is the point — but the bake is redone every time the front end comes
+back. It is also why `prepare` must run **before** an `ArenaGame` is
+constructed: the constructor clears the decals, and at boot there is no decal
+canvas until something has been prepared. Getting that order wrong fails
+silently into a front screen with no battle behind it.
+
+Not run on `compact` or `stacked` layouts — a phone's front end is a tight fit
+already.
 
 ## Watching options
 

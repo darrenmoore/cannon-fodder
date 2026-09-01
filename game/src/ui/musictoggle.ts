@@ -15,7 +15,7 @@
  * that looks broken.
  */
 
-import { musicOn, musicSource, onMusicChange, syncMusic } from '../shell/music.js';
+import { musicBlocked, musicOn, musicSource, onMusicChange, resumeMusic, syncMusic } from '../shell/music.js';
 import { updateSettings } from './settings.js';
 
 const SPEAKER_BODY = '<path class="cone" d="M4 9.5h3.6L12 5.4v13.2L7.6 14.5H4z"/>';
@@ -25,8 +25,25 @@ const SPEAKER_ON = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER_BODY}`
 const SPEAKER_OFF = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER_BODY}`
   + '<path class="slash" d="M15.6 9.6l5 4.8"/><path class="slash" d="M20.6 9.6l-5 4.8"/></svg>';
 
-/** Flips the music. Exposed so a keyboard shortcut can be the same action. */
+/**
+ * Flips the music. Exposed so a keyboard shortcut can be the same action.
+ *
+ * **A blocked speaker is not a switch to flip.** It is on already, and silent
+ * only because the browser wants to be asked by a human first -- so a click on
+ * it means "yes, please, now", and turning the setting off in answer to that is
+ * the opposite of what was asked. It was also the only way to reach the music
+ * from the front screen, so the reported symptom was a game whose music could
+ * not be started at all: the icon that asked to be clicked was the icon that
+ * switched it off.
+ *
+ * The click itself is the gesture the browser was waiting for, so retrying from
+ * inside this handler is what makes it work.
+ */
 export function flipMusic(): void {
+  if (musicBlocked()) {
+    resumeMusic();
+    return;
+  }
   updateSettings({ music: !musicOn() });
   syncMusic();
 }
@@ -42,13 +59,13 @@ export function mountMusicToggle(parent: HTMLElement): () => void {
 
   const render = (): void => {
     const on = musicOn();
-    const blocked = on && musicSource() === 'none';
+    const blocked = musicBlocked();
     toggle.classList.toggle('on', on && !blocked);
     toggle.classList.toggle('blocked', blocked);
     toggle.setAttribute('aria-pressed', String(on));
     toggle.title = !on
       ? 'Music off  (M)'
-      : blocked ? 'Click anywhere to start the music  (M)'
+      : blocked ? 'Start the music  (M)'
       : musicSource() === 'synth' ? 'Music on — house march  (M)'
       : 'Music on  (M)';
     toggle.setAttribute('aria-label', toggle.title);

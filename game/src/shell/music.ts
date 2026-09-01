@@ -96,7 +96,22 @@ export function preloadMusic(capMs = 20000): Promise<void> {
       if (el.readyState >= 4) { resolve(); return; }
       const timer = window.setTimeout(() => resolve(), capMs);
       el.addEventListener('canplaythrough', () => { window.clearTimeout(timer); resolve(); }, { once: true });
-      el.load();
+      /*
+       * There is no `el.load()` here, and its absence is the whole point.
+       *
+       * `load()` looks like "start buffering" and is actually "abort whatever
+       * this element is doing and begin resource selection again" -- and it
+       * *pauses the element* on the way past. This runs at boot alongside
+       * `startMusic`, which is off awaiting the same probe and about to call
+       * `play()` on this very element, so the two raced: `apply` started the
+       * track, `load()` killed it a moment later, the `play()` promise rejected
+       * with an AbortError that looked exactly like an autoplay refusal, and
+       * the speaker drew its "blocked" face. The game was stopping its own
+       * music and then blaming the browser.
+       *
+       * Nothing is needed in its place. `new Audio(url)` with `preload="auto"`
+       * has already begun fetching; all this has to do is wait for it.
+       */
     });
   });
 }
@@ -122,14 +137,26 @@ async function findTrack(): Promise<string | null> {
 function armGesture(): void {
   if (armed) return;
   armed = true;
-  const go = (): void => {
+  const go = (e: Event): void => {
+    /*
+     * ...except a gesture aimed at the speaker itself, which it handles.
+     *
+     * Both would otherwise fire on the same click and the button would lose the
+     * race: this listener starts the music, and a moment later the button's own
+     * handler sees music that is playing and helpfully switches it off. That is
+     * exactly the bug the owner reported -- an icon asking for a click, which
+     * turned the music off when clicked -- and it cannot be fixed in the button
+     * alone, because by the time its `click` runs this has already changed the
+     * state it would have to read.
+     */
+    if ((e.target as Element | null)?.closest?.('#music-toggle')) return;
     armed = false;
     window.removeEventListener('pointerdown', go);
     window.removeEventListener('keydown', go);
     void apply();
   };
-  window.addEventListener('pointerdown', go, { once: true });
-  window.addEventListener('keydown', go, { once: true });
+  window.addEventListener('pointerdown', go);
+  window.addEventListener('keydown', go);
 }
 
 /** Brings playback in line with what the settings and the shell are asking for. */
@@ -163,10 +190,17 @@ async function apply(): Promise<void> {
     source = 'track';
     try {
       await el.play();
-    } catch {
+    } catch (err) {
       // Autoplay refused, or the file turned out to be undecodable. A gesture
       // retry costs nothing; a broken file simply never starts, and the player
       // still has the toggle.
+      //
+      // Named out loud in a dev build. "The music did not start" has at least
+      // three causes that look identical from the outside -- the browser's
+      // autoplay policy, a decode failure, and a `play()` aborted by something
+      // else touching the element -- and telling them apart by staring at a
+      // silent speaker is not possible.
+      if (__DEV__) console.warn('music: play() failed:', (err as Error)?.name, (err as Error)?.message);
       armGesture();
     }
     announce();
@@ -199,6 +233,27 @@ export function stopMusic(): void {
 }
 
 export const musicOn = (): boolean => settings().music;
+
+/**
+ * The music is switched on, is wanted here, and is not coming out.
+ *
+ * The third state the speaker draws. It means the browser is sitting on the
+ * autoplay permission and is waiting to be asked by a person -- so the only
+ * correct response to a click is to *ask again*, never to turn the switch off.
+ */
+export const musicBlocked = (): boolean => wanted && settings().music && !playing();
+
+/**
+ * Try again, now that a person has clicked something.
+ *
+ * Deliberately not `startMusic`: nothing about what the shell wants has
+ * changed, and nothing about the setting has either. The only thing that is
+ * different is that there is now a user gesture on the stack, which is the one
+ * thing the browser was holding out for.
+ */
+export function resumeMusic(): void {
+  void apply();
+}
 
 // The music bar can move -- and cross zero, which flips the `music` toggle --
 // while the track is running, so both the level and the on/off answer are

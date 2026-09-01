@@ -31,17 +31,20 @@ looking at the code, and you will not find them by watching it for a minute.
 
 ```bash
 PORT=5210 node build.mjs --watch     # your own server; 5199 is the owner's
-node tools/arena-shot.mjs 120 out.png
+URL=http://localhost:5210/ node tools/arena-shot.mjs 120 out.png
 ```
 
 **Never kill whatever is listening on 5199.** From the owner's side a
 force-kill is indistinguishable from the dev server crashing, and it does not
 come back. Run your own on another port and kill only what you started.
 
-The mode is entered from the front screen's **BATTLE** button, which is
-`__DEV__`-only — so it exists under `npm run dev` and is absent from
-`npm run build`. `tools/arena-shot.mjs` walks in through that button, which
-makes it a test of the door as well as a camera.
+Two ways to see it, and they are different views of the same thing. It is
+**already running behind the front screen** — that is the mode's real job, and
+looking at the front screen is the only way to judge whether it works as a
+backdrop. For working on the battle itself, **`/#arena`** opens it full-size;
+that fragment is `__DEV__`-only and is the door `arena-shot.mjs` walks in
+through. A BATTLE button used to sit on the front screen; the owner had it
+removed once the backdrop landed.
 
 ### 3. Establish the baseline *before* editing
 
@@ -102,8 +105,13 @@ you will see it whether or not it reached the screen.
 - **Do not let the arena reach `resolvePhase`.** There is no objective and
   nothing that can be won or lost. A world with no soldiers has by definition
   lost its squad, so resolving would end it on the first step.
-- **Do not give the arena a way in that a player can find**, unless the owner
-  has asked for one. It is dev-only until it becomes the backdrop.
+- **Do not put a door to the arena on the front screen.** There was a BATTLE
+  button and it was removed on purpose: the arena is the thing running *behind*
+  that screen, and a front page offering a look at its own wallpaper is a front
+  page explaining itself. `#arena` is the developer's door.
+- **Do not let the backdrop be owned by the front screen.** `main.ts` owns it
+  for the life of the page, because that screen is shown, hidden and shown again
+  and the battle must not restart with it.
 - **Do not add a second copy of the step order.** `sim/step.ts` is the one
   ordered pass; both a mission and the arena call it, and two copies would drift
   silently because both would still work.
