@@ -7,7 +7,6 @@ mechanic: move, and then fire
 brief: Five of them, in the open. Nothing between you and them.
 grenades: 0
 advice: Click where you want them and they'll go there. {FIRE} to shoot. That is the whole of it.
-advicetime: -1
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

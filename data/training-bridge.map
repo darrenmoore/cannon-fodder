@@ -7,7 +7,6 @@ mechanic: the bridge, and what is on it
 brief: Both huts, and rifles will barely mark them. There are grenades on the bridge -- walk over them, then use them.
 grenades: 0
 advice: Rifles will not dent a hut. There are grenades on the bridge -- walk over them. {GRENADE} to aim, click to throw. At the huts, ideally.
-advicetime: -1
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTT

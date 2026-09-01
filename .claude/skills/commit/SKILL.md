@@ -2,7 +2,6 @@
 name: commit
 description: Review the working tree and commit it in this repo's voice. Stages deliberately rather than sweeping everything up, because more than one agent session edits this tree at a time.
 argument-hint: [what to commit, or a message hint]
-disable-model-invocation: true
 allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git branch *) Bash(git add *) Bash(git commit *) Bash(git rev-parse *) Bash(git show *) Bash(git restore *)
 ---
 
