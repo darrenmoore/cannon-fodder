@@ -238,6 +238,55 @@ export const sfxClick = (): void => burst({ duration: 0.035, gain: 0.11, freq: 1
  */
 export const sfxDenied = (): void => burst({ duration: 0.07, gain: 0.2, freq: 320, q: 2, sweepTo: 190 });
 
+/**
+ * A wave leaving the huts: a horn, somewhere off across the map.
+ *
+ * Waves announced themselves with a world-space popup that lives 1.6 seconds
+ * at the building it came from -- so if the camera was anywhere else, which it
+ * is whenever a wave actually matters, the player was told nothing. The HUD
+ * counter says how many; this says *now* (201-qa 015).
+ *
+ * "Distant" has to be built into the patch rather than into the mix, because
+ * no one-shot in this game is attenuated by distance. Air absorbs the high
+ * frequencies first, so a low fundamental under a lowpass is what far away
+ * sounds like; the two saws a fifth apart are what stop it reading as a test
+ * tone; and the soft attack is what stops it reading as a klaxon in the room
+ * with you.
+ *
+ * Deliberately not `loudAt`: the birds scatter for gunfire, and a horn a long
+ * way off is not gunfire.
+ */
+export const sfxKlaxon = (): void => {
+  if (!settings().sound) return;
+  if (!ensure() || !ctx || !master) return;
+  const now = ctx.currentTime;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 500;
+  filter.Q.value = 0.7;
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, now);
+  // 60ms to open. A hard attack is a klaxon on the wall behind you.
+  env.gain.exponentialRampToValueAtTime(0.13, now + 0.06);
+  env.gain.setValueAtTime(0.13, now + 0.45);
+  env.gain.exponentialRampToValueAtTime(0.0005, now + 0.95);
+  filter.connect(env).connect(master);
+
+  // A fifth, slightly out: two horns, not one synthesiser.
+  for (const f of [116, 174.5]) {
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(f, now);
+    // A shallow fall over the note, the way a real horn sags as it is blown out.
+    osc.frequency.exponentialRampToValueAtTime(f * 0.97, now + 0.95);
+    osc.connect(filter);
+    osc.start(now);
+    osc.stop(now + 1);
+  }
+};
+
 export const sfxWin = (): void => {
   if (!settings().sound) return;
   if (!ensure() || !ctx || !master) return;

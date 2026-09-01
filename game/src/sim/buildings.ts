@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { sfxExplosion } from '../shell/audio.js';
+import { sfxExplosion, sfxKlaxon } from '../shell/audio.js';
 import { hasLineOfSight, setTile } from './map.js';
 import { circleBlocked } from './pathfind.js';
 import { Tile } from './tiles.js';
@@ -181,7 +181,13 @@ export function stepWaves(world: World, dt: number): void {
     sent++;
   }
 
-  if (sent > 0 && target) world.fx.popup(target, `wave ${world.wavesSent}`, '#ff8a3c');
+  if (sent > 0) {
+    // One horn per wave, not one per hut that emptied. The popup stays: it is
+    // still the right thing when the camera happens to be on the buildings,
+    // and it is the only half of this that says *which* wave (201-qa 015).
+    sfxKlaxon();
+    if (target) world.fx.popup(target, `wave ${world.wavesSent}`, '#ff8a3c');
+  }
 }
 
 /**
