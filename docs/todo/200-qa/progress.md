@@ -8,7 +8,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 001 | [sink-no-spawn](001-sink-no-spawn.md) | done | 9c841c6 |
 | 002 | [mud-render](002-mud-render.md) | open | |
 | 003 | [veteran-balance](003-veteran-balance.md) | done | 98ec576 |
-| 004 | [house-circle](004-house-circle.md) | open | |
+| 004 | [house-circle](004-house-circle.md) | done | (see log) |
 | 005 | [idle-face-mouse](005-idle-face-mouse.md) | done | 28e117b |
 | 006 | [factory-sprite](006-factory-sprite.md) | open | |
 | 007 | [cabin-white-line](007-cabin-white-line.md) | done | fd329dd |

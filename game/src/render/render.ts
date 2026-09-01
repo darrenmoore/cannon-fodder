@@ -1299,7 +1299,15 @@ export class Renderer {
      * between two solid colours instead of an alpha ramp -- the same bargain
      * the dither makes everywhere else.
      */
-    const lit = Math.sin(this.time * 2.4) > 0;
+    /*
+     * Restyled for 200-qa 004: the electric cyan was from nobody's palette
+     * and blinked *and* marched at once. Now it is the chrome's gold over a
+     * dark backing pixel -- readable on sand, grass and snow without ever
+     * being a colour this game does not own -- with the march as its only
+     * animation, and each dash nudged a pixel in or out on a per-slot hash so
+     * the ring is hand-laid rather than compass-perfect (the tell
+     * /pixel-check warns about; shockRing plays the same trick).
+     */
     for (const z of world.extraction) {
       // The drawn ring is the real one: a zone on a tent counts from the tent's
       // edge, so a circle at the bare radius would picture a rule the game is
@@ -1316,15 +1324,26 @@ export class Renderer {
         // Three on, two off, moving round the ring about a fifth of a turn a
         // second -- slow enough to read as a marker rather than as a warning.
         if ((i + Math.floor(drift * 8)) % 5 >= 3) continue;
-        ctx.fillStyle = lit ? '#8fe0ff' : '#4c8ba8';
-        ctx.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 1, 1);
+        // A three-pixel radial band, dark on the outside: one-pixel gold dots
+        // vanished into the sand dither entirely, so the mark is painted
+        // thick enough to survive the ground it sits on.
+        const rr = r + (((i * 2654435761) >>> 8) % 3) - 1;
+        ctx.fillStyle = '#1a140a';
+        ctx.fillRect(Math.round(cx + Math.cos(a) * (rr + 1)), Math.round(cy + Math.sin(a) * (rr + 1)), 1, 1);
+        ctx.fillStyle = '#d9a833';
+        ctx.fillRect(Math.round(cx + Math.cos(a) * rr), Math.round(cy + Math.sin(a) * rr), 1, 1);
+        ctx.fillStyle = '#ffd24a';
+        ctx.fillRect(Math.round(cx + Math.cos(a) * (rr - 1)), Math.round(cy + Math.sin(a) * (rr - 1)), 1, 1);
       }
 
       // Four ticks pointing in, on the axes: they turn a ring into a target.
-      ctx.fillStyle = lit ? '#bff0ff' : '#5fa3c0';
+      // Two pixels wide so they read at mission zoom.
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as Array<[number, number]>) {
+        ctx.fillStyle = '#1a140a';
+        ctx.fillRect(Math.round(cx + dx * (r + 1)) - (dy ? 1 : 0), Math.round(cy + dy * (r + 1)) - (dx ? 1 : 0), dy ? 2 : 1, dx ? 2 : 1);
+        ctx.fillStyle = '#ffd24a';
         for (let k = 0; k < 4; k++) {
-          ctx.fillRect(cx + dx * (r - k) - (dy ? 0 : 0), cy + dy * (r - k), 1, 1);
+          ctx.fillRect(Math.round(cx + dx * (r - k)) - (dy ? 1 : 0), Math.round(cy + dy * (r - k)) - (dx ? 1 : 0), dy ? 2 : 1, dx ? 2 : 1);
         }
       }
     }

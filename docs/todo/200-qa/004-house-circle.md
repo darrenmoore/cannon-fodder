@@ -33,11 +33,15 @@ Broken, cause found -- the primitive was fixed, the styling never was.
 
 ## Plan (one sitting)
 
-Restyle in place: palette colour (theme-aware ground-marking tone, not cyan),
-jittered dash placement, radius pulled in toward the zone (or derived from
-the building's footprint rather than `pad + 46`), one animation not two,
-rounded ticks, and draw order after scenery. Update `/pixel-check`'s worklist
-entry. Judged by `/grill` on dry run's east end, and `/moments` can freeze it.
+Restyle in place: palette colour (the chrome's gold over a dark backing
+pixel, not cyan), jittered dash placement, one animation not two, rounded
+ticks. Update `/pixel-check`'s worklist entry.
+
+**Two plan items dropped, deliberately:** the radius stays `pad + 46`
+because the drawn ring is the *real* hold/extraction boundary the sim
+tests -- drawing a smaller one would picture a rule the game is not playing
+by; and the draw order stays before scenery because these are marks on the
+ground, and ground marks belong under the things standing on them.
 
 ## Done when
 

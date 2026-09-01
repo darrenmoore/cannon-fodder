@@ -67,7 +67,10 @@ rest are open.
 2. **Order marker** (`drawOrderMarker`) — an expanding `arc` on every click.
    The most frequently seen violation in the game. It should stay a ring and
    become hard pixels, not disappear.
-3. **Extraction zone** — two concentric `arc`s with a sine pulse. Same fix.
+3. ~~**Extraction zone**~~ — was two concentric `arc`s with a sine pulse;
+   became a dashed pixel ring, then (200-qa 004) lost its off-palette cyan
+   and its double animation: gold over a dark backing pixel, jittered per
+   dash, marching only.
 4. **Grenade thrower ring** — an `arc` around the man who will throw.
 5. **Crate, barrel and bullet shadows** — `ellipse` with alpha, where every
    other shadow in the game is a hard silhouette.
