@@ -24,7 +24,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 017 | [through-the-wall](017-through-the-wall.md) | open (after 010, 016) | |
 | 018 | [not-a-sound-variant](018-not-a-sound-variant.md) | open (after 010, 016) | |
 | 019 | [narrows-forest](019-narrows-forest.md) | open | |
-| 020 | [swim-for-it](020-swim-for-it.md) | open | |
+| 020 | [swim-for-it](020-swim-for-it.md) | done | (see log) |
 | 021 | [sink-waves](021-sink-waves.md) | done | e04472d |
 | 022 | [dust-devils](022-dust-devils.md) | open -- re-judge difficulty first, 003 landed | |
 | 023 | [grenade-pickups](023-grenade-pickups.md) | done | e553ec2 |
