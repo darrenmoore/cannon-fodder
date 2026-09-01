@@ -147,6 +147,7 @@ All checked in under `.claude/skills/`, so they work for anyone who clones this.
 | `/sprites` | Opens the live sprite gallery -- every baked sprite on one page, one link per sprite. For looking at what exists before drawing, and handing over what you drew. |
 | `/pixelate` | Measures a reference image and reads its shape off as a plottable mask. Use it before drawing anything matched to `docs/original-images/` -- it has settled two arguments that looked like taste and were facts. |
 | `/map` | Writes one mission by hand from an idea rather than a seed — reads `docs/map-format.md`, checks the idea is coherent before drawing, and proves the result can be won. |
+| `/speakers` | The voice of whoever is on the comms panel -- Major Trumper's register, what a speaker may never say (a hint the player has not earned; a control name, which is platform-branched), and the three edits that add a second character. |
 | `/commit` | Reviews the tree and stages by name — more than one session edits this tree at once. Never pushes. |
 | `/release` | Refuses a dirty tree, runs check and build, pushes `main`, then polls `GET /api/version` until the deployed URL serves that exact commit. |
 
