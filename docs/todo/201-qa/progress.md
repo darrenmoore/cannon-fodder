@@ -31,7 +31,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 015 | [wave-klaxon](015-wave-klaxon.md) | open | |
 | 016 | [collapse-rumble](016-collapse-rumble.md) | open | |
 | 017 | [theme-ambience-beds](017-theme-ambience-beds.md) | done -- already built, no work | |
-| 018 | [ui-clicks](018-ui-clicks.md) | open | |
+| 018 | [ui-clicks](018-ui-clicks.md) | done | |
 
 ## Suggested order
 

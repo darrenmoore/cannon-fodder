@@ -173,6 +173,20 @@ export const sfxPickup = (): void => {
 export const sfxOrder = (): void => burst({ duration: 0.045, gain: 0.16, freq: 2400, q: 3 });
 
 /**
+ * A button, pressed.
+ *
+ * The order blip re-pitched: lower, shorter and quieter, so a menu does not
+ * sound like giving orders to the squad. Every plotted control in the game was
+ * silent until this existed -- every audio call site in the codebase was in
+ * `sim/`, so the front end, the pause sheet, the settings screen and the
+ * result panel made no sound at all (201-qa 018).
+ *
+ * Nothing on hover, by the owner's ask, and nothing on a disabled control:
+ * a click that answers a press that did nothing is worse than silence.
+ */
+export const sfxClick = (): void => burst({ duration: 0.035, gain: 0.11, freq: 1500, q: 4 });
+
+/**
  * A refusal: low, short and flat, deliberately nothing like `sfxOrder`.
  *
  * Pressing a control and getting silence is the worst thing a control can do,

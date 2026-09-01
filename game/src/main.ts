@@ -5,6 +5,7 @@ import { unlockAudio } from './shell/audio.js';
 import { ambienceState, startAmbience, stopAmbience, updateAmbience } from './shell/ambience.js';
 import { bootBegin, bootEnd, bootFailed, bootStep } from './ui/boot.js';
 import { installPixelFace } from './ui/pixelface.js';
+import { installClicks } from './ui/clicks.js';
 import { Controls } from './ui/controls.js';
 import { Game } from './sim/game.js';
 import { closeSheet, sheetOpen, showSettings, showSheet } from './ui/sheet.js';
@@ -83,6 +84,8 @@ async function boot(): Promise<void> {
    * exactly what it used before.
    */
   installPixelFace();
+  // One delegated listener, so a control written tomorrow is audible too.
+  installClicks();
 
 /*
    * The menu track starts buffering here, in parallel with the atlas bake and
