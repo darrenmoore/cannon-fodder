@@ -503,6 +503,16 @@ html, body {
   max-width: 460px;
 }
 .briefing-ctl { display: contents; }
+
+/* The way out, under the controls. Gold, because it is the one instruction on
+   this screen that is about the screen itself. */
+.briefing-go {
+  margin-top: 20px;
+  color: var(--gold);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
 .briefing-ctl-a {
   color: var(--ink-faint);
   font-size: var(--fs-sm);

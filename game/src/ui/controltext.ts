@@ -56,13 +56,13 @@ export interface ControlLine {
 }
 
 /**
- * The six that matter, in the order a player needs them.
+ * The four that matter, in the order a player needs them.
  *
- * Six, not ten: the owner asked for SIMPLE, and a strip nobody finishes
- * reading has told them nothing. Escape and Space are in it even though the
- * brief's own table left them out -- pausing and re-centring are the two
- * things a lost player reaches for first, and neither was written down
- * anywhere.
+ * It was six. Pan/zoom and recentre came out on the owner's ask: they are
+ * conveniences rather than things you need to be told, and a strip nobody
+ * finishes reading has told them nothing. **The keys still work** -- arrows
+ * pan, `+`/`-` zoom, Space recentres -- they are simply not advertised, which
+ * is the right treatment for a shortcut as opposed to a control.
  */
 export function controlLines(): ControlLine[] {
   const onMac = isMac();
@@ -73,8 +73,6 @@ export function controlLines(): ControlLine[] {
     // code -- only this sentence.
     { action: 'fire', keys: onMac ? 'HOLD F  or  CTRL+CLICK' : 'HOLD RIGHT  or  F' },
     { action: 'grenade', keys: onMac ? 'G' : 'MIDDLE CLICK  or  G' },
-    { action: 'pan / zoom', keys: 'ARROWS  ·  + −' },
-    { action: 'recentre', keys: 'SPACE' },
     { action: 'pause', keys: 'ESC' },
   ];
 }

@@ -352,6 +352,16 @@ export class Hud {
      * that fired nothing must not read as 0% -- it fired nothing, which is the
      * best possible outcome on that mission.
      */
+    /*
+     * Only on a win, on the owner's ask.
+     *
+     * The first version showed them on a loss too, reasoning that accuracy is
+     * what makes a retry feel earned. He played it and disagreed: a panel that
+     * has just told you your squad is dead is not the place for a shooting
+     * report, and reading one is a beat spent on arithmetic instead of on
+     * going again. His call, and he is the one playing it.
+     */
+    if (won) {
     const stats = document.createElement('div');
     stats.className = 'result-stats';
     const stat = (label: string, value: string): void => {
@@ -398,6 +408,7 @@ export class Hud {
       stat('time', formatTime(elapsed));
     }
     card.appendChild(stats);
+    }
 
     // Records first: they are the thing that makes a win with casualties still
     // feel like it went somewhere.
@@ -468,8 +479,15 @@ export class Hud {
 
     const choice = document.createElement('div');
     choice.className = 'result-choice';
+    /*
+     * The arrows are the *pair*: back on the left, onward on the right, so
+     * "again, or on?" is one glance. On a loss there is no onward, so a lone
+     * left arrow points at nothing and reads as "go back" -- which is not what
+     * Try again does. No pair, no arrows.
+     */
     choice.appendChild(button(won ? 'Replay' : 'Try again', {
-      tone: won ? 'default' : 'warn', key: 'R', arrow: 'back',
+      tone: won ? 'default' : 'warn', key: 'R',
+      ...(won && this.hasNext ? { arrow: 'back' as const } : {}),
       onClick: () => this.onRetry?.(),
     }));
     if (won && this.hasNext) {
@@ -571,7 +589,10 @@ export class Hud {
     }
     box.appendChild(roll);
 
-    if (this.buried > 0) add('briefing-hill', `${this.buried} on Boot Hill`, box);
+    // The Boot Hill count came out on the owner's ask. It was a good line in a
+    // roll-call and a bad one on a briefing: a number of graves, on the screen
+    // you read on the way *in*, is a scoreboard for the thing the player is
+    // about to try not to add to.
 
     /*
      * The controls, in the space the original left empty.
@@ -596,6 +617,15 @@ export class Hud {
       controls.appendChild(row);
     }
     box.appendChild(controls);
+
+    /*
+     * How to get out of here.
+     *
+     * The briefing waits to be dismissed and never said so: it is a card on a
+     * black screen with no button on it, and the only reason nobody was stuck
+     * is that clicking anything happens to work. Saying so is one line.
+     */
+    add('briefing-go', 'CLICK TO CONTINUE', box);
 
     card.appendChild(box);
 
