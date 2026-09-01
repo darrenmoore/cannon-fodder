@@ -22,7 +22,9 @@
  */
 
 :root {
-  --sidebar-w: 188px;
+  /* Half again wider than it shipped, with a third more type -- the owner's
+     numbers (200-qa 024). */
+  --sidebar-w: 282px;
   /* Reserved bottom bar in portrait, before the home-indicator inset. */
   --bar-h: 104px;
 
@@ -316,11 +318,11 @@ html, body {
  * not on the bitmap grid, so 30 halves to 20, not to a blur.
  */
 #hud {
-  --fs-micro: 10px;
-  --fs-sm: 10px;
-  --fs-body: 10px;
-  --fs-lg: 20px;
-  --fs-xl: 20px;
+  --fs-micro: 13px;
+  --fs-sm: 13px;
+  --fs-body: 13px;
+  --fs-lg: 26px;
+  --fs-xl: 26px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -1115,6 +1117,14 @@ html, body {
 }
 [data-layout="stacked"] #viewport { grid-row: 1; }
 [data-layout="stacked"] #hud {
+  /* The enlarged sidebar ladder (200-qa 024) is a desktop measure; in the
+     phone bar it wrapped the goal one word per line. Back to the bar's own
+     sizes here. */
+  --fs-micro: 10px;
+  --fs-sm: 10px;
+  --fs-body: 10px;
+  --fs-lg: 20px;
+  --fs-xl: 20px;
   grid-row: 2;
   display: flex;
   flex-direction: row;
@@ -1245,6 +1255,9 @@ html, body {
   left: calc(10px + var(--safe-l));
   flex-direction: row-reverse;
 }
+/* With a mouse, pause lives in the sidebar tools; the floating plate is the
+   touch route only, since a phone has no Esc and no sidebar (200-qa 024). */
+#controls[data-mode="pointer"] .controls-top { display: none; }
 #controls[data-hand="left"] .controls-top {
   left: auto;
   right: calc(8px + var(--safe-r));
@@ -2119,7 +2132,7 @@ html, body {
 .hud-tool:active { border-image-source: var(--sk-btn-down); }
 .hud-tool.t-exit::after { background-image: var(--sk-ic-door); }
 .hud-tool.t-restart::after { background-image: var(--sk-ic-restart); }
-.hud-tool.t-gear::after { background-image: var(--sk-ic-gear); }
+.hud-tool.t-pause::after { background-image: var(--sk-ic-pause); }
 
 /* The standing orders, under the mission name. Always on screen. */
 .hud-goal {
@@ -2242,6 +2255,15 @@ html, body {
 /* No key caps in the sheets: the owner asked for the shortcut text gone, and
    a cap on DONE was the last of it. The keys themselves still work. */
 .sheet-card .ui-key { display: none; }
+
+/* The pause sheet's shape: resume large and alone, the small print sharing
+   one row beneath it (200-qa 024). */
+.sheet-actions .sheet-primary {
+  font-size: var(--fs-lg);
+  padding: 18px 10px;
+}
+.sheet-split { display: flex; gap: 10px; }
+.sheet-split .ui-btn { flex: 1 1 0; }
 
 /* Casualties of turning the row into a column: the label kept its 190px
    flex-basis and the level bar its 180px one, which in a column are pixels of

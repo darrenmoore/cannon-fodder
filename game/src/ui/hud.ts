@@ -49,7 +49,7 @@ export class Hud {
    */
   onExit: (() => void) | null = null;
   onRestart: (() => void) | null = null;
-  onSettings: (() => void) | null = null;
+  onPause: (() => void) | null = null;
 
   /** One plate per soldier, rebuilt only when the squad changes. */
   private plates: Array<{ root: HTMLElement; alive: boolean; name: string }> = [];
@@ -130,10 +130,13 @@ export class Hud {
       b.addEventListener('click', fire);
       return b;
     };
+    // Pause rather than a gear: settings live inside the pause sheet now, so
+    // the sidebar offers the door, the do-over, and the stop -- the three
+    // whole-mission verbs (200-qa 024).
     tools.append(
       tool('t-exit', 'Leave the mission', () => this.onExit?.()),
       tool('t-restart', 'Restart the mission', () => this.onRestart?.()),
-      tool('t-gear', 'Settings', () => this.onSettings?.()),
+      tool('t-pause', 'Pause', () => this.onPause?.()),
     );
 
     // The key-shortcut crib that used to sit here is gone on the owner's

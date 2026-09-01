@@ -89,6 +89,7 @@ export function installSkin(): void {
     '--sk-ic-door': url(bakeIcon('door')),
     '--sk-ic-restart': url(bakeIcon('restart')),
     '--sk-ic-gear': url(bakeIcon('gear')),
+    '--sk-ic-pause': url(bakeIcon('pause')),
 
     '--sk-star-on': url(bakeStar(13, true)),
     '--sk-star-off': url(bakeStar(13, false)),

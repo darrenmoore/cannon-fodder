@@ -348,7 +348,6 @@ async function boot(): Promise<void> {
         dismiss: 'cancel',
       }).then((v) => { if (v === 'restart') void restartMission(); });
     };
-    hud.onSettings = (): void => showSettings(() => layout.apply());
     /**
      * Esc and the PAUSE button.
      *
@@ -364,14 +363,17 @@ async function boot(): Promise<void> {
       // to offer somebody who paused mid-firefight, and the brief asked for it
       // out. Its door moves to the front end, which is 101's -- until that
       // lands it is reachable from the mission list only.
+      // Three verbs, one of them primary: resume large and centred, restart
+      // and settings small below it. The mission-list row is gone -- leaving
+      // is the sidebar door's job, behind its own confirmation (200-qa 024).
       showSheet('Paused', map.name, [
-        { label: 'Resume', tone: 'good', key: 'Enter', onPick: () => {} },
+        { label: 'Resume', tone: 'good', key: 'Enter', primary: true, onPick: () => {} },
+        { label: 'Restart', tone: 'warn', key: 'R', onPick: () => { void restartMission(); } },
         { label: 'Settings', onPick: () => showSettings(() => layout.apply()) },
-        { label: 'Restart mission', tone: 'warn', key: 'R', onPick: () => { void restartMission(); } },
-        { label: 'Mission list', onPick: () => { if (game) game.exitRequested = true; } },
       ]);
     };
     input.onPause = openPause;
+    hud.onPause = openPause;
 
     // Losing focus is a pause, not a licence to keep playing without a player.
     const onHide = (): void => { if (document.hidden) openPause(); };

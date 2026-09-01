@@ -565,7 +565,23 @@ export function bakeBanner(w: number, h: number, opts: BannerOptions = {}): Spri
  * has the arrow *leaving* it, the restart loop is square because everything in
  * this chrome is, and the gear has eight square teeth for the same reason.
  */
-const ICON_ART: Record<'door' | 'restart' | 'gear', string[]> = {
+const ICON_ART: Record<'door' | 'restart' | 'gear' | 'pause', string[]> = {
+  // Two square bars, because everything in this chrome is square.
+  pause: [
+    '.............',
+    '.............',
+    '..###...###..',
+    '..###...###..',
+    '..###...###..',
+    '..###...###..',
+    '..###...###..',
+    '..###...###..',
+    '..###...###..',
+    '..###...###..',
+    '..###...###..',
+    '.............',
+    '.............',
+  ],
   door: [
     '.............',
     '.............',

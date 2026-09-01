@@ -28,7 +28,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 021 | [sink-waves](021-sink-waves.md) | done | e04472d |
 | 022 | [dust-devils](022-dust-devils.md) | open -- re-judge difficulty first, 003 landed | |
 | 023 | [grenade-pickups](023-grenade-pickups.md) | done | e553ec2 |
-| 024 | [pause-left-menu](024-pause-left-menu.md) | open | |
+| 024 | [pause-left-menu](024-pause-left-menu.md) | done | (see log) |
 | 025 | [guide-arrow](025-guide-arrow.md) | open | |
 | 026 | [win-fail-screens](026-win-fail-screens.md) | open | |
 

@@ -19,6 +19,8 @@ export interface SheetAction {
   hint?: string;
   tone?: 'default' | 'warn' | 'good';
   key?: string;
+  /** Rendered large and full-width; the rest share a row beneath it. */
+  primary?: boolean;
   onPick(): void;
 }
 
@@ -100,13 +102,27 @@ export function showSheet(title: string, sub: string | null, actions: SheetActio
     }
     const list = document.createElement('div');
     list.className = 'sheet-actions';
+    // Primaries stand full-width; everything else shares one row under them,
+    // so the sheet reads as "the thing you came for, and the small print".
+    let split: HTMLElement | null = null;
     for (const a of actions) {
-      list.appendChild(button(a.label, {
+      const b = button(a.label, {
         tone: a.tone,
         hint: a.hint,
         key: a.key,
         onClick: () => { dismiss(); a.onPick(); },
-      }));
+      });
+      if (a.primary) {
+        b.classList.add('sheet-primary');
+        list.appendChild(b);
+      } else {
+        if (!split) {
+          split = document.createElement('div');
+          split.className = 'sheet-split';
+          list.appendChild(split);
+        }
+        split.appendChild(b);
+      }
     }
     body.appendChild(list);
     return body;
