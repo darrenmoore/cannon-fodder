@@ -11,7 +11,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 004 | [house-circle](004-house-circle.md) | open | |
 | 005 | [idle-face-mouse](005-idle-face-mouse.md) | open | |
 | 006 | [factory-sprite](006-factory-sprite.md) | open | |
-| 007 | [cabin-white-line](007-cabin-white-line.md) | open | |
+| 007 | [cabin-white-line](007-cabin-white-line.md) | done | (this commit) |
 | 008 | [hut-door](008-hut-door.md) | open | |
 | 009 | [tent-sprite](009-tent-sprite.md) | open | |
 | 010 | [spawn-distance](010-spawn-distance.md) | blocked on Q3 | |

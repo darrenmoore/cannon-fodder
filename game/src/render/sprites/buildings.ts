@@ -252,8 +252,9 @@ export function bakeCabin(stage: number): Sprite {
         : (x % 4 === 0 ? '#2e2418' : '#483722'));
     }
   }
-  // The ridge line, and icicles hanging off the eave.
-  for (let x = 2; x < 36; x++) px(g, x, 0, '#ffffff');
+  // Icicles hanging off the eave. (No ridge stripe: a pure-white row at y=0
+  // ran wider than the roof and read as a stray scanline -- the snow ramp is
+  // the ridge.)
   for (let x = 3; x < 35; x++) {
     if (rnd() > 0.24) continue;
     const len = 1 + ((rnd() * 3) | 0);
