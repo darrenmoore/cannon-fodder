@@ -22,7 +22,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 006 | [mac-fire-key](006-mac-fire-key.md) | open | |
 | 007 | [comms-panel](007-comms-panel.md) | open -- Q1 answered; sitting 1 can start, 2 waits on 005 + 006 | |
 | 008 | [merged-into-007](008-merged-into-007.md) | done -- merged, no work | |
-| 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | open | |
+| 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | done | |
 | 010 | [hiding-in-cover](010-hiding-in-cover.md) | open -- Q2 answered | |
 | 011 | [end-of-mission-stats](011-end-of-mission-stats.md) | open | |
 | 012 | [shell-casings](012-shell-casings.md) | open | |

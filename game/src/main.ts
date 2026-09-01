@@ -389,6 +389,23 @@ async function boot(): Promise<void> {
      */
     const openPause = (): void => {
       if (!game || sheetOpen() || confirmOpen()) return;
+      /*
+       * Nothing to pause, so nothing to offer.
+       *
+       * The sheet exists to stop the world while the player is not looking at
+       * it. On the briefing and on the end-of-mission panel the world is
+       * already stopped -- the step loop returns before `game.step` for the
+       * briefing, and a resolved phase steps nothing -- so a pause here buys
+       * the player nothing and costs them the card they were reading. The
+       * result panel is neither a sheet nor a confirm (it is `#overlay` with
+       * `.interactive`), so the two guards above do not see it and a
+       * tab-away used to stack Paused straight over a win.
+       *
+       * It sits in `openPause` rather than in the visibilitychange handler
+       * because the sidebar's PAUSE button reaches the same place, and it
+       * had the same hole (201-qa 009).
+       */
+      if (hud.briefingUp || game.world.phase !== Phase.Playing) return;
       // Boot Hill is not here any more: a link to the graves is a strange thing
       // to offer somebody who paused mid-firefight, and the brief asked for it
       // out. Its door moves to the front end, which is 101's -- until that
