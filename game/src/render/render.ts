@@ -14,6 +14,7 @@ import { TILES, Tile } from '../sim/tiles.js';
 import { EnemyKind, Faction, Phase } from '../types.js';
 import { rankTier } from '../sim/campaign.js';
 import { squadCentre } from '../sim/world.js';
+import { hiddenFromSquad } from '../sim/vision.js';
 import type { Aim } from '../shell/aim.js';
 import type { Camera } from './camera.js';
 import type { GameMap } from '../sim/map.js';
@@ -483,8 +484,23 @@ export class Renderer {
       const x = lerp(a.prev.x, a.pos.x, alpha);
       const y = lerp(a.prev.y, a.pos.y, alpha);
       if (x < viewL - 20 || x > viewR + 20 || y < viewT - 24 || y > viewB + 24) continue;
-      // Your own men are always drawn; theirs only where you have eyes.
-      if (a.faction === Faction.Enemy && !world.fog.isVisible(x, y)) continue;
+      /*
+       * Your own men are always drawn; theirs only where you have eyes.
+       *
+       * Two questions, not one. The fog answers "is this ground lit"; the
+       * second answers "and is he findable on it" -- a man standing in tall
+       * grass or up to his neck in deep water is hidden from a squad that is
+       * not close enough to pick him out, on exactly the terms his side gets
+       * against you. Without this half, a grass-heavy mission would get easier
+       * twice over (201-qa 010).
+       */
+      if (a.faction === Faction.Enemy) {
+        if (!world.fog.isVisible(x, y)) continue;
+        if (hiddenFromSquad(
+          world.map, world.soldiers, a.pos,
+          CONFIG.enemy.aggroRadius, world.levers.concealment,
+        )) continue;
+      }
       this.drawList.push({ sortY: y, actor: a });
     }
     for (const h of world.hostages) {

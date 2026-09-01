@@ -70,6 +70,17 @@ export interface Levers {
    */
   vision: number;
 
+  /**
+   * How well cover works against these troops, 0..1.
+   *
+   * 1 lets tall grass and deep water hide you for everything they are worth;
+   * 0 means they see straight through it. A lever rather than a constant per
+   * this module's own rule -- and it is the knob to move if a grass-heavy
+   * mission turns out too easy, never the three-tile floor in vision.ts, which
+   * is what stops cover meaning invisible (201-qa 010).
+   */
+  concealment: number;
+
   /** Grenades the squad starts with. */
   grenades: number;
 }
@@ -92,6 +103,7 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
       extraEnemies: 0.25, spawnInterval: 1.7, maxSpawned: 2,
       hearing: 95, hunters: 0.15, rushers: 0, grenadiers: 0, flank: 0, camo: 0, wander: 0.85,
       vision: 0,
+      concealment: 1,
       grenades: 4,
     },
   },
@@ -110,6 +122,8 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
       // away -- the two used to be tangled together, so the only way to face a
       // garrison that hunted you was to also face a mission you could not see.
       vision: 0,
+      // Cover works, but they are better at guessing where you went.
+      concealment: 0.85,
       grenades: 2,
     },
   },
@@ -122,6 +136,8 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
       extraEnemies: 1.6, spawnInterval: 0.45, maxSpawned: 6,
       hearing: 320, hunters: 0.85, rushers: 0.5, grenadiers: 0.28, flank: 0.8, camo: 0.5, wander: 1.3,
       vision: 160,
+      // They will still lose you in the reeds, but not for long.
+      concealment: 0.6,
       grenades: 2,
     },
   },

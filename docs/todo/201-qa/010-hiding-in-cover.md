@@ -192,3 +192,40 @@ half.
 - `npm run check` passes, including the winnability test on all 40+ maps.
 - A playtest of `undergrowth` still ends in a fight, not a stroll -- judged by
   whether the squad takes casualties on Veteran with no player skill applied.
+
+## The balance pass, as run
+
+Measured through the real acquisition path: for each member of the garrison in
+turn, stand one soldier five tiles away, hold both still, and ask whether he is
+noticed. Aggregated over the whole garrison, split by what he was standing on,
+and run twice -- once on the build without the change and once with it.
+
+| map | noticed, before | noticed, after |
+|---|---|---|
+| Undergrowth | 17% of 18 | 17% of 18 |
+| Not a Sound | 100% of 18 | 94% of 18 |
+| Softly Softly | 72% of 18 | 72% of 18 |
+| Loud and Clear | 33% of 18 | 39% of 18 |
+| Chicken Run (control, no grass) | 83% of 18 | 83% of 18 |
+| **totals** | **61% of 90** | **61% of 90** |
+| in cover | 13% of 30 | 10% of 30 |
+| in the open | 85% of 60 | 87% of 60 |
+
+**The feared imbalance does not materialise, and the reason is worth writing
+down: the dense maps were already concealing.** At five tiles inside a grass
+field the tiles *between* the two men are grass too, and those have always
+blocked sight -- so `undergrowth` sat at 0% noticed-in-cover before the change
+as well as after. What the change adds is the case the old rule could not
+express at all: the edge of a patch, where the lane is clear and only the
+man's own tile is cover, and deep water, which blocks nothing and never did.
+
+The remaining per-map wobble (Not a Sound 100 -> 94, Loud and Clear 33 -> 39,
+in both directions) is the sim's own randomness -- wander, reaction times --
+not the lever. The no-grass control holding at exactly 83% is what says the
+measure is steady enough to be read at all.
+
+**A first attempt at this pass measured nothing.** It walked the squad to the
+middle of each map and counted casualties, and returned 24/24 survived with
+zero enemies ever engaged on *both* builds, because the order never took. A
+metric that cannot tell the two builds apart is worse than none
+([docs/loop.md](../../loop.md)); it was replaced rather than believed.

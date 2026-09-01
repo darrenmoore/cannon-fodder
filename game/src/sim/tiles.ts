@@ -36,6 +36,14 @@ export interface TileDef {
   solid: boolean;
   /** Blocks line of sight, so enemies cannot see you through it. */
   blocksSight: boolean;
+  /**
+   * How far you can be noticed while standing on this tile, as a fraction of
+   * the ordinary notice range. 1 is open ground.
+   *
+   * On the tile rather than in a branch somewhere, so a reed bed or a
+   * snowdrift added later is concealing by saying so (201-qa 010).
+   */
+  concealment: number;
   /** Stops bullets. */
   blocksShots: boolean;
   /** Wading: slow, and you cannot fire. */
@@ -67,6 +75,7 @@ export interface TileDef {
 const def = (id: Tile, name: string, color: string, speckle: string, over: Partial<TileDef> = {}): TileDef => ({
   id, name, color, speckle,
   solid: false, blocksSight: false, blocksShots: false, wade: false, swim: false,
+  concealment: 1,
   speed: 1, slippery: false, canopy: false, sway: false,
   ...over,
 });
@@ -94,11 +103,17 @@ export const TILES: Record<Tile, TileDef> = {
    * those: the "he is holding his rifle clear of the water" rule already exists
    * and this simply reuses it. Flat, so you can still shoot across it.
    */
+  /*
+   * Deep water conceals; shallow water does not. You are up to your neck in
+   * one and standing upright in the other, and shallow water is already
+   * paying for itself with a speed penalty (201-qa 010).
+   */
   [Tile.DeepWater]: def(Tile.DeepWater, 'deep water', '#1d4665', '#245478',
-    { solid: true, swim: true, wade: true, speed: 0.34 }),
+    { solid: true, swim: true, wade: true, speed: 0.34, concealment: 0.35 }),
   [Tile.Bridge]:    def(Tile.Bridge, 'bridge', '#8a6c3f', '#7a5f37'),
   // Cover you can walk through: hides you without stopping bullets.
-  [Tile.TallGrass]: def(Tile.TallGrass, 'tall grass', '#3f6b28', '#4c7d31', { blocksSight: true, speed: 0.82, sway: true }),
+  [Tile.TallGrass]: def(Tile.TallGrass, 'tall grass', '#3f6b28', '#4c7d31',
+    { blocksSight: true, speed: 0.82, sway: true, concealment: 0.35 }),
   [Tile.Quicksand]: def(Tile.Quicksand, 'quicksand', '#8a7a44', '#7a6b3a', { speed: 0.24, wade: true }),
   [Tile.Ice]:       def(Tile.Ice, 'ice', '#c3dbe6', '#d5e8f0', { slippery: true, speed: 1.08 }),
   [Tile.Tent]:      def(Tile.Tent, 'tent', '#c9c2ac', '#b8b19b'),

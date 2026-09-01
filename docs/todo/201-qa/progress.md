@@ -23,7 +23,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 007 | [comms-panel](007-comms-panel.md) | open -- Q1 answered; sitting 1 can start, 2 waits on 005 + 006 | |
 | 008 | [merged-into-007](008-merged-into-007.md) | done -- merged, no work | |
 | 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | done | |
-| 010 | [hiding-in-cover](010-hiding-in-cover.md) | open -- Q2 answered | |
+| 010 | [hiding-in-cover](010-hiding-in-cover.md) | done | |
 | 011 | [end-of-mission-stats](011-end-of-mission-stats.md) | done | |
 | 012 | [shell-casings](012-shell-casings.md) | done | |
 | 013 | [wading-sfx](013-wading-sfx.md) | done | |

@@ -1,7 +1,8 @@
 import { CONFIG } from '../config.js';
 import { fire, throwGrenade } from './combat.js';
-import { hasLineOfFire, hasLineOfSight, nearestWalkable, tileAt } from './map.js';
+import { hasLineOfFire, nearestWalkable, tileAt } from './map.js';
 import { hunts } from './pressure.js';
+import { canNotice } from './vision.js';
 import { circleBlocked, findPath, hasWalkableLine } from './pathfind.js';
 import { bankFrom, moveWithCollision, steer, stumble, unstick } from './steering.js';
 import { EnemyState, Faction } from '../types.js';
@@ -275,12 +276,19 @@ function acquire(world: World, e: Enemy, dt: number): void {
 
 function nearestVisibleSoldier(world: World, e: Enemy): Actor | null {
   let best: Actor | null = null;
-  let bestD: number = e.stats.aggroRadius;
+  let bestD = Infinity;
   for (const s of world.soldiers) {
     if (!s.alive) continue;
     const d = Math.hypot(s.pos.x - e.pos.x, s.pos.y - e.pos.y);
-    // Tall grass breaks sight, which is what makes it worth hiding in.
-    if (d < bestD && hasLineOfSight(world.map, e.pos, s.pos)) { bestD = d; best = s; }
+    if (d >= bestD) continue;
+    /*
+     * Per soldier, not once for the loop: two men can be six pixels apart with
+     * one in the reeds and one on the bank, and the whole mechanic is that
+     * those are different men to be looking for (201-qa 010).
+     */
+    if (!canNotice(world.map, e.pos, s.pos, e.stats.aggroRadius, world.levers.concealment)) continue;
+    bestD = d;
+    best = s;
   }
   return best;
 }
