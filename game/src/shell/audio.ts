@@ -173,6 +173,67 @@ export const sfxExplosion = (): void => {
   thump(110, 0.45, 0.8);
 };
 
+/**
+ * A building coming down, as distinct from the grenade that did it.
+ *
+ * `collapse()` fired `sfxExplosion()` and nothing else, so the biggest moment
+ * in a demolish mission sounded exactly like a grenade landing in a field --
+ * even though the *visual* side already separates them, with 1.6x the shake
+ * and debris thrown wide (201-qa 016).
+ *
+ * This is fired **in addition to** the blast rather than instead of it, and
+ * scheduled 120ms behind: the grenade that levelled the hut was a grenade and
+ * should still sound like one, and the sequence -- bang, beat, fall -- is most
+ * of what makes a collapse read as a collapse.
+ *
+ * Two noise layers rather than one, because rubble is many small impacts and a
+ * single decay is a bomb. The low sweep is the mass going down; the mid band
+ * with the slow attack is the rattle of it landing.
+ *
+ * `loudAt` is left alone: `sfxExplosion` has already set it this frame, and
+ * the birds only need scattering once.
+ */
+export const sfxCollapse = (): void => {
+  // Two at a time. A demolish mission can drop three huts inside a second and
+  // three of these on top of each other is mush, not a bigger collapse.
+  if (!gate('collapse', 0.18)) return;
+  if (!settings().sound) return;
+  if (!ensure() || !ctx || !master || !noise) return;
+  const now = ctx.currentTime;
+  const at = now + 0.12;
+
+  const layer = (
+    type: BiquadFilterType, from: number, to: number, q: number,
+    gain: number, attack: number, dur: number,
+  ): void => {
+    const src = ctx!.createBufferSource();
+    src.buffer = noise;
+    src.loop = true;
+    src.loopStart = Math.random() * 0.3;
+    src.loopEnd = src.loopStart + 0.2;
+
+    const f = ctx!.createBiquadFilter();
+    f.type = type;
+    f.frequency.setValueAtTime(from, at);
+    f.frequency.exponentialRampToValueAtTime(to, at + dur);
+    f.Q.value = q;
+
+    const env = ctx!.createGain();
+    env.gain.setValueAtTime(0.0001, at);
+    env.gain.exponentialRampToValueAtTime(gain, at + attack);
+    env.gain.exponentialRampToValueAtTime(0.0005, at + dur);
+
+    src.connect(f).connect(env).connect(master!);
+    src.start(at);
+    src.stop(at + dur + 0.05);
+  };
+
+  // The mass going down, and the rubble landing after it.
+  layer('lowpass', 500, 60, 0.6, 0.7, 0.02, 1.4);
+  layer('bandpass', 1400, 700, 1.4, 0.16, 0.18, 1.1);
+  thump(60, 0.9, 0.65);
+};
+
 export const sfxPickup = (): void => {
   if (!settings().sound) return;
   if (!ensure() || !ctx || !master) return;

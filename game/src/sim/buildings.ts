@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { sfxExplosion, sfxKlaxon } from '../shell/audio.js';
+import { sfxCollapse, sfxExplosion, sfxKlaxon } from '../shell/audio.js';
 import { hasLineOfSight, setTile } from './map.js';
 import { circleBlocked } from './pathfind.js';
 import { Tile } from './tiles.js';
@@ -298,7 +298,11 @@ function collapse(world: World, b: Building): void {
 
   world.fx.explosion(b.centre);
   world.shake += CONFIG.fx.screenShake * 1.6;
+  // The blast, and then the building. Both: the grenade that did this was a
+  // grenade and should still sound like one -- sfxCollapse schedules itself
+  // behind it, so the pair reads as bang, beat, fall (201-qa 016).
   sfxExplosion();
+  sfxCollapse();
 
   // Debris, thrown wide enough to read as a building rather than a grenade.
   for (const [tx, ty] of b.tiles) {

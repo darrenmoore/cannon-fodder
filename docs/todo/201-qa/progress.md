@@ -29,7 +29,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 013 | [wading-sfx](013-wading-sfx.md) | done | |
 | 014 | [wounded-scream](014-wounded-scream.md) | open | |
 | 015 | [wave-klaxon](015-wave-klaxon.md) | done | |
-| 016 | [collapse-rumble](016-collapse-rumble.md) | in progress -- session 2026-09-01 | |
+| 016 | [collapse-rumble](016-collapse-rumble.md) | done | |
 | 017 | [theme-ambience-beds](017-theme-ambience-beds.md) | done -- already built, no work | |
 | 018 | [ui-clicks](018-ui-clicks.md) | done | |
 
