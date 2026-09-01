@@ -19,7 +19,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 003 | [music-on-first-visit](003-music-on-first-visit.md) | done -- already true, no work | |
 | 004 | [imbf-footer](004-imbf-footer.md) | open | |
 | 005 | [briefing-screen](005-briefing-screen.md) | open -- second sitting waits on 006 | |
-| 006 | [mac-fire-key](006-mac-fire-key.md) | open | |
+| 006 | [mac-fire-key](006-mac-fire-key.md) | done | |
 | 007 | [comms-panel](007-comms-panel.md) | open -- Q1 answered; sitting 1 can start, 2 waits on 005 + 006 | |
 | 008 | [merged-into-007](008-merged-into-007.md) | done -- merged, no work | |
 | 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | done | |

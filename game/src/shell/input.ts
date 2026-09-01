@@ -66,6 +66,18 @@ export class Input {
   private readonly detach: Array<() => void> = [];
 
   private rightDown = false;
+  /**
+   * The F key, held.
+   *
+   * A separate flag rather than a second write to `rightDown`, because the two
+   * are released independently and the release rule is "fire ends when *both*
+   * are up". Without it, holding F and then clicking the right button ends the
+   * fire on the mouse release while F is still down, and the player is left
+   * holding a dead key (201-qa 006).
+   */
+  private fireKeyDown = false;
+  /** Fire is being *held* by something -- the right button, the F key, or both. */
+  private get fireHeld(): boolean { return this.rightDown || this.fireKeyDown; }
   private panning = false;
   /** Accumulated drag, in screen pixels, drained by `consumePan`. */
   private panDelta: Vec2 = { x: 0, y: 0 };
@@ -187,7 +199,10 @@ export class Input {
   private onUp(button: number): void {
     if (button === 2) {
       this.rightDown = false;
-      if (this.aim.mode === 'fire' && !this.stickDir) this.aim.idle();
+      // `fireHeld` rather than `rightDown` alone: this release does not go
+      // through fireUp(), so it is its own place to ask whether anything else
+      // is still asking for fire -- the F key, in practice (201-qa 006).
+      if (this.aim.mode === 'fire' && !this.fireHeld && !this.stickDir) this.aim.idle();
       return;
     }
     // Releasing over the map is the throw. A tap produces this too, so a quick
@@ -289,7 +304,7 @@ export class Input {
 
   fireUp(): void {
     this.stickDir = null;
-    if (this.aim.mode === 'fire' && !this.rightDown) this.aim.idle();
+    if (this.aim.mode === 'fire' && !this.fireHeld) this.aim.idle();
   }
 
   /** GRENADE pressed: arm, or cancel if it was already armed. */
@@ -347,6 +362,25 @@ export class Input {
         e.preventDefault();
         this.queue.push({ type: 'recentre' });
         return;
+      /*
+       * Fire, from the keyboard.
+       *
+       * The mouse scheme is hold-right, and Apple hardware has no second
+       * button and no middle click -- so on a Mac the game shipped with no
+       * way to fire at all beyond the on-screen FIRE plate, which is not
+       * where anyone looks. F is the fire button there and a shortcut
+       * everywhere else (201-qa 006).
+       *
+       * `e.repeat` is guarded because auto-repeat would re-enter fireDown()
+       * fifty times a second, and each entry clears `stickDir` -- so a player
+       * firing along a thumbstick heading would have that heading wiped as
+       * fast as it was set.
+       */
+      case 'f': case 'F':
+        if (e.repeat) return;
+        this.fireKeyDown = true;
+        this.fireDown();
+        return;
       case 'g': case 'G':
         this.toggleGrenade();
         return;
@@ -366,11 +400,22 @@ export class Input {
   private onKeyUp(e: KeyboardEvent): void {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') this.keyPan.x = 0;
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') this.keyPan.y = 0;
+    /*
+     * Deliberately *not* behind the focused-control guard that `onKeyDown`
+     * uses. A press is stolen from a focused field; a release must never be,
+     * or focusing something mid-hold strands the fire on and leaves the
+     * player shooting at nothing they asked for.
+     */
+    if (e.key === 'f' || e.key === 'F') {
+      this.fireKeyDown = false;
+      this.fireUp();
+    }
   }
 
   /** A dragged-out release, a lost focus or a cancelled touch clears held state. */
   private releaseAll(): void {
     this.rightDown = false;
+    this.fireKeyDown = false;
     this.chordArmed = false;
     this.panning = false;
     this.stickDir = null;
@@ -406,7 +451,7 @@ export class Input {
       if (this.chorded) {
         this.chorded = false;
         this.rawAim = null;
-        this.aim.mode = this.rightDown ? 'fire' : 'idle';
+        this.aim.mode = this.fireHeld ? 'fire' : 'idle';
         this.aim.placed = false;
       }
     } else if (this.aim.mode === 'fire') {
