@@ -1535,6 +1535,75 @@ const BUILDERS = {
     building(g, Math.round(g.w * 0.82), gapY - 1, 2, 2, HUT);
   },
 
+  /**
+   * The Narrows, hand-cut (200-qa 012).
+   *
+   * The generated canyon gave four minutes for what the owner ran in sixty
+   * seconds. This keeps the dash and adds the wrong turn: at mid-canyon the
+   * floor forks, and the branch that carries straight on -- the obvious line
+   * -- widens into a bowl with a garrison waiting in it and no way out,
+   * while the true route bends hard south. A crate glints in the fork's
+   * mouth as bait. The clock is a hundred seconds: enough to sprint the
+   * truth, not enough to survive the lie -- the retry-often mission the
+   * brief asked it to be.
+   */
+  'the-narrows'(g, place) {
+    g.fillRect(0, 0, g.w, g.h, ROCK);
+
+    // The true canyon, west to east, bending hard south after the fork.
+    const floor = [];
+    let y = g.h * 0.45;
+    const forkX = Math.round(g.w * 0.52);
+    for (let x = 2; x < g.w - 2; x++) {
+      const drift = x > forkX && x < forkX + 26
+        ? 0.55
+        : Math.sin(x / 9) * 0.5 + (g.rnd() - 0.5) * 0.3;
+      y = Math.max(7, Math.min(g.h - 8, y + drift));
+      const half = 3.2 + Math.sin(x / 15) * 2.2;
+      for (let k = -half; k <= half; k++) g.set(x, Math.round(y + k), GRASS);
+      floor.push({ x, y: Math.round(y) });
+    }
+
+    // The lie: straight on from the fork, widening, then stopping dead.
+    const forkY = floor[forkX - 2].y;
+    let fy = forkY;
+    for (let x = forkX; x < forkX + 34; x++) {
+      fy += (g.rnd() - 0.5) * 0.4 - 0.1;
+      const half = 2.8 + (x - forkX) * 0.05;
+      for (let k = -half; k <= half; k++) g.set(x, Math.round(fy + k), GRASS);
+    }
+    const bowl = { x: forkX + 36, y: Math.round(fy) };
+    g.disc(bowl.x, bowl.y, 7, GRASS, [ROCK]);
+
+    scatter(g, SAND, 12, [3, 6], [GRASS]);
+
+    const spawn = clearing(g, 7, floor[5].y, 4);
+    squad(g, place, spawn);
+    place.used.push(spawn);
+    place.confineTo(spawn.x, spawn.y);
+    place.put('c', 14, floor[12].y, 4);
+
+    // The extraction, at the far end of the truth.
+    const end = floor[floor.length - 1];
+    g.disc(end.x - 2, end.y, 4, GRASS, [ROCK]);
+    g.fillRect(end.x - 3, end.y - 1, 2, 2, TENT);
+
+    // Ambush pockets down the true route, and a sniper watching the last leg.
+    for (let i = 0; i < 12; i++) {
+      const at = floor[Math.round(floor.length * (0.22 + 0.06 * i))];
+      place.put('E', at.x, at.y, 4, 3);
+    }
+    const late = floor[Math.round(floor.length * 0.8)];
+    place.put('S', late.x, late.y, 5, 4);
+
+    // The wrong turn's payoff: a garrison stacked in the dead end, a barrel
+    // among them, and the bait crate in the fork's mouth.
+    place.put('c', forkX + 6, forkY, 3);
+    for (let i = 0; i < 9; i++) place.put('E', bowl.x, bowl.y, 6, 2);
+    place.put('S', bowl.x + 2, bowl.y - 2, 4, 3);
+    place.put('o', bowl.x - 3, bowl.y + 2, 4);
+  },
+
   'last-stand'(g, place) {
     g.fillRect(0, 0, g.w, g.h, GRASS);
     g.frame(ROCK, { min: 4, max: 11 });
@@ -2148,11 +2217,11 @@ const CAMPAIGN = [
     brief: 'Five crates scattered across the delta. Every one of them is over water.',
   },
   {
-    id: 'the-narrows', layout: 'canyon', doctrine: 'ambush', order: 26, seed: 186540, w: 152, h: 58,
-    timelimit: 240,
+    id: 'the-narrows', doctrine: 'ambush', order: 26, seed: 186540, w: 152, h: 58,
+    timelimit: 100,
     name: 'The Narrows', theme: 'desert', objective: 'reach',
-    mechanic: 'a clock, and no room',
-    brief: 'Four minutes to the far end of the canyon. There is no second route.',
+    mechanic: 'a clock, and a wrong turn',
+    brief: 'A hundred seconds to the far end of the canyon, and the canyon lies about the way.',
   },
   {
     id: 'landing-ground', layout: 'coast', doctrine: 'hunters', order: 27, seed: 843017, w: 124, h: 72,

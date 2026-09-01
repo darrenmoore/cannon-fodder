@@ -16,7 +16,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 009 | [tent-sprite](009-tent-sprite.md) | done | 6e0b891 |
 | 010 | [spawn-distance](010-spawn-distance.md) | done | f30507e |
 | 011 | [cold-keep-note](011-cold-keep-note.md) | done -- no work, noted | |
-| 012 | [narrows-harder](012-narrows-harder.md) | open | |
+| 012 | [narrows-harder](012-narrows-harder.md) | done | (see log) |
 | 013 | [timer-clarity](013-timer-clarity.md) | done | d043054 |
 | 014 | [landing-ground-start](014-landing-ground-start.md) | done -- via 010 | f30507e |
 | 015 | [veteran-fire-range](015-veteran-fire-range.md) | done | 92b72ca |
