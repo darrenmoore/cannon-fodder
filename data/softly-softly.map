@@ -5,6 +5,7 @@ doctrine: garrison
 order: 12
 mechanic: not being seen
 brief: Walk out the far side without killing anybody. Firing is allowed; a body is not.
+advice: Out the far side without killing anybody. You may fire all you like -- it is the hitting that is against the rules.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

@@ -5,6 +5,7 @@ doctrine: garrison
 order: 19
 mechanic: a shot that lands elsewhere
 brief: Three of ours, ringed and out in the open. Put a round in the far trees and they go to the far trees.
+advice: Three of ours, ringed, out in the open. Put a round into the far trees and they will go and look at the far trees. Men are like that.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT.T.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

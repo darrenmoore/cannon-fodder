@@ -5,6 +5,7 @@ doctrine: hunters
 order: 8
 mechanic: enemy buildings
 brief: Huts keep sending out troopers. Grenades bring them down, rifles will not.
+advice: The huts keep producing men, so stop the huts. Grenades. Rifles will only annoy the brickwork.
 tile: 16
 ---
 TTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTT....TTTTTTTTTTTTTTTTTTT

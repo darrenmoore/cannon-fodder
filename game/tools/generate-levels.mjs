@@ -2209,18 +2209,21 @@ function fromLayout(g, place, spec) {
 
 const CAMPAIGN = [
   {
+    advice: "Flat ground, huts to level, men to shoot, and no cover to blame afterwards.",
     id: 'test-shooting', dev: true, doctrine: 'garrison', order: 98, seed: 90210, w: 54, h: 34,
     name: 'Shooting Range', theme: 'jungle', objective: 'eliminate',
     mechanic: 'nothing but targets',
     brief: 'Dev only. Flat ground, huts to level and men to shoot, and no cover to blame.',
   },
   {
+    advice: "One man. No herd to hide in, and one hit is still all it takes. Walk carefully and think of it as a promotion.",
     id: 'lone-wolf', squad: 1, doctrine: 'patrol', order: 11, seed: 887701, w: 84, h: 52,
     name: 'Lone Wolf', theme: 'jungle', objective: 'reach',
     mechanic: 'one man',
     brief: 'One soldier. No herd to hide in, and one hit is still all it takes.',
   },
   {
+    advice: "One of everything, for looking at rather than winning. Do not read anything into it.",
     id: 'test-range', dev: true, doctrine: 'garrison', order: 99, seed: 40404, w: 66, h: 30,
     name: 'Test Range', theme: 'jungle', objective: 'eliminate',
     mechanic: 'everything at once',
@@ -2238,6 +2241,8 @@ const CAMPAIGN = [
     // No grenades at all: this mission is about marching and shooting, and a
     // full pouch is a third thing to think about while learning the first two.
     grenades: 0,
+    advice: "Click where you want them and they'll go there. {FIRE} to shoot. That is the whole of it.",
+    advicetime: -1,
     id: 'training-fire', doctrine: 'garrison', order: 1, seed: 110001, w: 52, h: 34,
     name: 'Basic Training', theme: 'jungle', objective: 'eliminate',
     mechanic: 'move, and then fire',
@@ -2252,54 +2257,64 @@ const CAMPAIGN = [
     // over on the bridge, and arriving with four makes that pickup mean
     // nothing at all.
     grenades: 0,
+    advice: "Rifles will not dent a hut. There are grenades on the bridge -- walk over them. {GRENADE} to aim, click to throw. At the huts, ideally.",
+    advicetime: -1,
     id: 'training-bridge', doctrine: 'garrison', order: 2, seed: 110002, w: 46, h: 60,
     name: 'Over the Water', theme: 'jungle', objective: 'demolish',
     mechanic: 'the bridge, and what is on it',
     brief: 'Both huts, and rifles will barely mark them. There are grenades on the bridge -- walk over them, then use them.',
   },
   {
+    advice: "Move as a herd and use the trees. I hid in some trees in 1961 and nobody has found me since, in a sense.",
     id: 'chicken-run', doctrine: 'garrison', order: 3, seed: 20250830, w: 88, h: 56,
     name: 'Chicken Run', theme: 'jungle', objective: 'eliminate',
     mechanic: 'basics',
     brief: 'Move as a herd, use the treeline, and let them come to you.',
   },
   {
+    advice: "Deep water is not a route, it is a decision. Take a bridge and expect somebody to have thought of that before you.",
     id: 'river-run', doctrine: 'garrison', order: 4, seed: 771903, w: 64, h: 88,
     name: 'River Run', theme: 'jungle', objective: 'eliminate',
     mechanic: 'deep water',
     brief: 'Deep water cannot be crossed. Take a bridge, and expect it covered.',
   },
   {
+    advice: "A long march east. Get everybody still standing to the pickup. Emphasis, if I may, on still standing.",
     id: 'long-road', doctrine: 'ambush', order: 5, seed: 448210, w: 220, h: 44,
     name: 'The Long Road', theme: 'desert', objective: 'reach',
     mechanic: 'extraction',
     brief: 'A long march east. Get everyone still standing to the pickup.',
   },
   {
+    advice: "Tall grass hides you. It does not hide your bullets, which is a distinction I have had explained to me twice.",
     id: 'undergrowth', doctrine: 'patrol', order: 6, seed: 913377, w: 96, h: 68,
     name: 'Undergrowth', theme: 'jungle', objective: 'eliminate',
     mechanic: 'tall grass',
     brief: 'Tall grass hides you but not your bullets. Snipers own the open ground.',
   },
   {
+    advice: "Mines everywhere. Shoot a barrel to open a lane, then level the huts. Do not open a lane you are standing in.",
     id: 'minefield', doctrine: 'garrison', order: 7, seed: 610455, w: 92, h: 64,
     name: 'Minefield', theme: 'desert', objective: 'demolish',
     mechanic: 'mines',
     brief: 'Mines everywhere. Shoot a barrel to clear a lane, then level the huts.',
   },
   {
+    advice: "The huts keep producing men, so stop the huts. Grenades. Rifles will only annoy the brickwork.",
     id: 'village', doctrine: 'hunters', order: 8, seed: 328814, w: 96, h: 76,
     name: 'Village', theme: 'jungle', objective: 'demolish',
     mechanic: 'enemy buildings',
     brief: 'Huts keep sending out troopers. Grenades bring them down, rifles will not.',
   },
   {
+    advice: "Walk every prisoner back to the tent. The ice ruins your footing and one dead hostage ends it, so mind where you are pointing that.",
     id: 'ice-station', doctrine: 'patrol', order: 9, seed: 175062, w: 100, h: 64,
     name: 'Ice Station', theme: 'arctic', objective: 'rescue',
     mechanic: 'hostages and ice',
     brief: 'Walk every prisoner back to the tent. Ice ruins your footing; one dead hostage ends it.',
   },
   {
+    advice: "Out the far side without killing anybody. You may fire all you like -- it is the hitting that is against the rules.",
     id: 'softly-softly', doctrine: 'garrison', order: 12, seed: 664218, w: 104, h: 56,
     name: 'Softly Softly', theme: 'jungle', objective: 'covert',
     mechanic: 'not being seen',
@@ -2318,18 +2333,21 @@ const CAMPAIGN = [
    * mission whose brief was autogenerated would read like one.
    */
   {
+    advice: "One way east and the walls keep closing. Nothing on this map is optional, including the walking.",
     id: 'dry-run', layout: 'gauntlet', doctrine: 'ambush', order: 22, seed: 411903, w: 168, h: 52,
     name: 'Dry Run', theme: 'desert', objective: 'reach',
     mechanic: 'a corridor with shoulders',
     brief: 'One way east, and the walls keep closing on you. Nothing here is optional.',
   },
   {
+    advice: "Sea on every side, so there is nowhere to fall back to. Clear it. On the bright side, you cannot get lost.",
     id: 'no-way-off', layout: 'island', doctrine: 'garrison', order: 23, seed: 720184, w: 96, h: 86,
     name: 'No Way Off', theme: 'jungle', objective: 'eliminate', guards: 14,
     mechanic: 'nowhere to fall back to',
     brief: 'The sea is on every side. Clear it, because there is nowhere else to be.',
   },
   {
+    advice: "Four ways in and one outpost. Level a hut and the next wave is thinner, which is the closest thing to good news I have for you.",
     id: 'cold-keep', layout: 'ringSiege', doctrine: 'swarm', order: 24, seed: 338261, w: 88, h: 88,
     duration: 110, waves: '5@20',
     name: 'Cold Keep', theme: 'arctic', objective: 'survive',
@@ -2337,12 +2355,14 @@ const CAMPAIGN = [
     brief: 'Four ways in and one outpost. Level a hut and the next wave is thinner.',
   },
   {
+    advice: "Five crates and every one of them across water. Wade slowly. You cannot shoot while you are doing it, so try to have finished shooting.",
     id: 'braided-water', layout: 'delta', doctrine: 'patrol', order: 25, seed: 509772, w: 104, h: 82,
     name: 'Braided Water', theme: 'jungle', objective: 'collect',
     mechanic: 'channels and crossings',
     brief: 'Five crates scattered across the delta. Every one of them is over water.',
   },
   {
+    advice: "A hundred seconds to the far end, and the canyon lies about the way. Trust the clock rather than the scenery.",
     id: 'the-narrows', doctrine: 'ambush', order: 26, seed: 186540, w: 152, h: 58,
     timelimit: 100,
     name: 'The Narrows', theme: 'desert', objective: 'reach',
@@ -2350,12 +2370,14 @@ const CAMPAIGN = [
     brief: 'A hundred seconds to the far end of the canyon, and the canyon lies about the way.',
   },
   {
+    advice: "Everything they have landed is stacked above the beach. Take the lot down. Nobody has ever been thanked for leaving half a depot standing.",
     id: 'landing-ground', layout: 'coast', doctrine: 'hunters', order: 27, seed: 843017, w: 124, h: 72,
     name: 'Landing Ground', theme: 'jungle', objective: 'demolish', guards: 12,
     mechanic: 'piers and open shore',
     brief: 'Everything they land is stored above the beach. Take it all down.',
   },
   {
+    advice: "Take the bunker on the crossroads and stand on it. Four waves come for it, and leaving stops the clock. Standing still is the job.",
     id: 'hold-the-junction', layout: 'crossroads', doctrine: 'garrison', order: 28, seed: 265419, w: 104, h: 88,
     duration: 75, waves: '4@11',
     name: 'Hold the Junction', theme: 'desert', objective: 'hold',
@@ -2363,24 +2385,28 @@ const CAMPAIGN = [
     brief: 'Take the bunker on the crossroads and stand there. Four waves come for it. Leaving stops the clock.',
   },
   {
+    advice: "He is at the centre and every ring makes you walk most of a lap. Only he has to die. Everyone else is optional, in the nicest possible way.",
     id: 'the-coil', layout: 'spiral', doctrine: 'patrol', order: 29, seed: 972330, w: 90, h: 90,
     name: 'The Coil', theme: 'arctic', objective: 'assassinate',
     mechanic: 'three rings, three gaps',
     brief: 'He is at the centre and every ring makes you walk most of a lap. Only he has to die.',
   },
   {
+    advice: "Rock end to end and three ways through it. They know which three, so you are not surprising anybody.",
     id: 'the-spine', layout: 'ridgeline', doctrine: 'hunters', order: 30, seed: 604158, w: 112, h: 78,
     name: 'The Spine', theme: 'arctic', objective: 'eliminate', guards: 13,
     mechanic: 'a ridge with three passes',
     brief: 'Rock from end to end and three ways through it. They know which three.',
   },
   {
+    advice: "The prisoners are at the far end of the chain. Every causeway is a decision and there is no going round.",
     id: 'stepping-stones', layout: 'causeway', doctrine: 'garrison', order: 31, seed: 117622, w: 144, h: 60,
     name: 'Stepping Stones', theme: 'jungle', objective: 'rescue',
     mechanic: 'islands, one at a time',
     brief: 'The prisoners are at the far end of the chain. Every causeway is a decision.',
   },
   {
+    advice: "Walk the length of it, take the far bunker, and keep somebody standing on it. Somebody, not everybody -- it is a bunker, not a bus.",
     id: 'the-long-white', layout: 'gauntlet', doctrine: 'swarm', order: 32, seed: 488251, w: 150, h: 54,
     duration: 75, waves: '4@11',
     name: 'The Long White', theme: 'arctic', objective: 'hold',
@@ -2388,6 +2414,7 @@ const CAMPAIGN = [
     brief: 'Walk the length of it, take the far bunker, and keep somebody standing on it while they come.'
   },
   {
+    advice: "A canyon floor, four waves, and walls that stop you going round. Face the right way and do not let them behind you.",
     id: 'white-cut', layout: 'canyon', doctrine: 'swarm', order: 33, seed: 733806, w: 138, h: 56,
     duration: 100, waves: '4@22',
     name: 'White Cut', theme: 'arctic', objective: 'survive',
@@ -2395,24 +2422,28 @@ const CAMPAIGN = [
     brief: 'A canyon floor, four waves, and walls that stop you going round them.',
   },
   {
+    advice: "Water on a flat where there should be none. Both banks want clearing, and neither is going to volunteer.",
     id: 'salt-flats', layout: 'delta', doctrine: 'patrol', order: 34, seed: 951274, w: 108, h: 80,
     name: 'Salt Flats', theme: 'desert', objective: 'eliminate', guards: 14,
     mechanic: 'water where there should be none',
     brief: 'Channels across a flat nobody expected water on. Clear both banks.',
   },
   {
+    advice: "A strip of shore, a long way east, and no cover worth the name. Keep moving; standing about is the only thing that is definitely fatal.",
     id: 'cold-shore', layout: 'coast', doctrine: 'ambush', order: 35, seed: 622085, w: 128, h: 70,
     name: 'Cold Shore', theme: 'arctic', objective: 'reach',
     mechanic: 'open ground beside deep water',
     brief: 'A strip of shore, a long way east, and no cover worth the name.',
   },
   {
+    advice: "Everything worth levelling is inside the wire. They will not wait for you to be ready, which I think is rather bad manners.",
     id: 'the-drum', layout: 'ringSiege', doctrine: 'hunters', order: 36, seed: 380916, w: 92, h: 92,
     name: 'The Drum', theme: 'jungle', objective: 'demolish', guards: 12,
     mechanic: 'a compound to get into',
     brief: 'Everything worth levelling is inside the wire, and they will not wait for you.',
   },
   {
+    advice: "Five crates among the blocks, and every street is somebody's lane. Move along them briskly and do not stop to shop.",
     id: 'market-day', layout: 'crossroads', doctrine: 'ambush', order: 37, seed: 297643, w: 108, h: 86,
     name: 'Market Day', theme: 'jungle', objective: 'collect',
     mechanic: 'a town with sightlines',
@@ -2421,36 +2452,42 @@ const CAMPAIGN = [
 
   // ---- set pieces: hand-written, because the shape is the point ----------
   {
+    advice: "Four crossings and all four are covered. Pick one and go, and do not stand on it admiring the canal.",
     id: 'four-bridges', doctrine: 'garrison', order: 13, seed: 310577, w: 108, h: 70,
     name: 'Four Bridges', theme: 'jungle', objective: 'demolish',
     mechanic: 'a cut somebody dug',
     brief: 'A straight canal, four crossings, and every one of them covered. Pick your bridge.',
   },
   {
+    advice: "He is somewhere in the middle. Nothing else on this map has to die, which I mention because it usually does anyway.",
     id: 'walled-town', doctrine: 'patrol', order: 14, seed: 664901, w: 104, h: 72,
     name: 'The Walled Town', theme: 'desert', objective: 'assassinate',
     mechanic: 'streets, and one man in them',
     brief: 'He is somewhere in the middle. Nothing else on this map has to die.',
   },
   {
+    advice: "Three prisoners, home through the grass, and one body ends it. This is the mission where being good at shooting is a liability.",
     id: 'not-a-sound', doctrine: 'garrison', order: 15, seed: 907714, w: 108, h: 58,
     name: 'Not a Sound', theme: 'jungle', objective: 'rescue', nokill: true,
     mechanic: 'a rescue nobody hears',
     brief: 'Walk three prisoners home through the grass. One body and it is over.',
   },
   {
+    advice: "The same grass, the other way round. Nobody is walking past anybody today.",
     id: 'loud-and-clear', doctrine: 'garrison', order: 17, seed: 3315870, w: 108, h: 58,
     name: 'Loud and Clear', theme: 'jungle', objective: 'eliminate',
     mechanic: 'the quiet map, armed',
     brief: 'The same grass, the other way round. This time nobody is walking past anybody: clear it.',
   },
   {
+    advice: "One green corridor to the far end. They are in the grass at the edges and they will let you get close first, which is not sporting.",
     id: 'the-choke', doctrine: 'ambush', order: 20, seed: 411387, w: 150, h: 54,
     name: 'The Choke', theme: 'jungle', objective: 'reach',
     mechanic: 'edges you cannot read',
     brief: 'One green corridor to the far end. They are in the grass at its edges, and they will let you get close.',
   },
   {
+    advice: "The supplies are on the far side and there is no way round. So the door is a building. Bring it down and walk through where it was.",
     id: 'through-the-wall', doctrine: 'garrison', order: 16, seed: 155038, w: 96, h: 64, gated: true,
     name: 'Through the Wall', theme: 'desert', objective: 'collect',
     mechanic: 'the door is a building',
@@ -2458,6 +2495,7 @@ const CAMPAIGN = [
   },
 
   {
+    advice: "Hold the outpost for two minutes. Five waves out of the huts, and levelling a hut makes the next one smaller. Two minutes is longer than it sounds.",
     id: 'last-stand', doctrine: 'swarm', order: 10, seed: 502991, w: 76, h: 76, duration: 150,
     name: 'Last Stand', theme: 'arctic', objective: 'survive', waves: '5@22',
     mechanic: 'holding out',
@@ -2475,30 +2513,35 @@ const CAMPAIGN = [
    * same mission three times however different the ground is.
    */
   {
+    advice: "Three of ours, ringed, out in the open. Put a round into the far trees and they will go and look at the far trees. Men are like that.",
     id: 'the-far-trees', doctrine: 'garrison', order: 19, seed: 640217, w: 100, h: 58,
     name: 'The Far Trees', theme: 'jungle', objective: 'rescue',
     mechanic: 'a shot that lands elsewhere',
     brief: 'Three of ours, ringed and out in the open. Put a round in the far trees and they go to the far trees.',
   },
   {
+    advice: "Crates across the pan and nowhere at all to stand out of sight. Bright, flat and entirely overlooked, like my career.",
     id: 'salt-pan', layout: 'island', doctrine: 'ambush', order: 38, seed: 517742, w: 96, h: 72,
     name: 'Salt Pan', theme: 'desert', objective: 'collect',
     mechanic: 'flat, bright and overlooked',
     brief: 'Crates scattered across the pan, and nowhere at all to stand out of sight.',
   },
   {
+    advice: "They work the pit from the rim. Level what they built and get out before somebody asks you to fill the hole in.",
     id: 'the-quarry', layout: 'canyon', doctrine: 'garrison', order: 39, seed: 863401, w: 112, h: 64,
     name: 'The Quarry', theme: 'desert', objective: 'demolish',
     mechanic: 'terraces and dead ground',
     brief: 'They work the pit from the rim. Level what they built and get out.',
   },
   {
+    advice: "One road, water either side, pickets the whole way. There is no shoulder, so do not go looking for one.",
     id: 'bone-road', layout: 'causeway', doctrine: 'patrol', order: 40, seed: 294118, w: 180, h: 48,
     name: 'Bone Road', theme: 'desert', objective: 'reach',
     mechanic: 'a road with no shoulder',
     brief: 'One road, water either side, and pickets all the way along it.',
   },
   {
+    advice: "They own the ridge and they will not stay on it. Take it anyway. High ground is high ground even when it is full of people.",
     id: 'dust-devils', layout: 'ridgeline', doctrine: 'hunters', order: 41, seed: 706233, w: 104, h: 80,
     // The ridgeline's hubs left the bottom-left quarter bare (200-qa 022);
     // a pinned camp with a marched beat fills it without rerolling a map the
@@ -2509,30 +2552,35 @@ const CAMPAIGN = [
     brief: 'They own the ridge and they will not stay on it. Take it anyway.',
   },
   {
+    advice: "They are held at the middle and every turn of the spiral is watched. Wind in, wind out, and try not to think about it too hard.",
     id: 'the-cistern', layout: 'spiral', doctrine: 'garrison', order: 43, seed: 448970, w: 88, h: 88,
     name: 'The Cistern', theme: 'desert', objective: 'rescue',
     mechanic: 'a compound wound inward',
     brief: 'They are held at the middle of it, and every turn of the spiral is watched.',
   },
   {
+    advice: "The river braids here and the ice is thin. Pick a crossing and commit to it. Reconsidering halfway is how you get wet.",
     id: 'black-ice', layout: 'delta', doctrine: 'patrol', order: 42, seed: 655012, w: 108, h: 76,
     name: 'Black Ice', theme: 'arctic', objective: 'reach',
     mechanic: 'many crossings, none safe',
     brief: 'The river braids here and the ice is thin. Pick a crossing and commit.',
   },
   {
+    advice: "Four roads meet at their sheds. Take the sheds down and the roads are yours. That is how junctions work, apparently.",
     id: 'the-hangar', layout: 'crossroads', doctrine: 'garrison', order: 44, seed: 138265, w: 96, h: 84,
     name: 'The Hangar', theme: 'arctic', objective: 'demolish',
     mechanic: 'a junction they built on',
     brief: 'Four roads meet at their sheds. Take the sheds down and the roads are yours.',
   },
   {
+    advice: "He is somewhere along the pass and so is everybody guarding him. Work down it and you will find them both.",
     id: 'snow-blind', layout: 'gauntlet', doctrine: 'ambush', order: 45, seed: 981744, w: 148, h: 52,
     name: 'Snow Blind', theme: 'arctic', objective: 'assassinate',
     mechanic: 'a corridor, and one man in it',
     brief: 'He is somewhere along the pass, and so is everybody guarding him.',
   },
   {
+    advice: "Take the bunker on the ice and stay on it. Four waves come across for it. The ice is fine. Probably.",
     id: 'frozen-lake', layout: 'island', doctrine: 'swarm', order: 46, seed: 322806, w: 84, h: 84,
     duration: 75, waves: '4@11',
     name: 'Frozen Lake', theme: 'arctic', objective: 'hold',
@@ -2540,12 +2588,14 @@ const CAMPAIGN = [
     brief: 'Take the bunker on the ice and stay on it. Four waves come across for it.',
   },
   {
+    advice: "Supplies down both sides of a gap you cannot cross, and they will come round it faster than you will. Decide which side you want first.",
     id: 'the-crevasse', layout: 'canyon', doctrine: 'hunters', order: 47, seed: 570439, w: 128, h: 60,
     name: 'The Crevasse', theme: 'arctic', objective: 'collect',
     mechanic: 'a split you cannot cross',
     brief: 'Supplies down both sides of a gap, and they will come round it faster than you.',
   },
   {
+    advice: "They are held at the station above the beach. Walk them down. It is downhill, which is the only good news on this map.",
     id: 'north-station', layout: 'coast', doctrine: 'garrison', order: 48, seed: 811527, w: 116, h: 68,
     name: 'North Station', theme: 'arctic', objective: 'rescue',
     mechanic: 'a shore with one way up it',
@@ -2587,6 +2637,19 @@ function generate(spec) {
     // Only when the mission overrides the difficulty's number. `0` is a real
     // answer, so the test is against undefined rather than against falsiness.
     ...(spec.grenades !== undefined ? [`grenades: ${spec.grenades}`] : []),
+    /*
+     * What the comms panel says on this mission. `{FIRE}` and `{GRENADE}` are
+     * substituted at runtime, because the controls are platform-branched and a
+     * map file cannot know which machine is reading it.
+     *
+     * `advisor` and `advicetime` are only emitted when a mission overrides the
+     * default: -1 keeps the panel up for the whole mission, which is what the
+     * two training missions want, and there is one speaker so far, so naming
+     * him on fifty-one maps would be fifty-one lines saying the same thing.
+     */
+    ...(spec.advice ? [`advice: ${spec.advice}`] : []),
+    ...(spec.advisor ? [`advisor: ${spec.advisor}`] : []),
+    ...(spec.advicetime !== undefined ? [`advicetime: ${spec.advicetime}`] : []),
     ...(spec.dev ? ['dev: true'] : []),
     ...(spec.squad ? [`squad: ${spec.squad}`] : []),
     ...(spec.waves ? [`waves: ${spec.waves}`] : []),

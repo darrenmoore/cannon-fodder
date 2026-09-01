@@ -6,6 +6,7 @@ order: 16
 mechanic: the door is a building
 brief: The supplies are on the far side and there is no way round. Bring the wall down.
 gated: true
+advice: The supplies are on the far side and there is no way round. So the door is a building. Bring it down and walk through where it was.
 tile: 16
 ---
 ###########################################################.#.##################################

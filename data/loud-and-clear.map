@@ -5,6 +5,7 @@ doctrine: garrison
 order: 17
 mechanic: the quiet map, armed
 brief: The same grass, the other way round. This time nobody is walking past anybody: clear it.
+advice: The same grass, the other way round. Nobody is walking past anybody today.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

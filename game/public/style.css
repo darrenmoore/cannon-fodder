@@ -557,7 +557,21 @@ html, body {
  */
 #comms {
   position: absolute;
-  left: 50%;
+  /*
+   * Centred by auto margins between left:0 and right:0, not by `left: 50%`
+   * with a -50% translate.
+   *
+   * The translate version shrink-wrapped into the *right half* of the play
+   * area -- an absolutely positioned box sizes itself against the space from
+   * its `left` to the container edge -- so a long line wrapped to five rows in
+   * a 495px panel while 760 was available and three would have done. Five rows
+   * of panel over the bottom of the map is a real cost on a map you are trying
+   * to read.
+   */
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
   bottom: calc(10px + var(--safe-b));
   z-index: 5;
   max-width: min(760px, calc(100% - 32px));
@@ -568,9 +582,8 @@ html, body {
   image-rendering: pixelated;
   text-align: center;
   pointer-events: none;
-  /* Off the bottom of the play area until it is asked for. The translate is
-     on top of the -50% that centres it, so both live in one transform. */
-  transform: translate(-50%, calc(100% + 24px));
+  /* Off the bottom of the play area until it is asked for. */
+  transform: translateY(calc(100% + 24px));
   opacity: 0;
   transition: transform 0.34s cubic-bezier(0.18, 1.5, 0.4, 1), opacity 0.2s linear;
 }
@@ -596,7 +609,7 @@ html, body {
 }
 .comms-said { flex: 1 1 auto; min-width: 0; }
 #comms.in {
-  transform: translate(-50%, 0);
+  transform: translateY(0);
   opacity: 1;
 }
 /* The overshoot is the whole of the "bounces in" the brief asked for, so under

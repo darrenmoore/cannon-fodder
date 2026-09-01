@@ -5,6 +5,7 @@ doctrine: garrison
 order: 99
 mechanic: everything at once
 brief: Dev only. One of everything, for looking at rather than winning.
+advice: One of everything, for looking at rather than winning. Do not read anything into it.
 dev: true
 tile: 16
 ---

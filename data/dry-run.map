@@ -5,6 +5,7 @@ doctrine: ambush
 order: 22
 mechanic: a corridor with shoulders
 brief: One way east, and the walls keep closing on you. Nothing here is optional.
+advice: One way east and the walls keep closing. Nothing on this map is optional, including the walking.
 tile: 16
 ---
 ########################################################################################################################################################################

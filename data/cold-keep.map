@@ -5,6 +5,7 @@ doctrine: swarm
 order: 24
 mechanic: a wall with four gates
 brief: Four ways in and one outpost. Level a hut and the next wave is thinner.
+advice: Four ways in and one outpost. Level a hut and the next wave is thinner, which is the closest thing to good news I have for you.
 waves: 5@20
 tile: 16
 duration: 110

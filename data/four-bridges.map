@@ -5,6 +5,7 @@ doctrine: garrison
 order: 13
 mechanic: a cut somebody dug
 brief: A straight canal, four crossings, and every one of them covered. Pick your bridge.
+advice: Four crossings and all four are covered. Pick one and go, and do not stand on it admiring the canal.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

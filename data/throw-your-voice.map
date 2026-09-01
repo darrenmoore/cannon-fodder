@@ -5,6 +5,7 @@ doctrine: patrol
 order: 16
 mechanic: a shot that lands elsewhere
 brief: They go to where the round landed, not to who fired it. Put one in the far trees and walk the other way.
+advice: They walk to where the round landed, not to whoever fired it. Put one in the far trees and go the other way. It works every time and I still do not know why.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

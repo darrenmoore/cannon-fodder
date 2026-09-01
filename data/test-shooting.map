@@ -5,6 +5,7 @@ doctrine: garrison
 order: 98
 mechanic: nothing but targets
 brief: Dev only. Flat ground, huts to level and men to shoot, and no cover to blame.
+advice: Flat ground, huts to level, men to shoot, and no cover to blame afterwards.
 dev: true
 tile: 16
 ---

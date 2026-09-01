@@ -5,6 +5,7 @@ doctrine: ambush
 order: 20
 mechanic: edges you cannot read
 brief: One green corridor to the far end. They are in the grass at its edges, and they will let you get close.
+advice: One green corridor to the far end. They are in the grass at the edges and they will let you get close first, which is not sporting.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

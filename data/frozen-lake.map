@@ -5,6 +5,7 @@ doctrine: swarm
 order: 46
 mechanic: ground you cannot leave
 brief: Take the bunker on the ice and stay on it. Four waves come across for it.
+advice: Take the bunker on the ice and stay on it. Four waves come across for it. The ice is fine. Probably.
 waves: 4@11
 tile: 16
 duration: 75

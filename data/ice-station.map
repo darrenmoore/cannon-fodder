@@ -5,6 +5,7 @@ doctrine: patrol
 order: 9
 mechanic: hostages and ice
 brief: Walk every prisoner back to the tent. Ice ruins your footing; one dead hostage ends it.
+advice: Walk every prisoner back to the tent. The ice ruins your footing and one dead hostage ends it, so mind where you are pointing that.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

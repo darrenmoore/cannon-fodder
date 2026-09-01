@@ -5,6 +5,7 @@ doctrine: garrison
 order: 3
 mechanic: basics
 brief: Move as a herd, use the treeline, and let them come to you.
+advice: Move as a herd and use the trees. I hid in some trees in 1961 and nobody has found me since, in a sense.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.T...TTTTTTTTTTTTTTTTTTTTTTT

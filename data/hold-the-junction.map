@@ -5,6 +5,7 @@ doctrine: garrison
 order: 28
 mechanic: ground, measured in seconds
 brief: Take the bunker on the crossroads and stand there. Four waves come for it. Leaving stops the clock.
+advice: Take the bunker on the crossroads and stand on it. Four waves come for it, and leaving stops the clock. Standing still is the job.
 waves: 4@11
 tile: 16
 duration: 75

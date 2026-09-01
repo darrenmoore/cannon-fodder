@@ -5,6 +5,7 @@ doctrine: swarm
 order: 10
 mechanic: holding out
 brief: Hold the outpost for two minutes. Five waves come out of the huts -- level a hut and the next one is smaller.
+advice: Hold the outpost for two minutes. Five waves out of the huts, and levelling a hut makes the next one smaller. Two minutes is longer than it sounds.
 waves: 5@22
 tile: 16
 duration: 150

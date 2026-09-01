@@ -6,6 +6,7 @@ order: 26
 mechanic: a clock, and a wrong turn
 brief: A hundred seconds to the far end of the canyon, and the canyon lies about the way.
 timelimit: 100
+advice: A hundred seconds to the far end, and the canyon lies about the way. Trust the clock rather than the scenery.
 tile: 16
 ---
 ########################################################################################################################################################

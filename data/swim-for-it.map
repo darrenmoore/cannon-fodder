@@ -5,6 +5,7 @@ doctrine: ambush
 order: 17
 mechanic: water as a route you pay for
 brief: One bridge and it is covered. The channel will take you anywhere else, slowly, and you cannot shoot while in it.
+advice: One bridge and it is covered. The channel will take you anywhere else, slowly, and you cannot shoot while you are in it. Choose which problem you would rather have.
 tile: 16
 ---
 ################################################################################################

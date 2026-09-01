@@ -5,6 +5,7 @@ doctrine: ambush
 order: 5
 mechanic: extraction
 brief: A long march east. Get everyone still standing to the pickup.
+advice: A long march east. Get everybody still standing to the pickup. Emphasis, if I may, on still standing.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

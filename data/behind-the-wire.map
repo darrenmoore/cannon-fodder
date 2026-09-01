@@ -5,6 +5,7 @@ doctrine: garrison
 order: 15
 mechanic: wire you can see through
 brief: Wire stops bullets, not eyes. You will watch each other the whole way; the gates are where it turns.
+advice: Wire stops bullets and not eyes, so you will be watching each other the whole way. The gates are where it turns.
 tile: 16
 ---
 ############################################################################################

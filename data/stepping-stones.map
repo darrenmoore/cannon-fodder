@@ -5,6 +5,7 @@ doctrine: garrison
 order: 31
 mechanic: islands, one at a time
 brief: The prisoners are at the far end of the chain. Every causeway is a decision.
+advice: The prisoners are at the far end of the chain. Every causeway is a decision and there is no going round.
 tile: 16
 ---
 WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

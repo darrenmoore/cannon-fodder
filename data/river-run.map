@@ -5,6 +5,7 @@ doctrine: garrison
 order: 4
 mechanic: deep water
 brief: Deep water cannot be crossed. Take a bridge, and expect it covered.
+advice: Deep water is not a route, it is a decision. Take a bridge and expect somebody to have thought of that before you.
 tile: 16
 ---
 TTTTT....TTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..T...T

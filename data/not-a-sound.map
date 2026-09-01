@@ -6,6 +6,7 @@ order: 15
 mechanic: a rescue nobody hears
 brief: Walk three prisoners home through the grass. One body and it is over.
 nokill: true
+advice: Three prisoners, home through the grass, and one body ends it. This is the mission where being good at shooting is a liability.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

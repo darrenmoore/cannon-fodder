@@ -5,6 +5,7 @@ doctrine: patrol
 order: 34
 mechanic: water where there should be none
 brief: Channels across a flat nobody expected water on. Clear both banks.
+advice: Water on a flat where there should be none. Both banks want clearing, and neither is going to volunteer.
 tile: 16
 ---
 ######################################################~~~~~##############################################,.#

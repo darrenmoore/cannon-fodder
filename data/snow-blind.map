@@ -5,6 +5,7 @@ doctrine: ambush
 order: 45
 mechanic: a corridor, and one man in it
 brief: He is somewhere along the pass, and so is everybody guarding him.
+advice: He is somewhere along the pass and so is everybody guarding him. Work down it and you will find them both.
 tile: 16
 ---
 ####################################################################################################################################################

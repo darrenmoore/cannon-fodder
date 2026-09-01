@@ -51,6 +51,9 @@ perfectly valid — it is simply ignored by the other.
 | `timelimit` | Seconds before the mission is lost. See [Modifiers](#modifiers) | none | both |
 | `gated` | `true` when the only route runs through a building you must level. See [Modifiers](#modifiers) | `false` | mission |
 | `grenades` | Grenades the squad starts with, overriding the difficulty's number. `0` is a real answer; omit it to take the difficulty's | difficulty's | mission |
+| `advice` | What the comms panel says on this mission. `{FIRE}` and `{GRENADE}` are replaced with the controls for whichever machine is reading. Omit it and the mission is silent | none | mission |
+| `advisor` | Which speaker says it. See [docs/characters.md](characters.md) | `trumper` | mission |
+| `advicetime` | Seconds it stays on screen. `-1` keeps it up for the whole mission | `14` | mission |
 | `brief` | One line shown on the menu and in the opening banner | — | both |
 | `mechanic` | Short label for the new idea this mission introduces | — | both |
 | `duration` | Seconds to hold out, for `survive`; seconds to stand in the zone, for `hold` | `90` | mission |

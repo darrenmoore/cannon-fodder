@@ -5,6 +5,7 @@ doctrine: patrol
 order: 14
 mechanic: streets, and one man in them
 brief: He is somewhere in the middle. Nothing else on this map has to die.
+advice: He is somewhere in the middle. Nothing else on this map has to die, which I mention because it usually does anyway.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TT

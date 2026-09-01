@@ -5,6 +5,7 @@ doctrine: patrol
 order: 25
 mechanic: channels and crossings
 brief: Five crates scattered across the delta. Every one of them is over water.
+advice: Five crates and every one of them across water. Wade slowly. You cannot shoot while you are doing it, so try to have finished shooting.
 tile: 16
 ---
 TTTTT...TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~~~TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.T.T.

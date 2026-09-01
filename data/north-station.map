@@ -5,6 +5,7 @@ doctrine: garrison
 order: 48
 mechanic: a shore with one way up it
 brief: They are held at the station above the beach. Walk them back down to the tent.
+advice: They are held at the station above the beach. Walk them down. It is downhill, which is the only good news on this map.
 tile: 16
 ---
 ####################################################################################################################

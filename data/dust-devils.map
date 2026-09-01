@@ -5,6 +5,7 @@ doctrine: hunters
 order: 41
 mechanic: high ground, both ways
 brief: They own the ridge and they will not stay on it. Take it anyway.
+advice: They own the ridge and they will not stay on it. Take it anyway. High ground is high ground even when it is full of people.
 tile: 16
 ---
 ########################################################################################################

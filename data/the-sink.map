@@ -6,6 +6,7 @@ order: 18
 duration: 75
 mechanic: quicksand as a shape
 brief: Firm ground in the middle and sinks all round it. Four waves come out of the huts, and every one of them has to wade. They cannot fire while they do.
+advice: Firm ground in the middle, sinks all round it. Every wave has to wade and they cannot fire while they do. Let the ground do some of the work.
 waves: 4@11
 tile: 16
 ---

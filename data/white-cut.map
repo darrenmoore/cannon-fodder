@@ -5,6 +5,7 @@ doctrine: swarm
 order: 33
 mechanic: nowhere to spread out
 brief: A canyon floor, four waves, and walls that stop you going round them.
+advice: A canyon floor, four waves, and walls that stop you going round. Face the right way and do not let them behind you.
 waves: 4@22
 tile: 16
 duration: 100

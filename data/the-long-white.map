@@ -5,6 +5,7 @@ doctrine: swarm
 order: 32
 mechanic: holding a corridor
 brief: Walk the length of it, take the far bunker, and keep somebody standing on it while they come.
+advice: Walk the length of it, take the far bunker, and keep somebody standing on it. Somebody, not everybody -- it is a bunker, not a bus.
 waves: 4@11
 tile: 16
 duration: 75

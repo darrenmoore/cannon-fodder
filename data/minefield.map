@@ -5,6 +5,7 @@ doctrine: garrison
 order: 7
 mechanic: mines
 brief: Mines everywhere. Shoot a barrel to clear a lane, then level the huts.
+advice: Mines everywhere. Shoot a barrel to open a lane, then level the huts. Do not open a lane you are standing in.
 tile: 16
 ---
 ##############################################.##..#########################################

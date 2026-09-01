@@ -5,6 +5,7 @@ doctrine: garrison
 order: 39
 mechanic: terraces and dead ground
 brief: They work the pit from the rim. Level what they built and get out.
+advice: They work the pit from the rim. Level what they built and get out before somebody asks you to fill the hole in.
 tile: 16
 ---
 ################################################################################################################

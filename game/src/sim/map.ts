@@ -6,6 +6,34 @@ import type { Theme } from './tiles.js';
 import type { Vec2 } from '../types.js';
 
 /** What a mission asks of you. See objectives.ts for the evaluation. */
+/**
+ * One thing a speaker says on one mission.
+ *
+ * `seconds` is -1 for "stays until the mission ends", which the first two
+ * missions want because they are teaching the controls and the player may look
+ * away and come back. Everything else takes a number, and a mission that omits
+ * the key takes the panel's default.
+ */
+export interface Advice {
+  text: string;
+  /** Speaker id, matching the table in `ui/comms.ts`. */
+  speaker: string;
+  /** Seconds on screen; -1 stays for the whole mission. */
+  seconds: number;
+}
+
+/** Who speaks when a mission does not say. The only one there is, so far. */
+export const DEFAULT_SPEAKER = 'trumper';
+
+/**
+ * How long a transmission stays when a mission does not say.
+ *
+ * Fourteen seconds: long enough to read twice at the panel's typing speed,
+ * short enough that it is not sitting over the bottom of the map for the whole
+ * mission. The two training missions override it with -1.
+ */
+export const DEFAULT_ADVICE_SECONDS = 14;
+
 export type ObjectiveKind =
   | 'eliminate' | 'demolish' | 'rescue' | 'reach' | 'survive' | 'covert'
   | 'hold' | 'collect' | 'assassinate';
@@ -138,6 +166,20 @@ export interface GameMap {
    */
   startGrenades: number;
   /**
+   * What the comms panel says on this mission, or null for silence.
+   *
+   * Mission data rather than code (owner's ask). It began as a switch on map
+   * id in `ui/comms.ts`, which meant three missions could talk and the other
+   * forty-eight could not without an edit to a UI file -- and a line about the
+   * quicksand is as much a property of the sink as its quicksand is.
+   *
+   * `text` may carry `{FIRE}` and `{GRENADE}`, substituted at runtime by the
+   * panel. That is the one thing a map file cannot state for itself: the
+   * controls are platform-branched, and a hard-coded RIGHT-CLICK in here would
+   * be a lie on every Mac that read it.
+   */
+  advice: Advice | null;
+  /**
    * The only route to something runs through a building that must be levelled.
    *
    * Declared, never inferred. Levelling a hut turns its tiles into walkable
@@ -251,6 +293,22 @@ export function parseMap(src: string, id = 'level'): GameMap {
     nokill: askedFor === 'covert' || header.nokill === 'true',
     timeLimit: Math.max(0, Number(header.timelimit) || 0),
     startGrenades: header.grenades === undefined ? -1 : Math.max(0, Number(header.grenades) || 0),
+    /*
+     * No text, no transmission. `advisor` and `advicetime` are meaningless on
+     * their own, so they are only read when there is something to say -- which
+     * also means a mission can be made silent by deleting one line.
+     */
+    advice: header.advice
+      ? {
+        text: header.advice,
+        speaker: header.advisor ?? DEFAULT_SPEAKER,
+        // -1 is sticky and 0 is a real (if odd) answer, so the test is against
+        // the key being absent rather than against falsiness.
+        seconds: header.advicetime === undefined
+          ? DEFAULT_ADVICE_SECONDS
+          : Number(header.advicetime),
+      }
+      : null,
     gated: header.gated === 'true',
     doctrine: isDoctrineId(header.doctrine ?? '') ? (header.doctrine as DoctrineId) : 'garrison',
     duration: Number(header.duration) || 90,

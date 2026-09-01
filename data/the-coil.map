@@ -5,6 +5,7 @@ doctrine: patrol
 order: 29
 mechanic: three rings, three gaps
 brief: He is at the centre and every ring makes you walk most of a lap. Only he has to die.
+advice: He is at the centre and every ring makes you walk most of a lap. Only he has to die. Everyone else is optional, in the nicest possible way.
 tile: 16
 ---
 ###################...####################################################################

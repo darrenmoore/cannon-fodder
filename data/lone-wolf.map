@@ -5,6 +5,7 @@ doctrine: patrol
 order: 11
 mechanic: one man
 brief: One soldier. No herd to hide in, and one hit is still all it takes.
+advice: One man. No herd to hide in, and one hit is still all it takes. Walk carefully and think of it as a promotion.
 squad: 1
 tile: 16
 ---

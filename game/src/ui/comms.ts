@@ -33,6 +33,8 @@
  */
 
 import { controlLines } from './controltext.js';
+import { DEFAULT_SPEAKER } from '../sim/map.js';
+import type { GameMap } from '../sim/map.js';
 import { reducedMotion, settings } from './settings.js';
 import { sfxVoice } from '../shell/audio.js';
 import type { SpeakerVoice } from '../shell/audio.js';
@@ -247,48 +249,42 @@ export function teardownComms(): void {
 }
 
 /**
- * What each mission has to say, keyed by map id.
+ * What this mission has to say, ready to put on the wire.
  *
- * A function rather than a string because the control names are decided at
- * runtime, and `controlLines()` is the only place that knows them -- one
- * source for "how do you fire", never two.
+ * The line itself is mission data (`advice:` in the map header); this resolves
+ * the two things a map file cannot state for itself.
  *
- * Only the first three have entries. The owner asked for the tutorial on the
- * first two, sticky, and on the third with a retract; everything else is
- * silent until somebody has something to say.
+ * **The controls.** `{FIRE}` and `{GRENADE}` are substituted here from
+ * `controlLines()`, which is platform-branched -- so one line of map data
+ * reads "HOLD RIGHT or F" on a PC and "HOLD F or CTRL+CLICK" on a Mac. A map
+ * file that spelled the key out would be a lie on half the machines that read
+ * it, and that exact lie is why the comms panel exists at all.
+ *
+ * **The speaker.** An id in the map, an entry in `SPEAKERS` here. An unknown
+ * id falls back rather than throwing: a mission whose speaker was renamed
+ * should still say its line in somebody's voice.
  */
 export function transmissionFor(
-  mapId: string,
-): { text: string; opts: TransmissionOpts } | null {
-  const keys = new Map(controlLines().map((l) => [l.action, l.keys]));
-  const fire = keys.get('fire') ?? '';
-  const grenade = keys.get('grenade') ?? '';
+  map: GameMap,
+): { speaker: Speaker; text: string; opts: TransmissionOpts } | null {
+  const advice = map.advice;
+  if (!advice || !advice.text.trim()) return null;
 
-  switch (mapId) {
-    /*
-     * In Major Trumper's register, per the answer to Q1: the officer supplies
-     * the situation, Lock supplies the delivery. Flat, unhurried, an absurdly
-     * specific detail stated as ordinary fact and then committed to. If a line
-     * would work with a drum sting after it, it is the wrong line -- and it
-     * still has to say what to press, because a tutorial that is only funny
-     * has failed at the one job it was given.
-     */
-    case 'training-fire':
-      return {
-        text: `CLICK WHERE YOU WANT THEM AND THEY'LL GO THERE. ${fire} TO SHOOT. THAT IS THE WHOLE OF IT.`,
-        opts: { sticky: true },
-      };
-    case 'training-bridge':
-      return {
-        text: `THE GRENADES ARE ON THE BRIDGE. WALK OVER THEM. ${grenade} TO AIM, CLICK TO THROW. AT THE HUTS, IDEALLY.`,
-        opts: { sticky: true },
-      };
-    case 'chicken-run':
-      return {
-        text: 'MOVE AS A HERD AND USE THE TREES. I HID IN SOME TREES IN 1961. NOBODY HAS FOUND ME SINCE, IN A SENSE.',
-        opts: { seconds: 14 },
-      };
-    default:
-      return null;
-  }
+  const keys = new Map(controlLines().map((l) => [l.action, l.keys]));
+  const text = advice.text
+    .replace(/\{FIRE\}/g, keys.get('fire') ?? '')
+    .replace(/\{GRENADE\}/g, keys.get('grenade') ?? '')
+    .replace(/\{MOVE\}/g, keys.get('move') ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const speaker = SPEAKERS[advice.speaker] ?? SPEAKERS[DEFAULT_SPEAKER] ?? NARRATOR;
+  // -1 means it stays for the whole mission, which is what the two training
+  // missions want: the player may look away and come back still not knowing
+  // which button fires.
+  const opts: TransmissionOpts = advice.seconds < 0
+    ? { sticky: true }
+    : { seconds: advice.seconds };
+
+  return { speaker, text, opts };
 }

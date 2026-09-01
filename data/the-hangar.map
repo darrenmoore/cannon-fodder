@@ -5,6 +5,7 @@ doctrine: garrison
 order: 44
 mechanic: a junction they built on
 brief: Four roads meet at their sheds. Take the sheds down and the roads are yours.
+advice: Four roads meet at their sheds. Take the sheds down and the roads are yours. That is how junctions work, apparently.
 tile: 16
 ---
 #########################################.######################################################

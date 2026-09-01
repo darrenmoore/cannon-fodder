@@ -5,6 +5,7 @@ doctrine: patrol
 order: 6
 mechanic: tall grass
 brief: Tall grass hides you but not your bullets. Snipers own the open ground.
+advice: Tall grass hides you. It does not hide your bullets, which is a distinction I have had explained to me twice.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTT

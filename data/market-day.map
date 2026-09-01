@@ -5,6 +5,7 @@ doctrine: ambush
 order: 37
 mechanic: a town with sightlines
 brief: Five crates among the blocks. Every street is a lane somebody is watching.
+advice: Five crates among the blocks, and every street is somebody's lane. Move along them briskly and do not stop to shop.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

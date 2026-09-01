@@ -5,6 +5,7 @@ doctrine: garrison
 order: 43
 mechanic: a compound wound inward
 brief: They are held at the middle of it, and every turn of the spiral is watched.
+advice: They are held at the middle and every turn of the spiral is watched. Wind in, wind out, and try not to think about it too hard.
 tile: 16
 ---
 ########################################################################################

@@ -5,6 +5,7 @@ doctrine: hunters
 order: 47
 mechanic: a split you cannot cross
 brief: Supplies down both sides of a gap, and they will come round it faster than you.
+advice: Supplies down both sides of a gap you cannot cross, and they will come round it faster than you will. Decide which side you want first.
 tile: 16
 ---
 ################################################################################################################################

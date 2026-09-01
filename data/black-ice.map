@@ -5,6 +5,7 @@ doctrine: patrol
 order: 42
 mechanic: many crossings, none safe
 brief: The river braids here and the ice is thin. Pick a crossing and commit.
+advice: The river braids here and the ice is thin. Pick a crossing and commit to it. Reconsidering halfway is how you get wet.
 tile: 16
 ---
 ########.###############################################~~~~~########.#.####################...#.###########

@@ -5,6 +5,7 @@ doctrine: ambush
 order: 35
 mechanic: open ground beside deep water
 brief: A strip of shore, a long way east, and no cover worth the name.
+advice: A strip of shore, a long way east, and no cover worth the name. Keep moving; standing about is the only thing that is definitely fatal.
 tile: 16
 ---
 ################################################################################################################################

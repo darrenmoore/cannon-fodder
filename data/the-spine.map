@@ -5,6 +5,7 @@ doctrine: hunters
 order: 30
 mechanic: a ridge with three passes
 brief: Rock from end to end and three ways through it. They know which three.
+advice: Rock end to end and three ways through it. They know which three, so you are not surprising anybody.
 tile: 16
 ---
 ..#.#############################################################################################..#############

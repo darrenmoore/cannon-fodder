@@ -5,6 +5,7 @@ doctrine: hunters
 order: 36
 mechanic: a compound to get into
 brief: Everything worth levelling is inside the wire, and they will not wait for you.
+advice: Everything worth levelling is inside the wire. They will not wait for you to be ready, which I think is rather bad manners.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
