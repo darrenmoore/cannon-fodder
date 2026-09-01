@@ -27,23 +27,10 @@ import type { DifficultyId } from './difficulty.js';
  *   - **Rank is only ever earned by surviving.** There is no other source.
  */
 
+import { nameAt } from './names.js';
+
 const KEY = 'cf.campaign';
 const VERSION = 1;
-
-/**
- * The recruitment pool, in order. The first twelve are the original's names in
- * the original's order — Jools and Jops lead every squad and the recruits behind
- * them are the ones the game expects you to spend. Past that the war goes on
- * longer than Sensible planned for, so the queue keeps filling.
- */
-export const RECRUITS = [
-  'JOOLS', 'JOPS', 'STOO', 'RJ', 'GARY', 'ANDY',
-  'BUZZ', 'TEDDY', 'HAWK', 'MAC', 'FRANK', 'WILL',
-  'CHRIS', 'DAVE', 'ROB', 'JIM', 'KEV', 'PAUL',
-  'NOBBY', 'TAFF', 'GEORDIE', 'SCOUSE', 'SMUDGE', 'DUSTY',
-  'BROCK', 'HAGGIS', 'PIKE', 'WALKER', 'JONES', 'FRAZER',
-  'BILKO', 'DOYLE', 'HUDSON', 'VASQUEZ', 'DRAKE', 'APONE',
-];
 
 /**
  * The ladder. `at` is the number of missions survived that earns the tier, so a
@@ -266,18 +253,20 @@ export function saveCampaign(state: CampaignState): void {
 /**
  * A name no living or dead soldier has ever had.
  *
- * Walks the pool first, then falls back to a numbered recruit. Running out is a
- * good problem — it means the campaign outlived thirty-six names.
+ * Walks the pool, and when the pool runs out goes round it again wearing a
+ * suffix -- SMITH, then one day SMITH JR., then SMITH III. It used to fall
+ * back to `RECRUIT 41`, which is precisely the thing this file exists not to
+ * do: a numbered recruit is a casualty counter that has stopped pretending.
  */
 function nextName(state: CampaignState): string {
   const taken = new Set([...state.squad.map((t) => t.name), ...state.fallen.map((g) => g.name)]);
-  while (state.issued < RECRUITS.length) {
-    const name = RECRUITS[state.issued++];
+  // `nameAt` is total and never repeats itself, so this walks forward until it
+  // finds one nobody has had. The only way it can skip is a name the player
+  // typed in themselves with their one rename.
+  for (;;) {
+    const name = nameAt(state.issued++);
     if (!taken.has(name)) return name;
   }
-  let n = state.issued++ - RECRUITS.length + 1;
-  while (taken.has(`RECRUIT ${n}`)) n++;
-  return `RECRUIT ${n}`;
 }
 
 /**

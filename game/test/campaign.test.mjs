@@ -47,6 +47,15 @@ const {
  * module scope for nothing this test needs -- so it is bundled separately with
  * a `__DEV__` define, the same way the real build does it.
  */
+/* The name pool, on its own: it has no DOM reach at all. */
+const namesBuild = await esbuild.build({
+  entryPoints: [join(ROOT, 'src', 'sim', 'names.ts')],
+  bundle: true, write: false, format: 'esm', target: 'es2022', logLevel: 'silent',
+});
+const { NAMES_MAX, NAME_MAX_RENDERED, RECRUITS, nameAt } = await import(
+  `data:text/javascript;base64,${Buffer.from(namesBuild.outputFiles[0].text).toString('base64')}`
+);
+
 const unlockBuild = await esbuild.build({
   entryPoints: [join(ROOT, 'src', 'sim', 'unlock.ts')],
   bundle: true,
@@ -420,6 +429,69 @@ test('the test range is never gated behind campaign progress', () => {
 });
 
 
+
+/* --------------------------------------------------------------- the names
+ *
+ * The pool is a hand-edited list of a few hundred strings, which is exactly
+ * the kind of thing that rots when somebody adds a name in a hurry. Both
+ * properties below are load-bearing and neither is visible when it breaks: an
+ * over-long name overflows a fixed-width roster column, and a duplicate
+ * silently defeats the one rule this whole file exists to enforce.
+ */
+
+test('the pool is hundreds of names, not dozens', () => {
+  assert.ok(RECRUITS.length >= 300, `only ${RECRUITS.length} names`);
+});
+
+test('the original twelve still lead, in the original order', () => {
+  assert.deepEqual(RECRUITS.slice(0, 12), [
+    'JOOLS', 'JOPS', 'STOO', 'RJ', 'GARY', 'ANDY',
+    'BUZZ', 'TEDDY', 'HAWK', 'MAC', 'FRANK', 'WILL',
+  ]);
+});
+
+test('no name is longer than the suffixes leave room for', () => {
+  const over = RECRUITS.filter((n) => n.length > NAMES_MAX);
+  assert.deepEqual(over, [], `too long: ${over.join(', ')}`);
+});
+
+test('no name appears twice in the pool', () => {
+  const seen = new Set();
+  const dup = RECRUITS.filter((n) => (seen.has(n) ? true : (seen.add(n), false)));
+  assert.deepEqual(dup, [], `duplicated: ${dup.join(', ')}`);
+});
+
+test('every name is uppercase, with nothing a roster cannot print', () => {
+  const bad = RECRUITS.filter((n) => !/^[A-Z]+$/.test(n));
+  assert.deepEqual(bad, [], `unprintable: ${bad.join(', ')}`);
+});
+
+test('nameAt never hands out the same name twice', () => {
+  // Four laps of the pool: far more war than anyone will play, and enough to
+  // walk several rungs of the suffix ladder.
+  const n = RECRUITS.length * 4;
+  const seen = new Set();
+  for (let i = 0; i < n; i++) seen.add(nameAt(i));
+  assert.equal(seen.size, n, 'nameAt repeated itself');
+});
+
+test('and every name it hands out fits the roster column', () => {
+  // Twelve, which was measured in the real sidebar rather than inferred from
+  // sanitiseName's nine -- that nine is a cap on what a *player* may type.
+  for (let i = 0; i < RECRUITS.length * 4; i++) {
+    const name = nameAt(i);
+    assert.ok(name.length <= NAME_MAX_RENDERED, `"${name}" is ${name.length} characters`);
+  }
+});
+
+test('the war outliving the pool produces a man, not a number', () => {
+  // The old behaviour was RECRUIT 41, which is a casualty counter that has
+  // stopped pretending. The first past the end should be somebody's son.
+  const past = nameAt(RECRUITS.length);
+  assert.ok(!/RECRUIT/.test(past), `still numbering recruits: ${past}`);
+  assert.equal(past, `${RECRUITS[0]} JR.`);
+  assert.equal(nameAt(RECRUITS.length * 2), `${RECRUITS[0]} III`);
+});
 
 console.log(`\n  ${run} campaign checks run`);
 if (process.exitCode) {
