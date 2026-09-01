@@ -565,6 +565,26 @@ html, body {
   transition: transform 0.34s cubic-bezier(0.18, 1.5, 0.4, 1), opacity 0.2s linear;
 }
 #comms[hidden] { display: none; }
+
+/* With a face, the strip becomes two columns: the portrait on the left, as the
+   brief asked, and what he is saying beside it. */
+#comms.with-face {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+}
+.comms-face {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  /* Whole-number scaling of a 32px sprite, nearest-neighbour: a portrait with
+     a soft edge would be the one anti-aliased thing on the screen. */
+  image-rendering: pixelated;
+}
+.comms-said { flex: 1 1 auto; min-width: 0; }
 #comms.in {
   transform: translate(-50%, 0);
   opacity: 1;

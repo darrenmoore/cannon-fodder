@@ -354,6 +354,51 @@ export const sfxWade = (thick: boolean): void => {
   burst({ duration: 0.09, gain: 0.22, freq: vary(2200), q: 2, sweepTo: vary(900) });
 };
 
+/**
+ * What a speaker's voice is made of.
+ *
+ * The pitch belongs to the *speaker*, not to the panel, which is the whole
+ * reason a second character costs a table entry: a low slow blip is a big
+ * gruff man and a high fast one is somebody else entirely (201-qa 007).
+ */
+export interface SpeakerVoice {
+  wave: OscillatorType;
+  /** Centre pitch, Hz. */
+  hz: number;
+  /** Pitch wobble per blip, as a fraction. Zero is a dial tone. */
+  jitter: number;
+  /** Blip on every Nth speakable character. 1 is a buzz. */
+  everyNth: number;
+}
+
+/**
+ * One blip of speech, as the classics did it.
+ *
+ * Zelda, Animal Crossing, Undertale: a short tone per character while text
+ * types, which reads as speech without anyone recording a syllable -- exactly
+ * right for a game with no audio files.
+ *
+ * What makes it read as *words* rather than as a machine is not the tone, it
+ * is the gaps: the caller blips on every second or third character and stays
+ * silent on spaces and punctuation. That rule lives in the panel, which is the
+ * side that knows what character it just typed; this end is one blip.
+ */
+export const sfxVoice = (voice: SpeakerVoice): void => {
+  if (!settings().sound) return;
+  if (!ensure() || !ctx || !master) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = voice.wave;
+  osc.frequency.setValueAtTime(vary(voice.hz, voice.jitter), now);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, now);
+  env.gain.exponentialRampToValueAtTime(0.06, now + 0.006);
+  env.gain.exponentialRampToValueAtTime(0.0005, now + 0.05);
+  osc.connect(env).connect(master);
+  osc.start(now);
+  osc.stop(now + 0.06);
+};
+
 export const sfxOrder = (): void => burst({ duration: 0.045, gain: 0.16, freq: 2400, q: 3 });
 
 /**

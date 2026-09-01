@@ -6,7 +6,7 @@ import { ambienceState, startAmbience, stopAmbience, updateAmbience } from './sh
 import { bootBegin, bootEnd, bootFailed, bootStep } from './ui/boot.js';
 import { installPixelFace } from './ui/pixelface.js';
 import { installClicks } from './ui/clicks.js';
-import { NARRATOR, showTransmission, teardownComms, transmissionFor } from './ui/comms.js';
+import { SPEAKERS, showTransmission, teardownComms, transmissionFor } from './ui/comms.js';
 import { Controls } from './ui/controls.js';
 import { Game } from './sim/game.js';
 import { closeSheet, sheetOpen, showSettings, showSheet } from './ui/sheet.js';
@@ -545,7 +545,7 @@ async function boot(): Promise<void> {
        * be two things talking at once (201-qa 007).
        */
       const wire = transmissionFor(info.id);
-      if (wire) showTransmission(NARRATOR, wire.text, wire.opts);
+      if (wire) showTransmission(SPEAKERS.trumper, wire.text, wire.opts);
     };
     const teardownBriefing = (): void => {
       window.removeEventListener('pointerdown', dismissBriefing, true);

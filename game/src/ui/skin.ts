@@ -27,6 +27,7 @@
  */
 
 import { bakeBanner, bakeButton, bakeFrame, bakeIcon, bakeLock, bakePlate, bakeStar } from '../render/sprites/plates.js';
+import { SPEAKER_FRAMES, SPEAKER_IDS, bakeSpeaker } from '../render/sprites/speaker.js';
 import { buildAtlas } from '../render/sprites/index.js';
 import type { Sprite } from '../render/sprites/paint.js';
 
@@ -104,6 +105,18 @@ export function installSkin(): void {
     '--sk-slice-frame': String(SLICE.frame),
     '--sk-slice-banner': String(SLICE.banner),
   };
+
+  /*
+   * Comms portraits, one property per speaker per frame:
+   * `--sk-face-trumper-0`. Published the same way as the logo -- used at its
+   * own size, not sliced -- and keyed by id so a second speaker is a second
+   * entry in the art table and nothing here changes (201-qa 007).
+   */
+  for (const id of SPEAKER_IDS) {
+    for (let f = 0; f < SPEAKER_FRAMES; f++) {
+      set[`--sk-face-${id}-${f}`] = url(bakeSpeaker(id, f));
+    }
+  }
 
   const root = document.documentElement;
   for (const [k, v] of Object.entries(set)) root.style.setProperty(k, v);

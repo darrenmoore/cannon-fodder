@@ -33,17 +33,42 @@
  */
 
 import { controlLines } from './controltext.js';
-import { reducedMotion } from './settings.js';
+import { reducedMotion, settings } from './settings.js';
+import { sfxVoice } from '../shell/audio.js';
+import type { SpeakerVoice } from '../shell/audio.js';
 
-/** Who is talking. A portrait and a voice hang off this later. */
+/** Who is talking. */
 export interface Speaker {
   id: string;
   /** Shown above the line. Empty for the plain narrator. */
   name: string;
+  /** The portrait id, matching `render/sprites/speaker.ts`. */
+  portrait?: string;
+  /** How they sound while typing. Absent means the text simply appears. */
+  voice?: SpeakerVoice;
 }
 
 /** The voice with no face: plain instructions, nobody speaking them. */
 export const NARRATOR: Speaker = { id: 'narrator', name: '' };
+
+/**
+ * The speaker table.
+ *
+ * Adding a character is adding an entry here plus a mask in
+ * `render/sprites/speaker.ts`. Nothing else in this file knows any of their
+ * names, which is the property the owner asked for and the one worth
+ * protecting.
+ */
+export const SPEAKERS: Record<string, Speaker> = {
+  trumper: {
+    id: 'trumper',
+    name: 'Major Trumper',
+    portrait: 'trumper',
+    // Low, square and unhurried: a big man who is in no rush and has never
+    // once wondered whether he should be talking.
+    voice: { wave: 'square', hz: 320, jitter: 0.06, everyNth: 2 },
+  },
+};
 
 export interface TransmissionOpts {
   /** Stay until the mission ends. Overrides `seconds`. */
@@ -74,6 +99,13 @@ const DEFAULT_SECONDS = 12;
 let root: HTMLElement | null = null;
 let inTimer = 0;
 let outTimer = 0;
+let typeTimer = 0;
+let blinkTimer = 0;
+
+/** Seconds per character while typing. */
+const TYPE_STEP = 0.035;
+/** Characters that get no blip: silence on the gaps is what makes it speech. */
+const SILENT = /[\s.,;:!?'"()\-·]/;
 
 function ensure(): HTMLElement | null {
   if (root) return root;
@@ -89,9 +121,62 @@ function ensure(): HTMLElement | null {
 const clearTimers = (): void => {
   window.clearTimeout(inTimer);
   window.clearTimeout(outTimer);
+  window.clearInterval(typeTimer);
+  window.clearInterval(blinkTimer);
   inTimer = 0;
   outTimer = 0;
+  typeTimer = 0;
+  blinkTimer = 0;
 };
+
+/**
+ * Types `text` into `into`, blipping as it goes.
+ *
+ * Skipped entirely under reduced motion -- the text appears whole -- and the
+ * blip is skipped when effects are off, which are two different settings and
+ * deliberately two different checks: somebody who has turned motion down has
+ * not necessarily turned the sound off.
+ */
+function type(into: HTMLElement, text: string, voice: SpeakerVoice | undefined): void {
+  if (reducedMotion() || !voice) { into.textContent = text; return; }
+  into.textContent = '';
+  let i = 0;
+  let spoken = 0;
+  typeTimer = window.setInterval(() => {
+    if (i >= text.length) { window.clearInterval(typeTimer); typeTimer = 0; return; }
+    const ch = text[i++];
+    into.textContent += ch;
+    if (SILENT.test(ch)) return;
+    // Every Nth speakable character, not every one: at a readable typing speed
+    // that is about thirty a second and becomes a buzz rather than a voice.
+    if (spoken++ % voice.everyNth === 0 && settings().sound) sfxVoice(voice);
+  }, TYPE_STEP * 1000);
+}
+
+/**
+ * Blinks the portrait, and shifts it a pixel now and then.
+ *
+ * Frames on a timer rather than a tween, per the house rule that sprite work
+ * has no interpolation -- a fading eyelid is alpha by another name. Stopped
+ * under reduced motion, where a face twitching in the corner is exactly the
+ * thing the setting exists to turn off.
+ */
+function animate(face: HTMLElement, portrait: string): void {
+  const set = (f: number): void => {
+    face.style.backgroundImage = `var(--sk-face-${portrait}-${f})`;
+  };
+  set(0);
+  if (reducedMotion()) return;
+  blinkTimer = window.setInterval(() => {
+    // Roughly one blink every few seconds, at an uneven beat: a metronome
+    // blink reads as a fault.
+    if (Math.random() > 0.25) return;
+    set(1);
+    window.setTimeout(() => set(2), 70);
+    window.setTimeout(() => set(1), 150);
+    window.setTimeout(() => set(0), 220);
+  }, 900);
+}
 
 /** Puts one transmission on the wire. Replaces whatever was up. */
 export function showTransmission(
@@ -102,15 +187,25 @@ export function showTransmission(
   clearTimers();
 
   el.textContent = '';
+  el.dataset.speaker = speaker.id;
+  el.classList.toggle('with-face', !!speaker.portrait);
+
+  if (speaker.portrait) {
+    const face = Object.assign(document.createElement('i'), { className: 'comms-face' });
+    el.appendChild(face);
+    animate(face, speaker.portrait);
+  }
+
+  const said = document.createElement('div');
+  said.className = 'comms-said';
   if (speaker.name) {
-    el.appendChild(Object.assign(document.createElement('span'), {
+    said.appendChild(Object.assign(document.createElement('span'), {
       className: 'comms-who', textContent: speaker.name.toUpperCase(),
     }));
   }
-  el.appendChild(Object.assign(document.createElement('span'), {
-    className: 'comms-line', textContent: text,
-  }));
-  el.dataset.speaker = speaker.id;
+  const line = Object.assign(document.createElement('span'), { className: 'comms-line' });
+  said.appendChild(line);
+  el.appendChild(said);
 
   const delay = (opts.delay ?? DEFAULT_DELAY) * 1000;
   inTimer = window.setTimeout(() => {
@@ -124,6 +219,10 @@ export function showTransmission(
       // drops the bounce, so there is one place that decides and it is not
       // this one.
       if (reducedMotion()) el.classList.add('still');
+      // The typing starts once it has arrived, not on the way in: a line being
+      // spelled out while the panel is still sliding reads as two effects
+      // fighting rather than as someone talking.
+      window.setTimeout(() => type(line, text, speaker.voice), reducedMotion() ? 0 : 260);
     });
     if (!opts.sticky) {
       outTimer = window.setTimeout(hideComms, (opts.seconds ?? DEFAULT_SECONDS) * 1000);
@@ -166,17 +265,28 @@ export function transmissionFor(
   const grenade = keys.get('grenade') ?? '';
 
   switch (mapId) {
+    /*
+     * In Major Trumper's register, per the answer to Q1: the officer supplies
+     * the situation, Lock supplies the delivery. Flat, unhurried, an absurdly
+     * specific detail stated as ordinary fact and then committed to. If a line
+     * would work with a drum sting after it, it is the wrong line -- and it
+     * still has to say what to press, because a tutorial that is only funny
+     * has failed at the one job it was given.
+     */
     case 'training-fire':
-      return { text: `CLICK TO MARCH.   ${fire} TO SHOOT.`, opts: { sticky: true } };
+      return {
+        text: `CLICK WHERE YOU WANT THEM AND THEY'LL GO THERE. ${fire} TO SHOOT. THAT IS THE WHOLE OF IT.`,
+        opts: { sticky: true },
+      };
     case 'training-bridge':
       return {
-        text: `WALK OVER THE GRENADES.   ${grenade} TO AIM, CLICK TO THROW AT THE HUTS.`,
+        text: `THE GRENADES ARE ON THE BRIDGE. WALK OVER THEM. ${grenade} TO AIM, CLICK TO THROW. AT THE HUTS, IDEALLY.`,
         opts: { sticky: true },
       };
     case 'chicken-run':
       return {
-        text: 'MOVE AS A HERD.   USE THE TREELINE, AND LET THEM COME TO YOU.',
-        opts: { seconds: DEFAULT_SECONDS },
+        text: 'MOVE AS A HERD AND USE THE TREES. I HID IN SOME TREES IN 1961. NOBODY HAS FOUND ME SINCE, IN A SENSE.',
+        opts: { seconds: 14 },
       };
     default:
       return null;
