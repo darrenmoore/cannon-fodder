@@ -1,7 +1,0 @@
-# A local track is the player's own copy, not ours to redistribute.
-*.mp3
-*.ogg
-*.m4a
-*.opus
-*.wav
-*.flac

@@ -5,10 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 *Boots & Bullets*, a browser game cut to the pattern of Cannon Fodder (1993).
 TypeScript + Canvas 2D, bundled by
 esbuild, served by ~90 lines of `node:http`. Three dev dependencies, **no runtime
-dependencies and no asset files** — every sprite is plotted into an offscreen
-canvas at boot (`render/sprites/`), every inch of terrain is generated, and the sound
-is synthesised with WebAudio (`shell/audio.ts`). Adding a runtime dependency, a PNG or
-an audio file breaks the premise; generate it instead.
+dependencies, and one asset file** — the menu track the owner chose to ship
+(`game/public/music/theme.mp3`). Everything else is generated: every sprite is
+plotted into an offscreen canvas at boot (`render/sprites/`), every inch of
+terrain is derived, and the sound effects are synthesised with WebAudio
+(`shell/audio.ts`). That one exception was a deliberate owner decision on
+1 September 2026, not a precedent: adding a runtime dependency, a PNG, or a
+second audio file still breaks the premise — generate it instead.
 
 ## Commands
 

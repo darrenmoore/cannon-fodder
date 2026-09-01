@@ -44,7 +44,12 @@ const DEFAULTS: Settings = {
   sound: true,
   music: true,
   volume: 0.35,
-  musicVolume: 0.35,
+  /*
+   * 0.5, up from 0.35 on the owner's ask. Note the limit of a default: anyone
+   * with saved settings keeps their saved number, which is why MUSIC_LEVEL in
+   * music.ts rose alongside it -- that half reaches everyone.
+   */
+  musicVolume: 0.5,
   haptics: true,
   handedness: 'right',
   resolution: 'full',

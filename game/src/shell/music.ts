@@ -6,12 +6,17 @@ import { onSettingsChange, settings } from '../ui/settings.js';
  *
  * Two ways to make a noise, in this order:
  *
- *  1. A track dropped into `public/music/` by whoever is running the game. See
- *     the README in there. Nothing is shipped in the repo -- the tune this game
- *     is a homage to is somebody else's copyright, and rehosting it is not ours
- *     to do, so the file is a slot you fill locally rather than an asset.
+ *  1. The track in `public/music/` -- shipped in the repo since 1 September
+ *     2026, on the owner's explicit instruction, as the project's one asset
+ *     file. The README in that folder and CLAUDE.md both record the decision;
+ *     replacing the file is still all it takes to change the tune.
  *  2. Failing that, an original synth march written for this menu. Not a
  *     transcription of anything: it exists so the front screen is never silent.
+ *
+ * The deployed site spent a day playing the march because the track was
+ * gitignored by design and never reached Render -- the owner heard "the midi"
+ * and said so. If the fallback is playing anywhere the track should be, the
+ * first question is whether `/music/theme.mp3` actually answers 200 there.
  *
  * Playback is gated twice over -- by the player's saved `music` setting, and by
  * the shell only asking for it while the menu is up. Browsers also refuse to
@@ -30,8 +35,13 @@ const CANDIDATES = [
   '/music/theme.wav',
 ];
 
-/** Music sits below the sound effects, which are short and want the headroom. */
-const MUSIC_LEVEL = 0.55;
+/**
+ * Music sits below the sound effects, which are short and want the headroom.
+ * 0.65 rather than the original 0.55: raising only the settings default would
+ * have left every returning player -- the owner included -- on the volume their
+ * saved settings already held, and "louder by default" has to reach them too.
+ */
+const MUSIC_LEVEL = 0.65;
 
 /** Does the shell currently want music -- i.e. is the menu up? */
 let wanted = false;
@@ -56,6 +66,40 @@ const announce = (): void => { for (const fn of listeners) fn(); };
 export const musicSource = (): MusicSource => (playing() ? source : 'none');
 
 const playing = (): boolean => (el !== null && !el.paused) || (synth?.running ?? false);
+
+/**
+ * Buffers the track while the loading screen is up.
+ *
+ * The element this builds is the one `apply()` will play -- that matters,
+ * because the server sends `Cache-Control: no-store`, so a throwaway preload
+ * element would buffer three and a half megabytes the real one then fetched
+ * again. Resolves when the browser says it can play the whole thing through,
+ * when the cap expires, or immediately when there is no track to buffer; the
+ * boot awaits it, and a missing file must not hold the game hostage.
+ *
+ * What it cannot do is defeat autoplay policy: where the browser demands a
+ * gesture, the buffered track starts on the first click instead of the moment
+ * the bar completes -- instantly, because the bytes are already here.
+ */
+export function preloadMusic(capMs = 20000): Promise<void> {
+  const found = (probe ??= findTrack());
+  return new Promise((resolve) => {
+    void found.then((url) => {
+      if (!url) { resolve(); return; }
+      if (!el) {
+        el = new Audio(url);
+        el.loop = true;
+        el.preload = 'auto';
+        el.hidden = true;
+        document.body.appendChild(el);
+      }
+      if (el.readyState >= 4) { resolve(); return; }
+      const timer = window.setTimeout(() => resolve(), capMs);
+      el.addEventListener('canplaythrough', () => { window.clearTimeout(timer); resolve(); }, { once: true });
+      el.load();
+    });
+  });
+}
 
 async function findTrack(): Promise<string | null> {
   for (const url of CANDIDATES) {

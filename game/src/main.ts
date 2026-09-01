@@ -23,7 +23,7 @@ import { showBootHill } from './ui/boothill.js';
 import { deploy, loadCampaign, recordMission } from './sim/campaign.js';
 import { createWorld, squadCentre } from './sim/world.js';
 import { loadSettings, settings, updateSettings } from './ui/settings.js';
-import { startMusic, stopMusic } from './shell/music.js';
+import { preloadMusic, startMusic, stopMusic } from './shell/music.js';
 import { Phase } from './types.js';
 import type { DifficultyId } from './sim/difficulty.js';
 import type { LevelInfo } from './ui/menu.js';
@@ -82,6 +82,14 @@ async function boot(): Promise<void> {
    * exactly what it used before.
    */
   installPixelFace();
+
+/*
+   * The menu track starts buffering here, in parallel with the atlas bake and
+   * the mission fetch, so the loading bar's time is also the download's time.
+   * The await sits just before the boot screen comes down: the owner's ask was
+   * that when loading finishes, the music plays -- so "loaded" includes it.
+   */
+  const musicReady = preloadMusic();
 
   const canvas = document.getElementById('screen') as HTMLCanvasElement;
   const ctx = canvas.getContext('2d', { alpha: false })!;
@@ -158,6 +166,7 @@ async function boot(): Promise<void> {
 
   const levels = await fetchLevels();
   bootStep('missions');
+  await musicReady;
   if (levels.length === 0) throw new Error('no missions found in data/');
 
   /**
