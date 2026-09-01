@@ -18,9 +18,9 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 002 | [favicon](002-favicon.md) | done | 5ea3c29 |
 | 003 | [music-on-first-visit](003-music-on-first-visit.md) | done -- already true, no work | |
 | 004 | [imbf-footer](004-imbf-footer.md) | done | 4a4738e |
-| 005 | [briefing-screen](005-briefing-screen.md) | done | |
+| 005 | [briefing-screen](005-briefing-screen.md) | done | 729216f |
 | 006 | [mac-fire-key](006-mac-fire-key.md) | done | 196d0dc |
-| 007 | [comms-panel](007-comms-panel.md) | done -- 4 sittings, 4 commits; /grill outstanding | cd3f4d2 e0b4ddd |
+| 007 | [comms-panel](007-comms-panel.md) | done -- 4 sittings, 4 commits; /grill outstanding | cd3f4d2 e0b4ddd 0eaffa2 |
 | 008 | [merged-into-007](008-merged-into-007.md) | done -- merged, no work | |
 | 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | done | bac15ec |
 | 010 | [hiding-in-cover](010-hiding-in-cover.md) | done | 1df5840 |
@@ -141,3 +141,27 @@ outside all of it and can be picked up at any point.
   read, or every assertion after the first reads a stale card; and
   `Tile.Tree` is 2, which an early "clear lane" filter let through and so
   measured a treeline instead of the mechanic.
+
+- **2026-09-01, closed** -- 005 and 007 landed and the brief is CLOSED,
+  eighteen of eighteen.
+
+  005 rebuilt the briefing on the original's stack -- numbered mission, ruled
+  name, a bordered box wearing the plotted frame -- and gave the game its
+  first controls text, in `ui/controltext.ts`, read by the briefing and the
+  pause sheet alike so there is one answer to "how do I fire". A screenshot
+  caught what an assertion had passed: the frame was *declared* and never
+  painted, because `--sk-slice-frame` is a bare number and using it as a
+  border-width makes the shorthand invalid. Checking `border-image-source`
+  says nothing; checking the computed border-width says everything.
+
+  007 became the comms panel, a speaker table and Major Trumper. The disc
+  behind his face took two goes -- the first drew the rim per row, which
+  filled the top half of the circle solid and crushed the face into a dark
+  band, and was invisible until it was rendered. His voice is a property of
+  the *speaker*, which is the thing that keeps the next character cheap: a
+  mask, a table entry, a section in `/speakers`, and nothing in `comms.ts`.
+
+  Standing rule confirmed twice more this session: **look at the picture.**
+  Three separate defects this run were passed by their own assertions and
+  caught only by opening the image -- the unpainted frame, the solid-brass
+  disc, and the end panel disagreeing with the ribbon beside it.
