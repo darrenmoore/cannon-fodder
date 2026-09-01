@@ -6,27 +6,27 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | # | issue | status | commit |
 |---|---|---|---|
 | 001 | [sink-no-spawn](001-sink-no-spawn.md) | done | 9c841c6 |
-| 002 | [mud-render](002-mud-render.md) | done | (see log) |
+| 002 | [mud-render](002-mud-render.md) | done | 810608a |
 | 003 | [veteran-balance](003-veteran-balance.md) | done | 98ec576 |
 | 004 | [house-circle](004-house-circle.md) | done | 7365517 |
 | 005 | [idle-face-mouse](005-idle-face-mouse.md) | done | 28e117b |
-| 006 | [factory-sprite](006-factory-sprite.md) | done | (see log) |
+| 006 | [factory-sprite](006-factory-sprite.md) | done | b49c41e |
 | 007 | [cabin-white-line](007-cabin-white-line.md) | done | fd329dd |
 | 008 | [hut-door](008-hut-door.md) | done | 3d5c150 |
 | 009 | [tent-sprite](009-tent-sprite.md) | done | 6e0b891 |
 | 010 | [spawn-distance](010-spawn-distance.md) | done | f30507e |
 | 011 | [cold-keep-note](011-cold-keep-note.md) | done -- no work, noted | |
-| 012 | [narrows-harder](012-narrows-harder.md) | done | (see log) |
+| 012 | [narrows-harder](012-narrows-harder.md) | done | 6546870 |
 | 013 | [timer-clarity](013-timer-clarity.md) | done | d043054 |
 | 014 | [landing-ground-start](014-landing-ground-start.md) | done -- via 010 | f30507e |
 | 015 | [veteran-fire-range](015-veteran-fire-range.md) | done | 92b72ca |
 | 016 | [patrols](016-patrols.md) | done | 66babf6 |
-| 017 | [through-the-wall](017-through-the-wall.md) | done | (see log) |
-| 018 | [not-a-sound-variant](018-not-a-sound-variant.md) | done | (see log) |
-| 019 | [narrows-forest](019-narrows-forest.md) | done | (see log) |
+| 017 | [through-the-wall](017-through-the-wall.md) | done | e95cf4e |
+| 018 | [not-a-sound-variant](018-not-a-sound-variant.md) | done | 4bb54f2 |
+| 019 | [narrows-forest](019-narrows-forest.md) | done | eb71e92 |
 | 020 | [swim-for-it](020-swim-for-it.md) | done | 3032db4 |
 | 021 | [sink-waves](021-sink-waves.md) | done | e04472d |
-| 022 | [dust-devils](022-dust-devils.md) | done | (see log) |
+| 022 | [dust-devils](022-dust-devils.md) | done | 67208a7 |
 | 023 | [grenade-pickups](023-grenade-pickups.md) | done | e553ec2 |
 | 024 | [pause-left-menu](024-pause-left-menu.md) | done | a4c5298 |
 | 025 | [guide-arrow](025-guide-arrow.md) | done | 989cc08 |
@@ -54,3 +54,13 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
   replay-at-any-difficulty (026). Left: mud material (002), factory
   redesign (006), and the four map-design sittings (012, 017, 018, 019,
   022 -- 022 wants a veteran re-judge first, the garrison just doubled).
+- **2026-09-01, night** -- the last seven landed and the brief is CLOSED,
+  26 of 26: the bog got its own material and enemies splash in it (002),
+  the factory grew a sawtooth roof (006), Dust Devils' corner got a pinned
+  camp via the new table `camps` knob (022), Through the Wall fights back
+  on both sides of the wall (017), The Narrows was hand-cut to a hundred
+  seconds around a lying fork (012), and two new jungle missions shipped:
+  Loud and Clear (018, order 17) and The Choke (019, order 20) -- 48
+  missions total. Caveat worth knowing: the reworked/new maps pass every
+  check and load clean, but none has been played to a win by a person yet;
+  the balance judgement is the owner's next playthrough.
