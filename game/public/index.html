@@ -17,6 +17,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Boots &amp; Bullets</title>
+    <!--
+      The tab icon. The manifest below lists the same file, but a manifest icon
+      is only ever the installed app's -- it is not a favicon fallback in any
+      browser, so without this line the tab asked for /favicon.ico, got nothing,
+      and showed the generic page glyph.
+
+      SVG rather than .ico or .png because the premise is that there are no
+      asset files: this is markup, drawn on the same grid as the sprites.
+    -->
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <style>
       /* Only what the loading screen needs. Everything else waits. */

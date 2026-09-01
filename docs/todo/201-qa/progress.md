@@ -15,7 +15,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | # | issue | status | commit |
 |---|---|---|---|
 | 001 | [mine-depth-sort](001-mine-depth-sort.md) | done | |
-| 002 | [favicon](002-favicon.md) | open | |
+| 002 | [favicon](002-favicon.md) | done | |
 | 003 | [music-on-first-visit](003-music-on-first-visit.md) | done -- already true, no work | |
 | 004 | [imbf-footer](004-imbf-footer.md) | open | |
 | 005 | [briefing-screen](005-briefing-screen.md) | open -- second sitting waits on 006 | |
