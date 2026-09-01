@@ -10,7 +10,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 003 | [veteran-balance](003-veteran-balance.md) | done | 98ec576 |
 | 004 | [house-circle](004-house-circle.md) | done | 7365517 |
 | 005 | [idle-face-mouse](005-idle-face-mouse.md) | done | 28e117b |
-| 006 | [factory-sprite](006-factory-sprite.md) | open | |
+| 006 | [factory-sprite](006-factory-sprite.md) | done | (see log) |
 | 007 | [cabin-white-line](007-cabin-white-line.md) | done | fd329dd |
 | 008 | [hut-door](008-hut-door.md) | done | 3d5c150 |
 | 009 | [tent-sprite](009-tent-sprite.md) | done | 6e0b891 |

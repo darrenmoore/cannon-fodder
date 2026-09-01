@@ -456,43 +456,102 @@ export function bakeFactory(stage: number): Sprite {
     return c;
   }
 
-  rect(g, 4, 16, 44, 32, '#6d6f74');
-  rect(g, 4, 16, 44, 2, '#84868c');
-  rect(g, 4, 44, 44, 4, '#54565a');
-  // Corrugated roof.
-  for (let y = 6; y < 17; y++) {
-    const half = Math.round(10 + ((y - 6) / 10) * 12);
-    for (let x = 26 - half; x <= 25 + half; x++) {
-      px(g, x, y, x % 3 === 0 ? '#4e5054' : '#5f6165');
+  /*
+   * Redrawn for 200-qa 006. The old intact stages were three flat rects of
+   * grey with a mechanical x%3 stripe and four identical windows -- no
+   * dither, no light, no grain, and bakeOutpost's own header mocked it. The
+   * new read is the sawtooth roof: from this game's high oblique it is the
+   * one silhouette that says "factory" without a label, three north-lit
+   * slopes each dropping to a dark south face, glass glinting on the slopes.
+   */
+
+  // Cast shadow, hard, down and right -- the same move as the bunker's.
+  rect(g, 8, 49, 42, 3, '#232522');
+
+  // --- the sawtooth roof, y=4..30: three teeth of 9 rows (6 lit, 3 face),
+  // trapezoid-inset at the top so the block reads as standing, edges ragged
+  // by a pixel so nothing is ruler-straight.
+  for (let y = 4; y < 31; y++) {
+    const inset = Math.max(0, Math.round((30 - y) * 0.28));
+    const jitL = (rnd() < 0.3 ? 1 : 0);
+    const jitR = (rnd() < 0.3 ? 1 : 0);
+    const phase = (y - 4) % 9;
+    for (let x = 4 + inset + jitL; x <= 47 - inset - jitR; x++) {
+      let colour: string;
+      if (phase < 6) {
+        // The lit slope, brightest at its top edge, dithering darker down.
+        const k = phase + (((x * 7 + y * 13) % 3 === 0) ? 1 : 0);
+        colour = k < 2 ? '#8a8c92' : k < 4 ? '#7c7e84' : '#6d6f74';
+        if (rnd() < 0.07) colour = '#63656b';
+      } else {
+        // The south face of the tooth: near-vertical, in shadow.
+        colour = phase === 6 ? '#3a3c40' : '#43454a';
+      }
+      px(g, x, y, colour);
+    }
+    // North-light glass: a broken run of panes along each slope's second row.
+    if (phase === 2) {
+      for (let x = 8 + inset; x < 44 - inset; x++) {
+        if ((x * 31 + y * 7) % 5 < 2) px(g, x, y, rnd() < 0.3 ? '#2d4553' : '#20313d');
+      }
     }
   }
-  // Windows and a big roller door.
-  for (const wx of [9, 17, 33, 41]) {
-    rect(g, wx, 24, 5, 5, '#20313d');
-    rect(g, wx, 24, 5, 1, '#2d4553');
+
+  // --- the south wall, dithered concrete, lit falling off to the right.
+  for (let y = 31; y < 48; y++) {
+    for (let x = 4; x <= 47; x++) {
+      const lit = -(x - 4) / 60 + (47 - y) / 40;
+      const n = (x * 7 + y * 13) % 5;
+      let colour = lit > 0.24 ? '#7c7e84' : lit > 0.06 ? '#6d6f74' : '#5e6066';
+      if (n === 0) colour = '#63656b';
+      if (y > 45) colour = '#4a4c50';
+      px(g, x, y, colour);
+    }
   }
-  rect(g, 20, 32, 12, 16, '#2a2c30');
-  rect(g, 20, 32, 12, 1, '#3c3e44');
-  for (let y = 34; y < 48; y += 3) rect(g, 20, y, 12, 1, '#232529');
-  // Chimney.
-  rect(g, 38, 2, 6, 12, '#5a5c60');
-  rect(g, 37, 1, 8, 2, '#6c6e73');
+
+  // Windows, unevenly placed and unevenly sized, each with a sooty streak
+  // bleeding down the concrete beneath its sill.
+  const windows: Array<[number, number, number, number]> = [[8, 34, 5, 6], [30, 35, 4, 5], [40, 33, 5, 6]];
+  for (const [wx, wy, ww, wh] of windows) {
+    rect(g, wx, wy, ww, wh, '#20313d');
+    rect(g, wx, wy, ww, 1, '#2d4553');
+    for (let i = 0; i < ww; i++) {
+      if (rnd() < 0.5) rect(g, wx + i, wy + wh, 1, 1 + ((rnd() * 3) | 0), '#4a4c50');
+    }
+  }
+
+  // The roller door, off-centre, slatted, with a lit rail and worn sill.
+  rect(g, 16, 33, 12, 15, '#2a2c30');
+  rect(g, 16, 33, 12, 1, '#84868c');
+  for (let y = 36; y < 47; y += 3) rect(g, 16, y, 12, 1, '#232529');
+  rect(g, 15, 33, 1, 15, '#3a3c40');
+  rect(g, 28, 33, 1, 15, '#3a3c40');
+  for (let i = 0; i < 6; i++) px(g, 16 + rnd() * 12, 47, '#54565a');
+
+  // The chimney, NE corner: lit west edge, shaded east, a soot-black mouth
+  // and stain streaks where the smoke has run down it.
+  rect(g, 40, 0, 6, 14, '#5a5c60');
+  rect(g, 40, 0, 1, 14, '#6c6e73');
+  rect(g, 45, 0, 1, 14, '#43454a');
+  rect(g, 39, 0, 8, 2, '#6c6e73');
+  rect(g, 40, 0, 6, 1, '#1c1e20');
+  for (const sx of [41, 44]) rect(g, sx, 2, 1, 2 + ((rnd() * 3) | 0), '#3a3c40');
 
   if (stage >= 1) {
-    // Scarred: shattered windows and pocked concrete.
-    rect(g, 17, 24, 5, 5, '#161d23');
-    for (let i = 0; i < 40; i++) px(g, 5 + rnd() * 42, 17 + rnd() * 30, rnd() < 0.5 ? '#5a5c60' : '#4a4c50');
+    // Scarred: one window shattered dark, pocks across roof and wall.
+    rect(g, 30, 35, 4, 5, '#161d23');
+    for (let i = 0; i < 40; i++) px(g, 5 + rnd() * 42, 6 + rnd() * 40, rnd() < 0.5 ? '#5a5c60' : '#4a4c50');
   }
 
   if (stage >= 2) {
-    // Barely standing: a breach through the wall, roof holed, chimney down.
-    rect(g, 7, 30, 9, 16, '#1e2023');
-    for (let i = 0; i < 22; i++) px(g, 6 + rnd() * 12, 29 + rnd() * 18, '#33353a');
-    rect(g, 30, 8, 10, 6, '#2a2c30');
-    rect(g, 38, 2, 6, 8, '#00000000');
-    // Chimney lying on the roof.
+    // Barely standing: a breach through the wall, a tooth holed, chimney down.
+    rect(g, 6, 32, 9, 15, '#1e2023');
+    for (let i = 0; i < 22; i++) px(g, 5 + rnd() * 12, 31 + rnd() * 16, '#33353a');
+    rect(g, 28, 8, 10, 6, '#1a1c1f');
+    g.clearRect(40, 0, 7, 10);
+    // The chimney lying across the roof where it fell.
     for (let i = 0; i < 10; i++) rect(g, 33 + i, 10 + Math.floor(i * 0.3), 1, 3, '#4e5054');
-    for (let i = 0; i < 50; i++) px(g, 4 + rnd() * 44, 16 + rnd() * 32, rnd() < 0.5 ? '#26282b' : '#44464a');
+    for (let i = 0; i < 50; i++) px(g, 4 + rnd() * 44, 6 + rnd() * 40, rnd() < 0.5 ? '#26282b' : '#44464a');
   }
 
   addOutline(c, '#17181b');
