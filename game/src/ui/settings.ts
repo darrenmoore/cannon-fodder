@@ -15,12 +15,15 @@ export type Resolution = 'full' | 'half';
 export type Rules = 'classic' | 'modern';
 
 export interface Settings {
-  /** Steps away from the scale the viewport would pick, -2..+2. */
+  /** Steps away from the scale the viewport would pick, -1..+1. */
   zoomBias: number;
   sound: boolean;
   /** Menu music. Off is a real choice, so it survives a refresh like the rest. */
   music: boolean;
+  /** Effects level, 0..1. Gunfire, explosions and the ambience bed. */
   volume: number;
+  /** Music level, 0..1, on its own bar so a loud march never sets how loud a rifle is. */
+  musicVolume: number;
   haptics: boolean;
   /** Which side of the screen the action bar lives on. */
   handedness: Handedness;
@@ -41,6 +44,7 @@ const DEFAULTS: Settings = {
   sound: true,
   music: true,
   volume: 0.35,
+  musicVolume: 0.35,
   haptics: true,
   handedness: 'right',
   resolution: 'full',
@@ -57,10 +61,11 @@ function coerce(raw: unknown): Settings {
   const out = { ...DEFAULTS };
   if (typeof raw !== 'object' || raw === null) return out;
   const r = raw as Record<string, unknown>;
-  if (typeof r.zoomBias === 'number') out.zoomBias = Math.max(-2, Math.min(2, Math.round(r.zoomBias)));
+  if (typeof r.zoomBias === 'number') out.zoomBias = Math.max(-1, Math.min(1, Math.round(r.zoomBias)));
   if (typeof r.sound === 'boolean') out.sound = r.sound;
   if (typeof r.music === 'boolean') out.music = r.music;
   if (typeof r.volume === 'number') out.volume = Math.max(0, Math.min(1, r.volume));
+  if (typeof r.musicVolume === 'number') out.musicVolume = Math.max(0, Math.min(1, r.musicVolume));
   if (typeof r.haptics === 'boolean') out.haptics = r.haptics;
   if (r.handedness === 'left' || r.handedness === 'right') out.handedness = r.handedness;
   if (r.resolution === 'half' || r.resolution === 'full') out.resolution = r.resolution;

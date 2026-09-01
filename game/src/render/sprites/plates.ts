@@ -25,6 +25,7 @@
  */
 
 import { Mask, paintBevel } from './bevel.js';
+import { addOutline } from './paint.js';
 import { chromeText, chromeTextWidth } from '../chromefont.js';
 import { makeCanvas } from './paint.js';
 import type { BevelStyle } from './bevel.js';
@@ -154,7 +155,26 @@ export interface PlateOptions {
   rivets?: boolean;
   /** Corner chamfer. Smaller on a short control, or it eats the whole edge. */
   cut?: number;
+  /**
+   * Collapse the vertical sheen to its midpoint, for a sprite that will tile.
+   *
+   * A drawn plate is lighter at its crown than at its foot, and that is right
+   * when the plate is drawn at its final size. It is exactly wrong for a
+   * border-image source: `round` stacks copies of the middle slice, and every
+   * copy runs light-to-dark, so a control two tiles tall grows a hard
+   * horizontal line halfway up where one tile's foot meets the next one's
+   * crown. The owner spotted the line before the cause. A flat field tiles
+   * invisibly, and the rim and shade still carry the depth.
+   */
+  flat?: boolean;
 }
+
+/** The sheen collapsed to its own midpoint: the same tones, no gradient. */
+const flatten = (s: BevelStyle): BevelStyle => {
+  const [a, b] = s.sheen ?? [0.5, 0.5];
+  const m = (a + b) / 2;
+  return { ...s, sheen: [m, m] };
+};
 
 /* ------------------------------------------------------------------- plates */
 
@@ -188,10 +208,11 @@ export function bakePlate(
   const cut = opts.cut ?? Math.min(CUT, Math.floor(Math.min(w, h) / 5));
   const rivets = opts.rivets ?? true;
   const t = TONES[tone];
+  const dress = opts.flat ? flatten : (s: BevelStyle): BevelStyle => s;
   const { c, g } = makeCanvas(Math.max(w, PLATE_MIN.w), Math.max(h, PLATE_MIN.h));
 
-  paintBevel(g, box(c.width, c.height, 0, cut), 0, 0, t.frame);
-  paintBevel(g, box(c.width, c.height, RIM, Math.max(1, cut - RIM)), 0, 0, t.field);
+  paintBevel(g, box(c.width, c.height, 0, cut), 0, 0, dress(t.frame));
+  paintBevel(g, box(c.width, c.height, RIM, Math.max(1, cut - RIM)), 0, 0, dress(t.field));
 
   if (rivets && c.width >= 20 && c.height >= 14) {
     const i = RIM + RIVET_INSET;
@@ -293,6 +314,8 @@ export interface ButtonOptions {
   /** Fixed width. Omitted, the button sizes itself to its label. */
   w?: number;
   h?: number;
+  /** See PlateOptions.flat: for sources that tile, not controls that show. */
+  flat?: boolean;
 }
 
 /**
@@ -317,9 +340,10 @@ export function bakeButton(label: string, opts: ButtonOptions = {}): Sprite {
   const t = BUTTONS[state];
   const cut = Math.min(CUT, Math.floor(Math.min(w, h) / 5));
 
+  const dress = opts.flat ? flatten : (s: BevelStyle): BevelStyle => s;
   const { c, g } = makeCanvas(w, h);
-  paintBevel(g, box(w, h, 0, cut), 0, 0, t.edge);
-  paintBevel(g, box(w, h, RIM, Math.max(1, cut - RIM)), 0, 0, t.cap);
+  paintBevel(g, box(w, h, 0, cut), 0, 0, dress(t.edge));
+  paintBevel(g, box(w, h, RIM, Math.max(1, cut - RIM)), 0, 0, dress(t.cap));
 
   const text = chromeText(label, { scale, fill: t.ink, outline: t.inkEdge });
   // Pressed pushes the label into the bevel rather than moving the whole
@@ -527,6 +551,83 @@ export function bakeBanner(w: number, h: number, opts: BannerOptions = {}): Spri
   return c;
 }
 
+/* -------------------------------------------------------------------- icons */
+
+/**
+ * The sidebar's tool glyphs: leave, restart, settings.
+ *
+ * Thirteen pixels, cream on a hard outline -- the same bargain as the 3x5
+ * battlefield font, and for the same reason: these sit on a plate whose face is
+ * dithered, and an unoutlined glyph on a two-tone ground vibrates. No bevel;
+ * at this size a bevelled glyph is a smudge, and a glyph is ink, not hardware.
+ *
+ * Hand-plotted, so their shapes are decisions rather than accidents: the door
+ * has the arrow *leaving* it, the restart loop is square because everything in
+ * this chrome is, and the gear has eight square teeth for the same reason.
+ */
+const ICON_ART: Record<'door' | 'restart' | 'gear', string[]> = {
+  door: [
+    '.............',
+    '.............',
+    '#######......',
+    '#.....#......',
+    '#.....#..#...',
+    '#.....#..##..',
+    '#.....######.',
+    '#.....######.',
+    '#.....#..##..',
+    '#.....#..#...',
+    '#######......',
+    '.............',
+    '.............',
+  ],
+  restart: [
+    '.............',
+    '.########....',
+    '.########....',
+    '.##....##....',
+    '.##....##....',
+    '.##....##....',
+    '.##..######..',
+    '.##...####...',
+    '.##....##....',
+    '.##..........',
+    '.########....',
+    '.########....',
+    '.............',
+  ],
+  gear: [
+    '.....###.....',
+    '.##..###..##.',
+    '.###########.',
+    '..#########..',
+    '.####...####.',
+    '#####...#####',
+    '#####...#####',
+    '#####...#####',
+    '.####...####.',
+    '..#########..',
+    '.###########.',
+    '.##..###..##.',
+    '.....###.....',
+  ],
+};
+
+export type IconName = keyof typeof ICON_ART;
+
+export function bakeIcon(name: IconName): Sprite {
+  const art = ICON_ART[name];
+  const { c, g } = makeCanvas(art[0].length + 2, art.length + 2);
+  g.fillStyle = '#f6efd8';
+  for (let y = 0; y < art.length; y++) {
+    for (let x = 0; x < art[y].length; x++) {
+      if (art[y][x] === '#') g.fillRect(x + 1, y + 1, 1, 1);
+    }
+  }
+  addOutline(c, '#141005');
+  return c;
+}
+
 /* -------------------------------------------------------------------- frame */
 
 /** How far the corner brackets step into the opening. */
@@ -546,17 +647,18 @@ const CH = 2;
  *
  * No rivets. A frame is structure; the rivets belong on the things bolted to it.
  */
-export function bakeFrame(w: number, h: number, tone: ToneName = 'brass'): Sprite {
+export function bakeFrame(w: number, h: number, tone: ToneName = 'brass', flat = false): Sprite {
   const t = TONES[tone];
+  const dress = flat ? flatten : (s: BevelStyle): BevelStyle => s;
   const W = Math.max(w, 40), H = Math.max(h, 30);
   const { c, g } = makeCanvas(W, H);
 
-  paintBevel(g, box(W, H, 0, CUT), 0, 0, t.frame);
+  paintBevel(g, box(W, H, 0, CUT), 0, 0, dress(t.frame));
   // The channel: a groove, so it is lit from the far side like any hollow.
   paintBevel(g, box(W, H, RIM, Math.max(1, CUT - RIM)), 0, 0, {
     ...t.field, face: [t.field.shade, t.field.keyline], sheen: [0.5, 0.5],
   });
-  paintBevel(g, box(W, H, RIM + CH, Math.max(1, CUT - RIM - CH)), 0, 0, t.frame);
+  paintBevel(g, box(W, H, RIM + CH, Math.max(1, CUT - RIM - CH)), 0, 0, dress(t.frame));
 
   const in4 = RIM * 2 + CH;
   const field = new Mask(W, H).rect(in4, in4, W - in4 * 2, H - in4 * 2);
@@ -564,7 +666,7 @@ export function bakeFrame(w: number, h: number, tone: ToneName = 'brass'): Sprit
     [in4, in4], [W - in4 - NOTCH, in4],
     [in4, H - in4 - NOTCH], [W - in4 - NOTCH, H - in4 - NOTCH],
   ]) field.rect(x, y, NOTCH, NOTCH, 0);
-  paintBevel(g, field, 0, 0, t.field);
+  paintBevel(g, field, 0, 0, dress(t.field));
 
   return c;
 }

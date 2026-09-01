@@ -1,16 +1,30 @@
 import { CONFIG } from '../config.js';
+import { onSettingsChange, settings } from '../ui/settings.js';
 
 /**
  * All sound is synthesised with WebAudio -- no audio files to ship or load.
  * Gunshots are a filtered noise burst, explosions the same with a longer decay
  * and a low sine thump under them. Browsers require a gesture before audio can
  * start, so the context is created lazily on the first click.
+ *
+ * The Effects toggle and the Loudness setting land on `master`'s gain and on
+ * the one-shot entry points -- never inside `ensure()` or `audioContext()`.
+ * The music fetches its context through those and hangs its own bus straight
+ * off `destination`, so a gate there would silence the menu music too.
  */
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 /** One shared noise buffer; every shot is a slice of it. */
 let noise: AudioBuffer | null = null;
+
+/**
+ * When the field last got loud, in seconds on the `performance.now()` clock.
+ * The ambience polls this to scatter the birds after gunfire -- a timestamp
+ * here costs the sim nothing and keeps audio.ts free of ambience imports.
+ */
+let loudAt = -1e9;
+export const lastLoudAt = (): number => loudAt;
 
 function ensure(): boolean {
   if (!CONFIG.audio.enabled) return false;
@@ -23,7 +37,7 @@ function ensure(): boolean {
 
   ctx = new Ctor();
   master = ctx.createGain();
-  master.gain.value = CONFIG.audio.volume;
+  master.gain.value = settings().sound ? settings().volume : 0;
   master.connect(ctx.destination);
 
   const length = Math.floor(ctx.sampleRate * 0.5);
@@ -32,6 +46,14 @@ function ensure(): boolean {
   for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
   return true;
 }
+
+// Live volume: the pause sheet is reachable mid-mission, so a change has to
+// land on the running graph, not on the next boot. A short ramp, not a set --
+// a stepped gain under a sounding bed is an audible click.
+onSettingsChange((s) => {
+  if (!ctx || !master) return;
+  master.gain.setTargetAtTime(s.sound ? s.volume : 0, ctx.currentTime, 0.03);
+});
 
 /** Call from a user gesture so the context is allowed to start. */
 export const unlockAudio = (): void => { ensure(); };
@@ -47,6 +69,15 @@ export function audioContext(): AudioContext | null {
   return ensure() ? ctx : null;
 }
 
+/**
+ * The effects bus. Anything that should obey the Effects toggle and the
+ * Loudness setting -- the ambience bed does -- hangs off this rather than off
+ * `destination`, and inherits both for free.
+ */
+export function sfxBus(): GainNode | null {
+  return ensure() ? master : null;
+}
+
 interface BurstOpts {
   duration: number;
   gain: number;
@@ -59,6 +90,9 @@ interface BurstOpts {
 }
 
 function burst(o: BurstOpts): void {
+  // The master gain is already zero when effects are off; this just skips
+  // building a node graph nobody will hear, on every shot of a firefight.
+  if (!settings().sound) return;
   if (!ensure() || !ctx || !master || !noise) return;
   const now = ctx.currentTime;
 
@@ -86,6 +120,7 @@ function burst(o: BurstOpts): void {
 }
 
 function thump(freq: number, duration: number, gain: number): void {
+  if (!settings().sound) return;
   if (!ensure() || !ctx || !master) return;
   const now = ctx.currentTime;
   const osc = ctx.createOscillator();
@@ -103,16 +138,24 @@ function thump(freq: number, duration: number, gain: number): void {
 /** Slight pitch variation per shot, or a burst turns into a machine-gun drone. */
 const vary = (base: number, spread = 0.18): number => base * (1 + (Math.random() * 2 - 1) * spread);
 
-export const sfxShot = (): void => burst({ duration: 0.09, gain: 0.55, freq: vary(1500), q: 1.1, sweepTo: vary(420) });
-export const sfxEnemyShot = (): void => burst({ duration: 0.1, gain: 0.4, freq: vary(950), q: 1.3, sweepTo: vary(320) });
+export const sfxShot = (): void => {
+  loudAt = performance.now() / 1000;
+  burst({ duration: 0.09, gain: 0.55, freq: vary(1500), q: 1.1, sweepTo: vary(420) });
+};
+export const sfxEnemyShot = (): void => {
+  loudAt = performance.now() / 1000;
+  burst({ duration: 0.1, gain: 0.4, freq: vary(950), q: 1.3, sweepTo: vary(320) });
+};
 export const sfxDeath = (): void => burst({ duration: 0.22, gain: 0.5, freq: vary(320), q: 0.7, sweepTo: 120, type: 'lowpass' });
 
 export const sfxExplosion = (): void => {
+  loudAt = performance.now() / 1000;
   burst({ duration: 0.55, gain: 0.9, freq: 800, q: 0.5, sweepTo: 90, type: 'lowpass' });
   thump(110, 0.45, 0.8);
 };
 
 export const sfxPickup = (): void => {
+  if (!settings().sound) return;
   if (!ensure() || !ctx || !master) return;
   const now = ctx.currentTime;
   const osc = ctx.createOscillator();
@@ -139,6 +182,7 @@ export const sfxOrder = (): void => burst({ duration: 0.045, gain: 0.16, freq: 2
 export const sfxDenied = (): void => burst({ duration: 0.07, gain: 0.2, freq: 320, q: 2, sweepTo: 190 });
 
 export const sfxWin = (): void => {
+  if (!settings().sound) return;
   if (!ensure() || !ctx || !master) return;
   const now = ctx.currentTime;
   [523, 659, 784, 1047].forEach((f, i) => {
@@ -156,6 +200,7 @@ export const sfxWin = (): void => {
 };
 
 export const sfxLose = (): void => {
+  if (!settings().sound) return;
   if (!ensure() || !ctx || !master) return;
   const now = ctx.currentTime;
   [392, 330, 262, 196].forEach((f, i) => {

@@ -35,6 +35,28 @@ export const blackoutLevel = (): number => level;
  * needs to know when it has finished -- the next mission must not take its
  * first order through a black screen.
  */
+/**
+ * Fades to black over `seconds`, resolving when the screen is fully out.
+ *
+ * The mirror of `fadeIn`, and it exists for the same reason: the caller needs
+ * the moment. A restart tears the world down and rebuilds it, and doing that
+ * mid-fade shows one frame of the new world through the old one's exit.
+ */
+export function fadeOut(seconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    const from = level;
+    if (from >= 1) { resolve(); return; }
+    const started = performance.now();
+    const tick = (): void => {
+      const t = Math.min(1, (performance.now() - started) / (seconds * 1000));
+      setBlackout(from + (1 - from) * t);
+      if (t >= 1) { setBlackout(1); resolve(); return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
 export function fadeIn(seconds: number): Promise<void> {
   return new Promise((resolve) => {
     const from = level;

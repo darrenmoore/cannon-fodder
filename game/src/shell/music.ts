@@ -1,5 +1,5 @@
 import { audioContext } from './audio.js';
-import { settings } from '../ui/settings.js';
+import { onSettingsChange, settings } from '../ui/settings.js';
 
 /**
  * Menu music.
@@ -115,7 +115,7 @@ async function apply(): Promise<void> {
       el.hidden = true;
       document.body.appendChild(el);
     }
-    el.volume = Math.max(0, Math.min(1, settings().volume * MUSIC_LEVEL));
+    el.volume = Math.max(0, Math.min(1, settings().musicVolume * MUSIC_LEVEL));
     source = 'track';
     try {
       await el.play();
@@ -155,6 +155,16 @@ export function stopMusic(): void {
 }
 
 export const musicOn = (): boolean => settings().music;
+
+// The music bar can move -- and cross zero, which flips the `music` toggle --
+// while the track is running, so both the level and the on/off answer are
+// re-applied live rather than on the next start.
+onSettingsChange((s) => {
+  const level = Math.max(0, Math.min(1, s.musicVolume * MUSIC_LEVEL));
+  if (el) el.volume = level;
+  synth?.setLevel(level * 0.5);
+  void apply();
+});
 
 /**
  * Flips the toggle. The caller persists the setting; this only reacts to it,
@@ -287,7 +297,7 @@ class Synth {
     this.step = 0;
     this.at = this.ctx.currentTime + 0.08;
 
-    const level = Math.max(0, Math.min(1, settings().volume * MUSIC_LEVEL)) * 0.5;
+    const level = Math.max(0, Math.min(1, settings().musicVolume * MUSIC_LEVEL)) * 0.5;
     this.bus.gain.cancelScheduledValues(this.ctx.currentTime);
     this.bus.gain.setValueAtTime(0, this.ctx.currentTime);
     this.bus.gain.linearRampToValueAtTime(level, this.ctx.currentTime + 0.6);
@@ -296,6 +306,12 @@ class Synth {
     // so it only decides *what* to book, and the audio clock decides when.
     this.timer = window.setInterval(() => this.pump(), 90);
     this.pump();
+  }
+
+  /** Retargets the running level; a stopped synth picks its level up on start. */
+  setLevel(level: number): void {
+    if (!this.running) return;
+    this.bus.gain.setTargetAtTime(level, this.ctx.currentTime, 0.03);
   }
 
   stop(): void {

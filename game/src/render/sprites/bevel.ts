@@ -72,6 +72,30 @@ export class Mask {
     return this;
   }
 
+  /**
+   * Grows the silhouette by n pixels in every direction.
+   *
+   * Used to build a backing mass: the reference sets its wordmark on a dark
+   * olive field that fills the air between the letters, and without one the
+   * page shows through every gap and the two words read as loose type rather
+   * than as one badge.
+   */
+  dilate(n: number): this {
+    for (let pass = 0; pass < n; pass++) {
+      const born: number[] = [];
+      for (let y = 0; y < this.h; y++) {
+        for (let x = 0; x < this.w; x++) {
+          if (this.bits[y * this.w + x]) continue;
+          if (this.at(x - 1, y) || this.at(x + 1, y) || this.at(x, y - 1) || this.at(x, y + 1)) {
+            born.push(y * this.w + x);
+          }
+        }
+      }
+      for (const i of born) this.bits[i] = 1;
+    }
+    return this;
+  }
+
   /** Stamps another mask in, offset. Used to assemble words out of letters. */
   blit(src: Mask, ox: number, oy: number): this {
     for (let y = 0; y < src.h; y++) {
@@ -170,17 +194,28 @@ export interface BevelStyle {
   keylineWidth?: number;
   /** The lit edge: top and left outside, bottom and right inside a hole. */
   rim: string;
-  /** Face tones, light first. Dithered between, never blended. */
-  face: [string, string];
+  /**
+   * The face, light to dark.
+   *
+   * A ramp, not a pair. Two tones dithered at a fixed mix is a texture, not
+   * a lit surface -- it comes out as one flat colour with noise on it,
+   * identical at the top of a letter and at its foot. The reference models
+   * every glyph: the same hue steps down as it descends, brightest just
+   * under the top edge and darkest at the base. Four tones and a position
+   * along them is enough to read as that, and the dither only ever resolves
+   * the fraction between two *neighbours*, so the surface stays hard.
+   *
+   * Two entries still work and behave as before, which is what the plates
+   * and the chrome use.
+   */
+  face: string[];
   /** The edge turning away: bottom and right outside, top and left in a hole. */
   shade: string;
   /**
-   * How much of the light tone the face carries at its top and at its bottom.
+   * How lit the face is at its top and at its bottom, 1 brightest.
    *
-   * A slab letter in the reference is not one colour -- it is brightest just
-   * under its top edge and settles to the darker tone by its foot. Two numbers
-   * rather than a gradient: the dither resolves the fraction between them, so
-   * what lands on screen is still only ever two colours.
+   * These index the ramp rather than mixing two tones: 1 lands on the first
+   * entry, 0 on the last, and anything between falls between two of them.
    */
   sheen?: [number, number];
   /**
@@ -247,12 +282,28 @@ export function paintBevel(
     }
   }
 
-  // 2. The face, dithered along the sheen.
+  /*
+   * 2. The face: a position along the ramp, set by how far down the shape the
+   *    pixel is, with the dither resolving only the fraction between the two
+   *    ramp entries either side of it.
+   *
+   *    Dithering across the *whole* ramp at a fixed level is what the first
+   *    version did, and a critic shown it said the letters had no lighting on
+   *    them at all -- sampling straight down a stem returned two values
+   *    alternating with no trend, top to bottom. A surface that is the same
+   *    mixture everywhere is a flat colour however many tones are in it.
+   */
+  const ramp = style.face;
+  const last = ramp.length - 1;
   for (let y = 0; y < h; y++) {
-    const level = sTop + (sBot - sTop) * (h <= 1 ? 0 : y / (h - 1));
+    const lit = sTop + (sBot - sTop) * (h <= 1 ? 0 : y / (h - 1));
+    const pos = Math.max(0, Math.min(last, (1 - lit) * last));
+    const i = Math.min(last, Math.floor(pos));
+    const frac = pos - i;
+    const lo = ramp[Math.min(last, i + 1)];
     for (let x = 0; x < w; x++) {
       if (!solid(x, y)) continue;
-      g.fillStyle = threshAt(x, y) < level ? style.face[0] : style.face[1];
+      g.fillStyle = threshAt(x, y) < frac ? lo : ramp[i];
       g.fillRect(ox + x, oy + y, 1, 1);
     }
   }

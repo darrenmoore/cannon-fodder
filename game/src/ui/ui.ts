@@ -255,7 +255,10 @@ export function segmented<T extends string>(opts: SegmentedOptions<T>): {
     b.type = 'button';
     b.textContent = label;
     b.dataset.id = id;
-    b.addEventListener('click', () => opts.onChange(id));
+    // The control moves its own highlight. It used to only call onChange and
+    // trust the caller to call set() back, which no caller did -- so every
+    // setting changed for real while the buttons claimed nothing had.
+    b.addEventListener('click', () => { set(id); opts.onChange(id); });
     root.appendChild(b);
     return b;
   });
@@ -263,6 +266,56 @@ export function segmented<T extends string>(opts: SegmentedOptions<T>): {
     for (const b of buttons) b.classList.toggle('on', b.dataset.id === value);
   };
   set(opts.value);
+  return { root, set };
+}
+
+export interface SliderOptions {
+  /** 0..1. */
+  value: number;
+  /** Fired on every change while dragging, so volume can be heard live. */
+  onChange(value: number): void;
+}
+
+/**
+ * A horizontal level bar with a square handle: track, fill, block. Values are
+ * quantised to twenty steps -- a slider that reports 0.4137 is a modern
+ * control wearing a costume, and nothing downstream can hear the difference
+ * anyway.
+ */
+export function slider(opts: SliderOptions): { root: HTMLDivElement; set(value: number): void } {
+  const root = el('div', 'ui-slider');
+  const track = el('div', 'ui-slider-track');
+  const fillBar = el('i', 'ui-slider-fill');
+  const handle = el('i', 'ui-slider-handle');
+  track.append(fillBar, handle);
+  root.appendChild(track);
+
+  let current = 0;
+  const paint = (): void => {
+    const pct = `${Math.round(current * 100)}%`;
+    fillBar.style.width = pct;
+    handle.style.left = pct;
+  };
+  const set = (value: number): void => {
+    current = Math.round(Math.max(0, Math.min(1, value)) * 20) / 20;
+    paint();
+  };
+  set(opts.value);
+
+  const fromEvent = (e: PointerEvent): void => {
+    const r = track.getBoundingClientRect();
+    const before = current;
+    set((e.clientX - r.left) / r.width);
+    if (current !== before) opts.onChange(current);
+  };
+  root.addEventListener('pointerdown', (e) => {
+    root.setPointerCapture(e.pointerId);
+    fromEvent(e);
+  });
+  root.addEventListener('pointermove', (e) => {
+    if (root.hasPointerCapture(e.pointerId)) fromEvent(e);
+  });
+
   return { root, set };
 }
 

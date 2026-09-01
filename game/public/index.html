@@ -99,6 +99,46 @@
     <div id="overlay" hidden><div id="overlay-card"></div></div>
     <div id="sheet" hidden></div>
 
+    <!--
+      The front end: the intro and the level select, which are one screen.
+
+      One root, one logo, two panes. Moving between them swaps the pane and
+      shrinks the logo; nothing unmounts, which is what makes it seamless
+      rather than two screens with a transition between them.
+
+      Every plate and button in here wears the plotted chrome, reaching CSS
+      as a sliced border-image via ui/skin.ts.
+    -->
+    <div id="front" hidden>
+      <div id="front-inner">
+        <h1 id="front-logo"><span class="fx-sr">Boots &amp; Bullets</span></h1>
+
+        <!-- Small screens get the logo and marching orders, nothing else.
+             Shown and hidden purely by the stylesheet's width query, so
+             resizing the window in and out of it just works. -->
+        <section id="front-mobile" class="fx-pane" aria-hidden="false">
+          <p class="fx-mobile-title">This theatre of&nbsp;war is&nbsp;too&nbsp;small</p>
+          <p class="fx-mobile-sub">No mobile deployment yet, soldier.<br>
+            March to a desktop and report back.</p>
+        </section>
+
+        <section id="intro" class="fx-pane">
+          <div id="intro-actions"></div>
+        </section>
+
+        <section id="select" class="fx-pane" hidden>
+          <div id="select-frame">
+            <div id="select-head"></div>
+            <div id="select-body">
+              <nav id="select-rail"></nav>
+              <div id="select-list"></div>
+            </div>
+            <div id="select-foot"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <div id="menu" hidden>
       <div id="menu-inner">
         <h1>Boots&nbsp;&amp;&nbsp;Bullets</h1>

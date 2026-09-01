@@ -19,7 +19,7 @@
  * in the atlas, where the game can actually use it, and it appears here free.
  */
 
-import { TONE_NAMES, bakeBanner, bakeButton, bakeFrame, bakeLock, bakePlate, bakeStar } from '../render/sprites/plates.js';
+import { TONE_NAMES, bakeBanner, bakeButton, bakeFrame, bakeIcon, bakeLock, bakePlate, bakeStar } from '../render/sprites/plates.js';
 import { chromeText } from '../render/chromefont.js';
 import type { Sprite } from '../render/sprites/paint.js';
 
@@ -128,6 +128,12 @@ export const SPECIMENS: Specimen[] = [
       bakeStar(13, true), bakeStar(13, true), bakeStar(13, false),
       bakeStar(9, true), bakeStar(9, false),
     ],
+  },
+  {
+    id: 'ui.icons',
+    group: 'ui',
+    note: 'the sidebar tools: leave, restart, settings',
+    draw: () => [bakeIcon('door'), bakeIcon('restart'), bakeIcon('gear')],
   },
   {
     id: 'ui.lock',

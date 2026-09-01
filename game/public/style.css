@@ -304,7 +304,23 @@ html, body {
  * roster: a casualty should read as a name leaving a list, not as a counter
  * going down.
  */
+/*
+ * The sidebar keeps the small ladder.
+ *
+ * When the chrome doubled to 20/30/40 this column doubled with it, and a
+ * 188px rail set for ten-pixel type burst at twenty -- every hint wrapped,
+ * ORDERS ran to two lines, the roster barely fit. The owner asked for half
+ * again, and half of this ladder is exactly the one the sidebar was designed
+ * around. Scoped here rather than changed globally, so a dialog and the rail
+ * can disagree about size while reading from one set of names -- and 15 is
+ * not on the bitmap grid, so 30 halves to 20, not to a blur.
+ */
 #hud {
+  --fs-micro: 10px;
+  --fs-sm: 10px;
+  --fs-body: 10px;
+  --fs-lg: 20px;
+  --fs-xl: 20px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -987,20 +1003,13 @@ html, body {
 /* --------------------------------------------------------------- wide */
 
 /*
- * A caption sits over the battlefield; a modal owns the screen.
- *
- * This inset used to apply to the whole overlay, on the reasoning that the
- * sidebar should stay readable underneath a briefing. It does -- and it also
- * applied to the result panel, which is not a caption. Two faults fell out of
- * that and the owner reported both: the scrim started after the sidebar, so
- * the full-width blackout underneath showed as a black bar down the left; and
- * the card centred inside the shortened layer, landing 94px right of the
- * middle of a 1280px screen.
- *
- * So it applies to the briefing only, which is what `:not(.interactive)`
- * means here -- `hud.ts` adds that class for the panel you can click.
+ * No layout ever insets the overlay now. The rule that did -- briefing only,
+ * sidebar left readable -- guarded a scene that stopped existing: the briefing
+ * is shown on a full blackout (main.ts raises it before showBriefing), so the
+ * sidebar it was protecting is under black anyway, and all the inset produced
+ * was a bar of that black standing beside the scrim, plus a briefing centred
+ * on the play area instead of the screen. Every overlay owns the whole screen.
  */
-[data-layout="wide"] #overlay:not(.interactive) { inset: 0 0 0 var(--sidebar-w); }
 
 /* ------------------------------------------------------------ compact */
 
@@ -1423,29 +1432,15 @@ html, body {
   text-align: center;
   text-transform: uppercase;
 }
-/* Stuck to the bottom of the card rather than to the end of the list.
-   The card scrolls, so `Done` sat below the fold on a 900px desktop as well as
-   on a phone -- reachable only by a scroll with nothing to announce it, which
-   is the same as unreachable for anybody who does not think to try. It belongs
-   to the sheet, not to the settings. */
+/* Part of the card, not a bar bolted to it. The sticky treatment (own
+   background, upward shadow) existed for a nine-row list that scrolled; the
+   trimmed sheet never does, and over the plotted frame the band read as a
+   broken drop shadow floating under DONE. */
 .sheet-actions {
   display: flex;
   flex-direction: column;
   gap: 7px;
   margin-top: 18px;
-  position: sticky;
-  bottom: -18px;
-  padding: 10px 0;
-  background: #171d0d;
-  box-shadow: 0 -10px 12px -8px #0d1207;
-}
-/* A pause sheet is short and has nothing to scroll, so its buttons should not
-   look like a bar bolted to the bottom of one. */
-.sheet-body:not(:has(.sheet-rows)) .sheet-actions {
-  position: static;
-  padding: 0;
-  background: none;
-  box-shadow: none;
 }
 .sheet-note {
   margin: 14px 0 0;
@@ -1536,6 +1531,45 @@ html, body {
 }
 .ui-seg.on { background: var(--plate-hi); color: var(--gold); box-shadow: inset 0 2px 0 var(--gold); }
 .ui-seg:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+/* --- level bar: a track, a fill, and a square bevelled handle. Hard edges
+   everywhere -- it is a piece of the plate, not a browser range input. */
+.ui-slider {
+  flex: 1 1 180px;
+  min-width: 150px;
+  padding: 8px 0;
+  cursor: pointer;
+  /* Dragging the handle is the gesture; the page must not scroll under it. */
+  touch-action: none;
+}
+.ui-slider-track {
+  position: relative;
+  height: 10px;
+  background: #141a0b;
+  border-top: 1px solid var(--plate-lo);
+  border-left: 1px solid var(--plate-lo);
+  border-bottom: 1px solid var(--plate-hi);
+  border-right: 1px solid var(--plate-hi);
+}
+.ui-slider-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: #7a6028;
+}
+.ui-slider-handle {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 24px;
+  margin: -12px 0 0 -8px;
+  background: #a8843c;
+  border-top: 2px solid #d9c27a;
+  border-left: 2px solid #d9c27a;
+  border-right: 2px solid #4a3a16;
+  border-bottom: 2px solid #4a3a16;
+}
 
 .ui-chip {
   padding: 2px 7px;
@@ -1706,3 +1740,534 @@ html, body {
   font-size: var(--fs-micro);
   letter-spacing: var(--track-tight);
 }
+
+
+/* ===========================================================================
+ * The front end -- intro and level select, one screen
+ *
+ * Nothing in here draws its own bevel. Every plate, button, frame, banner and
+ * star is the plotted sprite arriving as a sliced border-image from ui/skin.ts,
+ * which is the whole reason those sprites exist: a control has to look the same
+ * on canvas and in the DOM, and it only does that if there is one drawing.
+ *
+ * border-image rather than background, because none of these are one size --
+ * a button is as wide as its label and a frame as big as the screen. Slicing
+ * stretches only the middles, so a corner lands untouched at any size.
+ * ======================================================================== */
+
+#front {
+  position: fixed;
+  inset: 0;
+  z-index: 14;
+  overflow-y: auto;
+  /* The ground the front end sits on. When the attract world lands it goes
+     behind this and only the vignette stays. */
+  background:
+    radial-gradient(ellipse at 50% 38%, #1e2a12 0%, #0d1207 62%, #070a04 100%);
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+#front.in { opacity: 1; }
+#front.leaving { opacity: 0; }
+#front[hidden] { display: none; }
+
+#front-inner {
+  min-height: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+/* The intro is a title screen: logo and buttons sit centred in the viewport
+   rather than hung from the top. Only there -- the level select is taller
+   than the screen, and centring a scroller reads as broken. */
+#front:not(.on-select) #front-inner {
+  justify-content: center;
+  padding-top: 24px;
+}
+
+/* --- the logo, which never unmounts
+ *
+ * The brief asked for it to shrink and move up when the level select opens, and
+ * that is exactly what makes the two panes read as one screen: the thing you
+ * were looking at is still there, smaller, rather than a screen having been
+ * replaced by another screen. Whole-number scales only -- 0.5 halves every
+ * plotted pixel cleanly, where 0.62 would put a glyph edge between two of them.
+ */
+#front-logo {
+  width: calc(var(--sk-logo-w) * 2px);
+  height: calc(var(--sk-logo-h) * 2px);
+  margin: 0;
+  background-image: var(--sk-logo);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  flex: none;
+  transition: width 0.34s ease, height 0.34s ease;
+}
+/* On the select pane the logo is the screen's title: half again its plotted
+   size, and hanging over the frame's top edge -- the negative margin swallows
+   the column gap and sinks its lower half into the card, and the frame pads
+   its own top so the rail starts below the overhang. */
+#front.on-select #front-logo {
+  width: calc(var(--sk-logo-w) * 1.5px);
+  height: calc(var(--sk-logo-h) * 1.5px);
+  margin-bottom: calc(var(--sk-logo-h) * -0.75px - 28px);
+  position: relative;
+  z-index: 1;
+  /* It is the way back to the intro now, and the hand should say so. */
+  cursor: pointer;
+}
+#front.on-select #select-frame {
+  padding-top: calc(var(--sk-logo-h) * 0.75px + 12px);
+}
+
+/* --- the small-screen gate ----------------------------------------------
+ * Below this width the game is not offered: the logo, a line of marching
+ * orders, and nothing to click. Driven entirely by the width query so
+ * resizing a window walks in and out of it with no script involved. */
+#front-mobile { display: none; }
+@media (max-width: 720px) {
+  #intro, #select { display: none !important; }
+  #front-mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 0 12px;
+    text-align: center;
+  }
+  /* Whatever pane state the front was in, the logo stands back up, centred,
+     still bobbing -- capped to the screen, because a 2x wordmark is wider
+     than the phones this gate exists for. */
+  #front #front-logo,
+  #front.on-select #front-logo {
+    width: min(calc(var(--sk-logo-w) * 2px), 90vw);
+    height: auto;
+    aspect-ratio: var(--sk-logo-w) / var(--sk-logo-h);
+    margin-bottom: 0;
+    animation: fx-logo-idle 8s step-end infinite;
+  }
+  #front #front-inner,
+  #front.on-select #front-inner { justify-content: center; }
+  .fx-mobile-title {
+    margin: 0;
+    color: var(--gold);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    max-width: 420px;
+  }
+  .fx-mobile-sub {
+    margin: 0;
+    color: var(--ink);
+    font-size: 17px;
+    line-height: 1.6;
+    letter-spacing: var(--track-tight);
+  }
+}
+/* Restated after the gate: its logo rule re-arms the animation, and this must
+   still win for anyone who asked their machine for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  #front #front-logo,
+  #front.on-select #front-logo { animation: none; }
+}
+
+/* The idle. A sprite-style bob -- whole pixels, held pose to pose with
+   `step-end` the way the game animates everything else, never a smooth
+   sub-pixel glide over a pixelated image. Three slow breaths, then one
+   small hop with a bounce on landing, and round again. */
+@keyframes fx-logo-idle {
+  0%   { transform: translateY(0); }
+  6%   { transform: translateY(-2px); }
+  12%  { transform: translateY(-4px); }
+  18%  { transform: translateY(-2px); }
+  24%  { transform: translateY(0); }
+  30%  { transform: translateY(-2px); }
+  36%  { transform: translateY(-4px); }
+  42%  { transform: translateY(-2px); }
+  48%  { transform: translateY(0); }
+  54%  { transform: translateY(-2px); }
+  60%  { transform: translateY(-4px); }
+  66%  { transform: translateY(-2px); }
+  72%  { transform: translateY(0); }
+  78%  { transform: translateY(-8px); }
+  82%  { transform: translateY(-3px); }
+  86%, 100% { transform: translateY(0); }
+}
+#front-logo { animation: fx-logo-idle 8s step-end infinite; }
+/* Small and risen on the select pane, the logo is furniture: it holds still. */
+#front.on-select #front-logo { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  #front-logo { animation: none; }
+}
+.fx-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fx-pane { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.fx-pane[hidden] { display: none; }
+
+/* --- buttons: the plotted plate, at any width */
+.fx-btn {
+  min-width: 280px;
+  padding: 14px 26px;
+  background: none;
+  border: 10px solid transparent;
+  border-image: var(--sk-btn) var(--sk-slice-btn) fill / 10px round;
+  color: #f6efd8;
+  font: var(--fs-lg)/1 var(--face);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  cursor: pointer;
+  image-rendering: pixelated;
+}
+.fx-btn:hover, .fx-btn:focus-visible {
+  border-image-source: var(--sk-btn-hot);
+  color: #fffbe8;
+  outline: none;
+}
+.fx-btn:active { border-image-source: var(--sk-btn-down); }
+.fx-btn:disabled { border-image-source: var(--sk-btn-off); color: #6d7254; cursor: default; }
+
+#intro-actions { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+
+/* --- the level select frame */
+#select-frame {
+  width: 100%;
+  border: 18px solid transparent;
+  border-image: var(--sk-frame) var(--sk-slice-frame) fill / 18px round;
+  image-rendering: pixelated;
+  padding: 6px;
+}
+/* Back on the left, the banner dead-centre, a ghost column keeping it there. */
+#select-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: -6px 0 14px;
+}
+#select-head .fx-back { justify-self: start; min-width: 0; padding: 10px 22px; }
+.fx-head-ghost { justify-self: end; }
+.fx-banner {
+  padding: 10px 40px;
+  border: 12px solid transparent;
+  border-image: var(--sk-banner) var(--sk-slice-banner) fill / 12px round;
+  width: fit-content;
+  image-rendering: pixelated;
+}
+.fx-banner-text {
+  color: #f6efd8;
+  font-size: var(--fs-lg);
+  letter-spacing: var(--track-wide);
+}
+
+#select-body {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* --- the rail */
+#select-rail { display: flex; flex-direction: column; gap: 8px; }
+.fx-group {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+}
+/* Placeholder portraits, tinted per theatre. The real six are outstanding and
+   the brief says a placeholder is acceptable until they land. */
+.fx-group-art { width: 36px; height: 36px; flex: none; box-shadow: inset 0 0 0 2px #0a0d05; }
+.fx-group-art.t-jungle { background: linear-gradient(#3f5216, #22300c); }
+.fx-group-art.t-desert { background: linear-gradient(#9d8a38, #5e5322); }
+.fx-group-art.t-arctic { background: linear-gradient(#a9c9d0, #5c7079); }
+.fx-group-art.t-test { background: linear-gradient(#4a4c46, #26271f); }
+.fx-group-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fx-group-name { font-size: var(--fs-body); letter-spacing: var(--track-tight); line-height: 1.15; }
+/* nowrap on both halves: "15 MISSIONS" breaking after the number reads as a
+   different number, which is worse than the line being tight. */
+.fx-group-meta { display: flex; justify-content: space-between; gap: 10px; white-space: nowrap; }
+.fx-group-count { color: #9db97a; font-size: var(--fs-body); }
+.fx-group-done { color: var(--gold); font-size: var(--fs-body); }
+.fx-group.on { border-image-source: var(--sk-btn-hot); }
+/* The dim meta tone is set for the resting plate; on the lit one it vanishes. */
+.fx-group.on .fx-group-count { color: #2a2408; }
+.fx-group.on .fx-group-done { color: #1c1804; }
+.fx-group.on .fx-group-name { color: #fffbe8; }
+
+/* --- the mission cards */
+#select-list { display: flex; flex-direction: column; gap: 8px; }
+.fx-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  padding: 12px 18px;
+  text-align: left;
+  background: none;
+  border: 10px solid transparent;
+  border-image: var(--sk-plate) var(--sk-slice-plate) fill / 10px round;
+  color: #f6efd8;
+  font: var(--fs-body)/1.3 var(--face);
+  cursor: pointer;
+  image-rendering: pixelated;
+}
+.fx-card:hover, .fx-card:focus-visible { border-image-source: var(--sk-plate-hot); outline: none; }
+.fx-card.locked { border-image-source: var(--sk-plate-off); color: #6d7254; cursor: default; }
+/* A big gold numeral against the name, which is the reference's arrangement. */
+.fx-card-num { color: var(--gold); font-size: var(--fs-title); line-height: 1; min-width: 66px; }
+.fx-card.locked .fx-card-num { color: #4e5230; }
+.fx-card-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fx-card-name { font-size: var(--fs-lg); letter-spacing: var(--track-tight); }
+/* Not italic. The brief is explicit and a bitmap face has no italic anyway. */
+.fx-card-desc { color: #a3b47c; font-size: var(--fs-body); }
+.fx-card.locked .fx-card-desc { color: #5c6142; }
+.fx-card-tail { display: flex; align-items: center; gap: 6px; }
+
+.fx-stars { display: flex; gap: 4px; }
+.fx-star {
+  width: 34px; height: 34px;
+  background-image: var(--sk-star-off);
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+}
+.fx-star.on { background-image: var(--sk-star-on); }
+.fx-lock {
+  width: 30px; height: 34px;
+  background-image: var(--sk-lock);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+/* --- the foot: difficulty, and the way back */
+#select-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.fx-diffs { display: flex; gap: 8px; flex-wrap: wrap; }
+.fx-diff, .fx-back { min-width: 0; padding: 10px 20px; }
+.fx-diff.on { border-image-source: var(--sk-btn-hot); color: #fffbe8; }
+
+/* The rail stacks under the list on anything narrow; a 280px column and a
+   mission card cannot both have room on a phone. */
+@media (max-width: 780px) {
+  #select-body { grid-template-columns: minmax(0, 1fr); }
+  #select-rail { flex-direction: row; overflow-x: auto; }
+  .fx-group { width: auto; min-width: 220px; }
+  .fx-btn { min-width: 0; width: 100%; }
+}
+
+
+/* --- the sidebar tools: leave, restart, settings ------------------------- */
+.hud-tools {
+  display: flex;
+  gap: 6px;
+  padding: 8px 7px 2px;
+  border-top: 1px solid var(--plate-lo);
+}
+.hud-tool {
+  width: 44px;
+  height: 40px;
+  background: none;
+  border: 10px solid transparent;
+  border-image: var(--sk-btn) var(--sk-slice-btn) fill / 10px round;
+  image-rendering: pixelated;
+  cursor: pointer;
+  padding: 0;
+}
+/*
+ * The glyph rides a pseudo-element, not the background. border-image with
+ * `fill` paints its middle slice over the element background, so an icon set
+ * there is drawn and then covered -- three plates, no pictures, which is how
+ * this shipped for about four minutes.
+ */
+.hud-tool::after {
+  content: '';
+  display: block;
+  width: 30px;
+  height: 30px;
+  margin: -3px auto 0;
+  background: center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+.hud-tool:hover, .hud-tool:focus-visible { border-image-source: var(--sk-btn-hot); outline: none; }
+.hud-tool:active { border-image-source: var(--sk-btn-down); }
+.hud-tool.t-exit::after { background-image: var(--sk-ic-door); }
+.hud-tool.t-restart::after { background-image: var(--sk-ic-restart); }
+.hud-tool.t-gear::after { background-image: var(--sk-ic-gear); }
+
+/* The standing orders, under the mission name. Always on screen. */
+.hud-goal {
+  margin-top: 4px;
+  color: #a3b47c;
+  font-size: var(--fs-body);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+/* --- the confirmation ----------------------------------------------------
+ *
+ * Above the pause sheet (20) and everything of the game's, below the dev
+ * panel (90): a question outranks whatever raised it.
+ */
+.confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(8, 11, 5, 0.78);
+}
+.confirm-card {
+  width: min(560px, 92vw);
+  padding: 30px 30px 26px;
+  border: 18px solid transparent;
+  border-image: var(--sk-frame) var(--sk-slice-frame) fill / 18px round;
+  image-rendering: pixelated;
+  text-align: center;
+}
+.confirm-title {
+  color: var(--gold);
+  font-size: var(--fs-lg);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+}
+.confirm-body {
+  margin-top: 14px;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.confirm-btn { min-width: 170px; }
+
+
+/* --- the sidebar tools fill their row, and stay square ------------------- */
+.hud-tools { gap: 8px; padding: 8px 7px 4px; }
+.hud-tool {
+  flex: 1 1 0;
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.hud-tool::after { margin: 0; }
+
+/* --- the sheet, in the plotted chrome ------------------------------------
+ *
+ * The settings looked like what they were: a 420px panel of CSS borders from
+ * before the chrome existed, holding twenty-pixel type it was never sized for
+ * -- the five-segment zoom row ran clean off its right edge. Wider, dressed in
+ * the frame, and each row stacks its control under its label instead of
+ * fighting it for one line.
+ */
+.sheet-card {
+  width: min(620px, 100%);
+  background: none;
+  border: 18px solid transparent;
+  border-image: var(--sk-frame) var(--sk-slice-frame) fill / 18px round;
+  image-rendering: pixelated;
+  padding: 24px 26px 20px;
+  box-shadow: none;
+}
+.sheet-title {
+  color: var(--gold);
+  font-size: var(--fs-lg);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  text-align: center;
+}
+.sheet-row { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 0; }
+.sheet-row > .ui-segmented { margin-left: 0; }
+.ui-segmented { flex-wrap: wrap; gap: 6px; overflow: visible; }
+.ui-seg {
+  background: none;
+  border: 10px solid transparent;
+  border-image: var(--sk-btn) var(--sk-slice-btn) fill / 10px round;
+  image-rendering: pixelated;
+  color: #d9d2ba;
+  min-height: 0;
+  padding: 6px 14px;
+}
+.ui-seg.on {
+  border-image-source: var(--sk-btn-hot);
+  color: #fffbe8;
+  box-shadow: none;
+}
+.sheet-actions .ui-btn {
+  background: none;
+  border: 10px solid transparent;
+  border-image: var(--sk-btn) var(--sk-slice-btn) fill / 10px round;
+  image-rendering: pixelated;
+}
+.sheet-actions .ui-btn:hover, .sheet-actions .ui-btn:focus-visible {
+  border-image-source: var(--sk-btn-hot);
+}
+/* No key caps in the sheets: the owner asked for the shortcut text gone, and
+   a cap on DONE was the last of it. The keys themselves still work. */
+.sheet-card .ui-key { display: none; }
+
+/* Casualties of turning the row into a column: the label kept its 190px
+   flex-basis and the level bar its 180px one, which in a column are pixels of
+   *height*. Both corrected against the axis they actually live on now. */
+.sheet-row-text { flex: 0 0 auto; min-width: 0; }
+.sheet-row > .ui-slider { flex: 0 0 auto; min-width: 0; }
+.sheet-rows { padding-bottom: 8px; }
+.sheet-actions { padding: 4px 4px 0; }
+
+
+/* --- the mission dialog's furniture -------------------------------------- */
+.mi { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+.mi-desc { margin: 0; color: var(--ink); font-size: var(--fs-body); line-height: 1.5; }
+.mi-meta { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.mi-chip {
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 1px #3b4d26;
+  color: #9db97a;
+  font-size: var(--fs-body);
+  letter-spacing: var(--track-tight);
+}
+.mi-chip.warn { color: #e0a050; box-shadow: inset 0 0 0 1px #6b4a20; }
+.mi-earned { display: flex; align-items: center; gap: 14px; }
+.mi-best { color: var(--gold); font-size: var(--fs-body); letter-spacing: var(--track-tight); }
+
+/* One line of difficulties, stars on a line of their own, no fourth button. */
+/* 740, measured: the three difficulty buttons come to 629px with their gaps,
+   and 680 left 584 inside the frame -- one line was the whole point. */
+.confirm-card { width: min(740px, 92vw); }
+.confirm-btn { min-width: 130px; }
+.mi-earned { flex-direction: column; gap: 8px; }

@@ -646,7 +646,39 @@ export const CONFIG = {
   /** Seconds the MISSION FAILED banner holds before the auto-restart. */
   restartDelay: 2.4,
 
-  audio: { enabled: true, volume: 0.35 },
+  audio: {
+    enabled: true,
+    /**
+     * The continuous mission bed -- river, wind, insects, birds. Every level
+     * here is pre-master: the whole bed still obeys the Effects toggle and the
+     * Loudness setting, because its bus hangs off the sfx master.
+     */
+    ambience: {
+      /** Whole-bed trim. The bed is scenery; it must never fight a rifle. */
+      level: 0.5,
+      /** Per-layer levels, before the terrain curves scale them. */
+      water: 0.28,
+      wind: 0.4,
+      rustle: 0.3,
+      insects: 0.14,
+      birds: 0.5,
+      /** Tiles of `wetSdf` over which the river fades in (the sdf clamps at 6). */
+      waterRange: 6,
+      /** Tiles of `foliageSdf` over which birds, insects and rustle fade in. */
+      foliageRange: 5,
+      /** setTargetAtTime tau for the terrain-proximity gains, seconds. */
+      ramp: 0.3,
+      /** Control-update cadence, seconds. The maths is cheap; the ear is slow. */
+      tick: 0.1,
+      /** Seconds between bird calls at full foliage / at the treeline's edge. */
+      birdMinGap: 2.5,
+      birdMaxGap: 9,
+      /** Seconds the birds stay silent after a shot or an explosion. */
+      scareTime: 8,
+      /** Tau for the birds fading back in once the field goes quiet. */
+      birdRecover: 2.5,
+    },
+  },
 } as const;
 
 export type Config = typeof CONFIG;

@@ -47,36 +47,36 @@ const GOLD: BevelStyle = {
   keyline: '#140c02',
   keylineWidth: 1,
   rim: '#fbe6a0',
-  face: ['#f4ba3e', '#e0a32e'],
+  face: ['#fdd66a', '#f4ba3e', '#dda02c', '#b8801f'],
   shade: '#8a5312',
-  sheen: [1, 0.38],
+  sheen: [1, 0.12],
 };
 
 const RED: BevelStyle = {
   keyline: '#120400',
   keylineWidth: 1,
   rim: '#f9b070',
-  face: ['#e6431a', '#cb320e'],
+  face: ['#f2683a', '#e6431a', '#c8300e', '#a02208'],
   shade: '#6e1605',
-  sheen: [1, 0.36],
+  sheen: [1, 0.12],
 };
 
 const OLIVE: BevelStyle = {
   keyline: '#0a0d02',
   keylineWidth: 1,
   rim: '#dce55f',
-  face: ['#85a11f', '#6f8a1a'],
+  face: ['#9cb82a', '#85a11f', '#6f8a1a', '#586d14'],
   shade: '#3f4d0e',
-  sheen: [0.95, 0.4],
+  sheen: [0.95, 0.15],
 };
 
 const HELMET: BevelStyle = {
   keyline: '#0a0d02',
   keylineWidth: 1,
   rim: '#d1da58',
-  face: ['#87a220', '#66811a'],
+  face: ['#a0bc2c', '#87a220', '#6d8a1c', '#546b16'],
   shade: '#32400d',
-  sheen: [1, 0.3],
+  sheen: [1, 0.1],
 };
 
 const STEEL: BevelStyle = {
@@ -100,6 +100,8 @@ const STOCK: BevelStyle = {
 /** The star, and the shadow the whole crest throws. */
 const STAR = '#f6e9d2';
 const SHADOW = '#080a04';
+/** The field the wordmark sits on, standing in for the reference's foliage. */
+const BACKING = '#28340f';
 
 /* ------------------------------------------------------------------- glyphs */
 
@@ -279,20 +281,20 @@ interface Line {
  */
 const BOOTS: Line = {
   text: 'BOOTS',
-  widths: [38, 39, 39, 35, 36],
+  widths: [35, 36, 36, 32, 33],
   capH: 46,
   stem: 13,
   bar: 10,
-  track: 1,
+  track: 4,
 };
 
 const BULLETS: Line = {
   text: 'BULLETS',
-  widths: [34, 34, 30, 30, 32, 32, 33],
+  widths: [31, 31, 27, 27, 29, 29, 30],
   capH: 44,
   stem: 11,
   bar: 10,
-  track: 1,
+  track: 4,
 };
 
 const lineWidth = (l: Line): number =>
@@ -449,7 +451,44 @@ export function bakeLogo(): Sprite {
   ];
   for (const [m, [x, y]] of cast) paintShadow(g, m, x + SH_X, y + SH_Y, SHADOW, 1);
 
-  /* 2. Back to front. */
+  /*
+   * 2. The backing mass.
+   *
+   * The reference sets its wordmark on a dark olive field -- foliage, out of
+   * focus -- which fills the air between and behind the letters. Three
+   * separate critics shown this without it said the same thing: ours reads as
+   * loose type on bare ground where the reference reads as one badge, with the
+   * page showing through 15% of the block against the reference's 4%.
+   *
+   * A dilated silhouette of the two words, and **the counters cut back out of
+   * it**. That second half is a deliberate departure from the reference, where
+   * the counters do read black because the foliage is behind them too: this
+   * logo has to sit over an animating battlefield, and the owner asked for the
+   * holes in the letters to stay holes. Air between the letters, daylight
+   * through them.
+   */
+  const backing = new Mask(c.width, c.height);
+  for (const [m, [x, y]] of [
+    [bullets, at.bullets], [boots, at.boots], [amp, at.amp],
+  ] as Array<[Mask, readonly number[]]>) backing.blit(m, x, y);
+  backing.dilate(4);
+  for (const [m, [x, y]] of [
+    [bullets, at.bullets], [boots, at.boots], [amp, at.amp],
+  ] as Array<[Mask, readonly number[]]>) {
+    const ext = m.exterior();
+    for (let yy = 0; yy < m.h; yy++) {
+      for (let xx = 0; xx < m.w; xx++) {
+        const i = yy * m.w + xx;
+        if (!m.bits[i] && !ext[i]) backing.set(xx + x, yy + y, 0);
+      }
+    }
+  }
+  g.fillStyle = BACKING;
+  for (let y = 0; y < backing.h; y++) {
+    for (let x = 0; x < backing.w; x++) if (backing.at(x, y)) g.fillRect(x, y, 1, 1);
+  }
+
+  /* 3. Back to front. */
   paintBevel(g, wingL, at.wingL[0], at.wingL[1], OLIVE);
   paintBevel(g, wingR, at.wingR[0], at.wingR[1], OLIVE);
   paintBevel(g, stocks, OX, OY + 1, STOCK);

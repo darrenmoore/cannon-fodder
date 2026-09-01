@@ -1,6 +1,5 @@
-import { bindKeys, button, fill, heading, segmented } from './ui.js';
+import { bindKeys, button, fill, segmented, slider } from './ui.js';
 import { settings, updateSettings } from './settings.js';
-import type { Handedness } from './settings.js';
 
 /**
  * The modal sheet: pause, and settings.
@@ -152,103 +151,49 @@ export function showSettings(onLayoutChange: () => void): void {
       rows.appendChild(r);
     };
 
-    const onOff = [{ id: 'on' as const, label: 'On' }, { id: 'off' as const, label: 'Off' }];
-    const bool = (v: boolean): 'on' | 'off' => (v ? 'on' : 'off');
+    /** One labelled row with a level bar in it. Dragging is heard live. */
+    const barRow = (
+      label: string, note: string, value: number, onChange: (v: number) => void,
+    ): void => {
+      const r = document.createElement('div');
+      r.className = 'sheet-row';
+      const text = document.createElement('div');
+      text.className = 'sheet-row-text';
+      text.appendChild(Object.assign(document.createElement('b'), { textContent: label }));
+      text.appendChild(Object.assign(document.createElement('span'), { textContent: note }));
+      r.appendChild(text);
+      r.appendChild(slider({ value, onChange }).root);
+      rows.appendChild(r);
+    };
 
-    rows.appendChild(heading('view'));
-    // Five steps rather than three. The automatic answer is a judgement about
-    // a screen it cannot see being used, and two of those judgements have
-    // already been wrong; the player wanting something else is the normal case,
-    // not an edge one, so the range is wide enough to actually reach it.
+    /*
+     * Three settings, no section headings. This sheet held nine rows under
+     * four headings, which is a preferences dialog, not a pause screen --
+     * Picture, Handedness, Haptics and Waypoints keep their saved values and
+     * their defaults, they just are not questions the sheet asks any more.
+     */
+
+    // Three steps, and none of them called Auto: "Auto" asked the player to
+    // know what the layout would have chosen, which is a question about the
+    // code. Normal *is* that choice; the other two are one step either side.
     row('Zoom', 'How much ground fits on screen.',
       [
-        { id: '-2' as const, label: 'Widest' },
-        { id: '-1' as const, label: 'Wider' },
-        { id: '0' as const, label: 'Auto' },
-        { id: '1' as const, label: 'Closer' },
-        { id: '2' as const, label: 'Closest' },
+        { id: '-1' as const, label: 'Wide' },
+        { id: '0' as const, label: 'Normal' },
+        { id: '1' as const, label: 'Close' },
       ],
-      String(settings().zoomBias) as '-2' | '-1' | '0' | '1' | '2',
+      settings().zoomBias < 0 ? '-1' : settings().zoomBias > 0 ? '1' : '0',
       (v) => { updateSettings({ zoomBias: Number(v) }); onLayoutChange(); });
 
-    /*
-     * One question, because underneath it always was one.
-     *
-     * `Resolution` and `Crisp pixels` were two rows, and they multiply into a
-     * single number -- the device pixel ratio the canvas is sized at. Nobody
-     * outside this file could have known that, and neither row could be
-     * answered by a player: "half is kinder to an older phone" is a shrug, and
-     * "hard sprite edges on a fractional-density screen" is a sentence about
-     * hardware. What a player can answer is how sharp they want it and what
-     * they are willing to pay for that.
-     */
-    row('Picture', 'Sharp on a good screen, Fast on an old one.',
-      [
-        { id: 'sharp' as const, label: 'Sharp' },
-        { id: 'auto' as const, label: 'Auto' },
-        { id: 'fast' as const, label: 'Fast' },
-      ],
-      settings().resolution === 'half' ? 'fast' : settings().crisp ? 'sharp' : 'auto',
-      (v) => {
-        updateSettings({
-          resolution: v === 'fast' ? 'half' : 'full',
-          crisp: v === 'sharp',
-        });
-        onLayoutChange();
-      });
+    // The bars replace three rows -- Effects on/off, Music on/off, and a
+    // three-step Loudness shared between them. A bar at zero *is* off, and
+    // the booleans underneath are kept true to that so everything that gates
+    // on them still works.
+    barRow('Effects', 'Gunfire, explosions and ambience.', settings().volume,
+      (v) => updateSettings({ volume: v, sound: v > 0 }));
+    barRow('Music', 'On the front screen only.', settings().musicVolume,
+      (v) => updateSettings({ musicVolume: v, music: v > 0 }));
 
-    rows.appendChild(heading('controls'));
-    row('Handedness', 'Which thumb the action bar sits under.',
-      [{ id: 'right' as const, label: 'Right' }, { id: 'left' as const, label: 'Left' }],
-      settings().handedness,
-      (v: Handedness) => { updateSettings({ handedness: v }); onLayoutChange(); });
-
-    row('Haptics', 'A tick on a throw and on a casualty.',
-      onOff, bool(settings().haptics),
-      (v) => updateSettings({ haptics: v === 'on' }));
-
-    rows.appendChild(heading('sound'));
-    row('Effects', 'Gunfire and explosions.', onOff, bool(settings().sound),
-      (v) => updateSettings({ sound: v === 'on' }));
-    row('Music', 'On the front screen only.', onOff, bool(settings().music),
-      (v) => updateSettings({ music: v === 'on' }));
-
-    /*
-     * `volume` has been saved, clamped, persisted and coerced since the day
-     * settings existed, and has never once been reachable -- a stored
-     * preference with no way to state it. Three steps rather than a slider,
-     * because a slider is a control this UI does not otherwise have and a
-     * volume nobody can name is the thing that got us here.
-     */
-    row('Loudness', 'Music and gunfire.',
-      [
-        { id: 'quiet' as const, label: 'Quiet' },
-        { id: 'normal' as const, label: 'Normal' },
-        { id: 'loud' as const, label: 'Loud' },
-      ],
-      settings().volume <= 0.2 ? 'quiet' : settings().volume >= 0.6 ? 'loud' : 'normal',
-      (v) => updateSettings({ volume: v === 'quiet' ? 0.15 : v === 'loud' ? 0.75 : 0.35 }));
-
-    rows.appendChild(heading('rules'));
-    /*
-     * Named after what it does rather than after which era it belongs to.
-     *
-     * "Ruleset: Classic / Modern" asks the player to know what 1993 had, which
-     * is a question about history rather than about the game in front of them.
-     * There is exactly one mechanic behind the switch, so the switch is called
-     * after it -- and the description says what the control *is*, not when it
-     * was invented.
-     */
-    row('Waypoints', 'Long-press to queue a second move. Off is the 1993 game.',
-      onOff, settings().rules === 'modern' ? 'on' : 'off',
-      (v) => updateSettings({ rules: v === 'on' ? 'modern' : 'classic' }));
-
-    /*
-     * The standing note is gone with the row that needed it. It existed to
-     * explain what `Ruleset: Modern` meant, which is a sign the control was
-     * named wrong -- a setting that needs a paragraph underneath the list is a
-     * setting whose own label is not doing its job.
-     */
     body.append(rows);
 
     const actions = document.createElement('div');

@@ -39,6 +39,18 @@ export class Hud {
   private readonly par = document.createElement('div');
   private readonly timer = meter('hold');
 
+  /** The mission's own orders, worded once and shown for the whole mission. */
+  private readonly goal = document.createElement('div');
+
+  /**
+   * The three tools at the foot of the sidebar: leave, restart, settings.
+   * The hud only reports the press; what a press means -- and the confirmation
+   * in front of two of them -- belongs to main.ts, which owns the mission.
+   */
+  onExit: (() => void) | null = null;
+  onRestart: (() => void) | null = null;
+  onSettings: (() => void) | null = null;
+
   /** One plate per soldier, rebuilt only when the squad changes. */
   private plates: Array<{ root: HTMLElement; alive: boolean; name: string }> = [];
   private lastPhase: Phase | null = null;
@@ -102,17 +114,32 @@ export class Hud {
 
     // Only ever shown in the sidebar layout, and only to a mouse: on touch
     // every one of these is a button on the action bar instead.
-    const hint = document.createElement('div');
-    hint.className = 'hud-hint';
-    hint.innerHTML = [
-      '<b>Tap / L-click</b> move',
-      '<b>on a target</b> engage',
-      '<b>drag</b> pan',
-      '<b>FIRE</b> / R-hold',
-      '<b>GRENADE</b> / G',
-    ].join('<br>');
+/*
+     * The tools live at the very bottom, under the hints: reachable all
+     * mission, and as far as a control can be from the battlefield reads --
+     * these are the three buttons whose cost is highest and urgency lowest.
+     */
+    const tools = document.createElement('div');
+    tools.className = 'hud-tools';
+    const tool = (cls: string, label: string, fire: () => void): HTMLButtonElement => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'hud-tool ' + cls;
+      b.title = label;
+      b.setAttribute('aria-label', label);
+      b.addEventListener('click', fire);
+      return b;
+    };
+    tools.append(
+      tool('t-exit', 'Leave the mission', () => this.onExit?.()),
+      tool('t-restart', 'Restart the mission', () => this.onRestart?.()),
+      tool('t-gear', 'Settings', () => this.onSettings?.()),
+    );
 
-    fill(this.root, body, hint);
+    // The key-shortcut crib that used to sit here is gone on the owner's
+    // say-so. The action bar already labels every control it fronts, and five
+    // lines of grey micro-text made the sidebar read as documentation.
+    fill(this.root, body, tools);
     this.timer.root.hidden = true;
   }
 
@@ -188,6 +215,12 @@ export class Hud {
           className: `hud-diff diff-${world.difficulty}`,
           textContent: DIFFICULTIES[world.difficulty].name,
         }));
+      // The orders, in words, for the life of the mission. The ORDERS panel
+      // below counts the live state; this is the standing answer to "what am I
+      // actually here to do", which the owner asked to be visible at all times.
+      this.goal.className = 'hud-goal';
+      this.goal.textContent = objectiveText(world.map);
+      this.mission.appendChild(this.goal);
       this.plates = [];
       this.lastPhase = null;
     }

@@ -363,6 +363,14 @@ export class Renderer {
     return Math.round(sway * w.amplitude * (0.65 + gust * 0.35));
   }
 
+  /**
+   * The clock the gust above runs on, for the ambience bed -- so the wind you
+   * hear swells on the same phase as the trees you can see bending.
+   */
+  get windTime(): number {
+    return this.time;
+  }
+
   draw(world: World, camera: Camera, alpha: number, dtSinceLastFrame: number, aim?: Aim): void {
     this.time += dtSinceLastFrame;
     this.flushDecals(world);

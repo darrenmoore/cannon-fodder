@@ -569,3 +569,210 @@ its own edge. At 5x it does not.
 Copying the reference's pixel *facts* rather than its *result* is a way to get
 further from it while being able to prove you got closer. Round zero's rule
 catches a lying capture; nothing but the critic catches this one.
+
+---
+
+# Run 3 — the plotted chrome
+
+The third run, against `docs/original-images/intro/`. Everything judged here was
+drawn on 31 August and 1 September by the session that is now running the loop,
+and none of it has been looked at by anybody else. That is the reason for the
+run and it is also its risk: **six artifacts share one primitive.** The
+wordmark, the plates, the buttons, the banner, the stars and the padlock are all
+painted by `render/sprites/bevel.ts`, so a fault in the bevel is a fault in all
+of them at once, and a critic looking at one of them is really looking at the
+lighting model behind six.
+
+## Objective
+
+The plotted chrome reads as the same hardware as the art it was drawn from:
+
+| artifact | reference |
+|---|---|
+| the wordmark | `docs/original-images/intro/logo.png` |
+| the plates and buttons | `docs/original-images/intro/frame.png` |
+| the banner | `docs/original-images/intro/banner.png` |
+
+Judged one artifact at a time, each against its own file. Not "looks good" and
+not "matches the palette" — **a fresh critic shown the two images unlabelled
+should struggle to say which is the reference**, and where it can, its reason is
+the gap.
+
+## Metric
+
+The real sprite out of the real atlas — `window.__atlas`, the same object the
+renderer draws from — captured at the size the game draws it, placed beside the
+reference region resampled to the same width, on the neutral grey both this
+loop's tools already use. `tools/pixelate.mjs beside` does exactly this and was
+written for it.
+
+Judged by a subagent with no history of the build, one per round, given both
+images without being told which is which.
+
+**Two things this run must not do**, both bought at the price of a previous run:
+
+- **Run 1's lesson.** A metric that can lie will eventually be believed. Round
+  zero is proving the capture shows what it claims, and nothing is judged until
+  a human has agreed one frame is the right frame.
+- **Run 2's lesson, which is the live danger here.** A correct measurement of
+  the reference is not a correct target. This session measured the reference
+  repeatedly with `tools/pixelate.mjs` and changed the drawing to match the
+  numbers — the ampersand's proportions, the B's counter widths. Those were
+  right. The same move made wrongly is round 4 of run 2, where a correct
+  measurement of the reference's missing keyline produced a worse frame. **The
+  critic decides, not the measurement.**
+
+## Boundary
+
+The default.
+
+- **May change:** `game/src/**`, `game/public/**`, `game/tools/**`, `data/**`,
+  `docs/**`
+- **Must not regress:** `npm run check`, a capture with zero page errors, any
+  mission's completability, the one-character-per-tile map contract
+- **Stop when:** the critic reports no improvement for a round, the ranked list
+  is exhausted, or six rounds are spent
+
+Six rounds, at roughly one build-capture-critique cycle each. Nothing is
+committed by the run; it is reviewed as one diff afterwards.
+
+## The ranked gap list
+
+Ordered by how much of the screen each governs, which is the only honest
+ordering when the objective is "looks like the reference".
+
+1. **The wordmark.** It is the intro screen. Nothing else on that screen is
+   larger, and it is the artifact with the most invention in it.
+2. **The plates and buttons.** Every screen is made of them; they are small
+   individually and total more area than anything else.
+3. **The banner.** One strip, but it carries a heading on every screen.
+4. **The stars and the padlock.** Icons. Smallest area, judged last.
+
+Ranked before the baseline critique, from area alone. The critic reorders within
+an artifact; it does not reorder the artifacts.
+
+## Round zero — the capture, and the confound it had in it
+
+`tools/pixelate.mjs beside` already existed and did the mechanical half: pull
+the sprite out of the live atlas, resample the reference region to the same
+width, put them on one strip at the same zoom. The first frame it produced was
+honest about the pixels and useless as a metric, for a reason that had nothing
+to do with the pixels: **the reference still had its chroma-green background on
+it.** A critic asked which of two images is the reference answers "the green
+one" and never looks at anything else, and question 1 — the only question that
+measures the objective — is dead.
+
+Keyed to the same grey before the resample rather than after, because the
+resample averages green into every edge pixel and no threshold gets it back.
+Round zero's rule earned its keep again: the tool was not lying, but the frame
+it produced could not have answered the question it was made to ask.
+
+## Round 1 — lighter strokes, open counters · **REVERTED**
+
+The baseline critic's ranked gap: "the letterforms — stroke weight and counter
+size", 55-60% of the frame, with the O's counters called "a narrow vertical slot"
+and the B's "pinholes". Stems went 13→11 and bars 10→8 on both lines.
+
+The next critic called it **further**, and measured why: the reference O's
+counter is 21% of the glyph width, the version before this round was 37%, and
+this round took it to 49%. "The reference letterform is a fat slab with a
+pinched slot punched out of it; B turned it into a thin ring around a nearly
+square hole."
+
+**Two fresh critics gave opposite directions on the same feature.** That is the
+finding of this round, and it is worth more than the round. The first said the
+counters were too small; the second measured them and said every attempt so far
+had been too open. A single critic's ranked gap is a hypothesis, not a
+measurement, and this loop treats it as one from here.
+
+## Round 2 — a lighting model on the faces · **KEPT**
+
+The critic's next gap: "the letters have no lighting on them" — sampling down a
+stem returned two values alternating in a fixed checker with no positional
+trend, where the reference ramps from bright at the top to dark at the foot.
+
+`face` went from a pair to a **ramp**, and the dither now resolves only the
+fraction between two *neighbouring* entries, positioned by how far down the
+shape a pixel is. Two tones mixed at a fixed ratio is a texture; it is one flat
+colour with noise on it however many tones are in the pair.
+
+Verdict: **closer**. "Face luminance in A spanned p5-p95 = 92-111 — effectively
+a flat fill; in B it spans 69-140 against the reference's 67-122." The change is
+in `bevel.ts`, so the helmet and the wings got it too, and the critic named both
+unprompted.
+
+## Round 3 — tracking and glyph widths · **KEPT**
+
+Next gap: the words were fusing. "The reference breaks into seven separate runs
+with clear 6-10px gaps; the attempt breaks into three — B-U-L-L is one
+continuous 294px slab." Tracking 1→4, and every glyph trimmed 3px so the words
+did not grow.
+
+Verdict: **closer**, with the letter widths measured to within 3px of the
+reference's and the counters called "compact squares and a narrow vertical slot,
+which is what the reference has".
+
+## Round 4 — an extruded side face, and darker ramps · **REVERTED**
+
+Next gap: "pale flat stencilling" — the reference has a wide dark bevel face
+down the right and bottom of every stroke, ours had one pixel. Added
+`shadeWidth` and pushed both ramps darker.
+
+Verdict: **further**, and badly. "Roughly triple the reference's top-to-bottom
+falloff... about 50 RGB units too dark in every band... zero pixels above V 0.9
+in BULLETS where the reference has 25%." At a 13px stem a three-pixel side face
+is most of the stroke, so the letters filled in rather than gaining depth.
+
+Reverted precisely rather than with `git checkout`, because rounds 2 and 3 were
+uncommitted in the same two files.
+
+## Round 5 — the backing mass · **KEPT**
+
+Not the last critic's headline. Its headline was the letterforms — the same
+answer rounds 1 and 3 had already chased. This round took instead **the gap
+three separate critics had each mentioned and none had ranked first**: the
+reference sets its wordmark on a dark olive field, and ours showed bare page
+through 15% of the block against the reference's 4%.
+
+A dilated silhouette of the two words, in dark olive, behind everything — **with
+the counters cut back out of it.** That last part is a deliberate departure. In
+the reference the counters read black, because the foliage is behind them too;
+this logo has to sit over an animating battlefield and the owner has already
+asked, in as many words, for the holes in the letters to stay holes. Air between
+the letters, daylight through them.
+
+Verdict: **closer**. The critic attributed the gain to colour — "the dead-black
+keyline was replaced with a dark olive that reads the way the reference's edges
+do" — which is a contrast effect from the darker surround rather than a palette
+change, and is exactly the improvement that was wanted.
+
+## Where run 3 stands
+
+Three rounds kept, two reverted, the budget spent. `npm run check` green, the
+capture clean with zero page errors, and the chrome that shares `bevel.ts`
+checked afterwards for regression: all four plate tones still distinct, the
+banner and stars unchanged in kind.
+
+**The gap still at the top of the list, and it is the expensive one.** Every
+critic from round 3 onward has converged on the same thing in different words:
+the wordmark is a rigid grid where the reference is a hand-cut mass. "Every
+glyph the same width and weight, bolt-upright, evenly spaced, dead-flat
+baseline" against "fat hand-cut slabs of varying width and height, leaning and
+splaying outward in perspective, overlapping and touching on a curved baseline".
+
+That is not a parameter. It is per-glyph variation — individual widths, vertical
+offsets, a fanned arrangement, letters allowed to overlap — and it is a redesign
+of `lineMask` rather than a tuning of it. It is also the point at which this
+run should stop and the owner should decide, because the current letterforms are
+*legible and consistent* and the reference's are neither, and "closer to the
+reference" and "better for a menu at 300 pixels" may not be the same direction.
+
+**What this run taught, beyond the pixels.** Run 1 learned that a metric can
+lie. Run 2 learned that a correct measurement of the reference is not a correct
+target. Run 3 adds a third: **a single fresh critic's ranked gap is a
+hypothesis.** Rounds 1 and 4 were both built on one critic's confident,
+measured, first-ranked gap, and both were reverted by the next critic on
+measurements just as confident. The gaps that survived — the flat faces, the
+fused words, the missing backing — were the ones more than one critic named
+independently. Corroboration across critics is the signal; a single ranked gap
+is where to look, not what to do.

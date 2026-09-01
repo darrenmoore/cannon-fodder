@@ -147,12 +147,35 @@ const result = await page.evaluate(({ rect, width, grid, ink, lum, colors, sprit
 
   // The resample. Smoothing is ON here and only here: this is a measurement of
   // what the reference contains, not a sprite. Everything downstream is hard.
+  /*
+   * Key the chroma out at full resolution, before the resample.
+   *
+   * In 'beside' mode this is not cosmetic. A critic asked which of two images
+   * is the reference will answer 'the green one' and never look at the pixels,
+   * which makes the first and most important question worthless. Both halves
+   * have to sit on the same ground or the comparison is not blind.
+   *
+   * Keyed before downsampling rather than after, because keying afterwards
+   * leaves a green fringe: the resample has already averaged green into every
+   * edge pixel, and no threshold recovers what was mixed.
+   */
+  const flat = document.createElement('canvas');
+  flat.width = box.w; flat.height = box.h;
+  const fg = flat.getContext('2d', { willReadFrequently: true });
+  fg.drawImage(img, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+  const fd = fg.getImageData(0, 0, box.w, box.h);
+  for (let i = 0; i < fd.data.length; i += 4) {
+    if (!isChroma(fd.data[i], fd.data[i + 1], fd.data[i + 2])) continue;
+    fd.data[i] = 0x6b; fd.data[i + 1] = 0x6b; fd.data[i + 2] = 0x66;
+  }
+  fg.putImageData(fd, 0, 0);
+
   const small = document.createElement('canvas');
   small.width = tw; small.height = th;
   const g2 = small.getContext('2d', { willReadFrequently: true });
   g2.imageSmoothingEnabled = true;
   g2.imageSmoothingQuality = 'high';
-  g2.drawImage(img, box.x, box.y, box.w, box.h, 0, 0, tw, th);
+  g2.drawImage(flat, 0, 0, box.w, box.h, 0, 0, tw, th);
   const S = g2.getImageData(0, 0, tw, th).data;
 
   /* The ASCII mask. Cells average coverage over the resampled region. */

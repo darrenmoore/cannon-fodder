@@ -2,19 +2,22 @@ import { CONFIG } from './config.js';
 import { Camera } from './render/camera.js';
 import { missionResolved, missionStarted, startSession } from './shell/analytics.js';
 import { unlockAudio } from './shell/audio.js';
+import { ambienceState, startAmbience, stopAmbience, updateAmbience } from './shell/ambience.js';
 import { bootBegin, bootEnd, bootFailed, bootStep } from './ui/boot.js';
 import { installPixelFace } from './ui/pixelface.js';
 import { Controls } from './ui/controls.js';
 import { Game } from './sim/game.js';
 import { closeSheet, sheetOpen, showSettings, showSheet } from './ui/sheet.js';
-import { fadeIn, setBlackout } from './ui/blackout.js';
+import { confirm, confirmOpen } from './ui/confirm.js';
+import { fadeIn, fadeOut, setBlackout } from './ui/blackout.js';
 import { debug } from './ui/debug.js';
 import { Layout } from './ui/layout.js';
 import { Hud } from './ui/hud.js';
 import { Input } from './shell/input.js';
 import { startLoop } from './loop.js';
 import { parseMap } from './sim/map.js';
-import { fetchLevels, loadDifficulty, saveDifficulty, showMenu } from './ui/menu.js';
+import { fetchLevels, loadDifficulty, saveDifficulty } from './ui/menu.js';
+import { showFront } from './ui/front.js';
 import { Renderer } from './render/render.js';
 import { showBootHill } from './ui/boothill.js';
 import { deploy, loadCampaign, recordMission } from './sim/campaign.js';
@@ -144,7 +147,10 @@ async function boot(): Promise<void> {
   // let the layout re-derive it, so a zoom survives a rotate or a resize
   // instead of being recomputed away.
   input.onZoom = (delta): void => {
-    const bias = Math.max(-2, Math.min(2, settings().zoomBias + delta));
+    // One step either side of the layout's own answer -- the same three stops
+    // the settings sheet offers, so the keys cannot reach a zoom the UI
+    // cannot name.
+    const bias = Math.max(-1, Math.min(1, settings().zoomBias + delta));
     if (bias === settings().zoomBias) return;
     updateSettings({ zoomBias: bias });
     layout.apply();
@@ -211,7 +217,7 @@ async function boot(): Promise<void> {
       // fought blind through a panel. The briefing is the same promise made at
       // the other end of a mission -- it is a title card, not a head start for
       // the garrison, so nothing moves until the player has put it away.
-      if (!game || sheetOpen() || hud.briefingUp) return;
+      if (!game || sheetOpen() || confirmOpen() || hud.briefingUp) return;
       // Dev only, and the second and last line the debug switches cost anyone:
       // the world holds while the draw carries on, so a capture harness can
       // advance it by an exact number of steps and photograph the result.
@@ -227,7 +233,14 @@ async function boot(): Promise<void> {
       const now = performance.now();
       const frameDt = Math.min(0.1, (now - lastDraw) / 1000);
       lastDraw = now;
-      if (game) renderer.draw(game.world, camera, alpha, frameDt, input.aim);
+      if (game) {
+        renderer.draw(game.world, camera, alpha, frameDt, input.aim);
+        // The bed rides the draw, not the step: it needs the camera as drawn
+        // and the renderer's wind clock, and it should keep breathing while
+        // the debug pause holds the world still for a photograph.
+        updateAmbience(camera, renderer.windTime, frameDt,
+          !sheetOpen() && !hud.briefingUp && game.world.phase === Phase.Playing);
+      }
     },
   );
 
@@ -253,6 +266,9 @@ async function boot(): Promise<void> {
     const roster = (): ReturnType<typeof deploy> => deploy(campaign, map.squadSize);
 
     game = new Game(map, camera, renderer, input, difficulty, roster);
+    // The bed knows the terrain from here; it starts sounding on the first
+    // drawn frame after the briefing comes down.
+    startAmbience(map);
     missionStarted(info.id, difficulty);
     // The end-of-mission panel drives the shell rather than the other way
     // round, so "next mission" is one click from where you finished.
@@ -280,6 +296,50 @@ async function boot(): Promise<void> {
       void fadeIn(CONFIG.banner.fade);
     };
     hud.onMissions = (): void => { if (game) game.exitRequested = true; };
+
+    /*
+     * The sidebar tools. Two of the three are destructive, and both ask first
+     * through the one confirmation component -- the questions are worded as
+     * what will be lost, because "are you sure" without the cost is a ritual
+     * rather than a question. Settings asks nothing; it costs nothing.
+     */
+    hud.onExit = (): void => {
+      void confirm({
+        title: 'Leave the mission?',
+        body: 'The squad walks away. Progress on this attempt is lost.',
+        buttons: [
+          { label: 'LEAVE', value: 'leave', variant: 'primary' },
+          { label: 'STAY', value: 'stay' },
+        ],
+        dismiss: 'stay',
+      }).then((v) => { if (v === 'leave' && game) game.exitRequested = true; });
+    };
+    /*
+     * A restart is an opening -- the same rule openMission's own comment
+     * fought for. The first wiring here called game.restart() and carried on,
+     * which swapped the world under the player mid-frame; the owner's words
+     * were that he expected the screen to fade to black and show the mission
+     * screen again, which is precisely what "goes through openMission" means.
+     */
+    const restartMission = async (): Promise<void> => {
+      await fadeOut(CONFIG.banner.fade);
+      game?.restart();
+      hud.hideOverlay();
+      closeSheet();
+      openMission();
+    };
+    hud.onRestart = (): void => {
+      void confirm({
+        title: 'Restart the mission?',
+        body: 'Back to the drop, everyone on their feet. This attempt is lost.',
+        buttons: [
+          { label: 'RESTART', value: 'restart', variant: 'primary' },
+          { label: 'CANCEL', value: 'cancel' },
+        ],
+        dismiss: 'cancel',
+      }).then((v) => { if (v === 'restart') void restartMission(); });
+    };
+    hud.onSettings = (): void => showSettings(() => layout.apply());
     /**
      * Esc and the PAUSE button.
      *
@@ -290,7 +350,7 @@ async function boot(): Promise<void> {
      * of which had any route at all without a keyboard.
      */
     const openPause = (): void => {
-      if (!game || sheetOpen()) return;
+      if (!game || sheetOpen() || confirmOpen()) return;
       // Boot Hill is not here any more: a link to the graves is a strange thing
       // to offer somebody who paused mid-firefight, and the brief asked for it
       // out. Its door moves to the front end, which is 101's -- until that
@@ -298,7 +358,7 @@ async function boot(): Promise<void> {
       showSheet('Paused', map.name, [
         { label: 'Resume', tone: 'good', key: 'Enter', onPick: () => {} },
         { label: 'Settings', onPick: () => showSettings(() => layout.apply()) },
-        { label: 'Restart mission', tone: 'warn', key: 'R', onPick: () => { game?.restart(); hud.hideOverlay(); } },
+        { label: 'Restart mission', tone: 'warn', key: 'R', onPick: () => { void restartMission(); } },
         { label: 'Mission list', onPick: () => { if (game) game.exitRequested = true; } },
       ]);
     };
@@ -335,6 +395,9 @@ async function boot(): Promise<void> {
     // Debug handle: lets the console (and the headless driver) inspect and poke
     // live game state without threading test hooks through the modules.
     (window as unknown as { game: Game | null }).game = game;
+    // Same audience: the ambience targets are unhearable headlessly, so the
+    // driver asserts on the numbers instead.
+    (window as unknown as { ambience: typeof ambienceState }).ambience = ambienceState;
     const centre = squadCentre(game.world);
     if (centre) camera.centreOn(centre, map);
 
@@ -421,6 +484,7 @@ async function boot(): Promise<void> {
         if (done) {
           game = null;
           (window as unknown as { game: Game | null }).game = null;
+          stopAmbience();
           hud.hideOverlay();
           closeSheet();
           teardownBriefing();
@@ -454,16 +518,16 @@ async function boot(): Promise<void> {
       } catch {
         last = null;
       }
-      // The list is its own screen and owns the whole window; anything left of
-      // the last mission's fade would sit over it.
-      setBlackout(0);
+      // The front lowers the blackout itself once it is up to receive the eye;
+      // dropping it here opened a beat of naked stage before the screen faded
+      // in. Music starts under the black, which is fine -- it is music.
       startMusic();
       // The menu is up and painted, which is the first moment there is anything
       // behind the loading screen worth revealing. Ending it here rather than
       // when boot() returns means it never lifts onto an empty page.
       bootStep('ready');
       void bootEnd();
-      const chosen = await showMenu(levels, last, difficulty, (d) => {
+      const chosen = await showFront(levels, last, difficulty, (d) => {
         difficulty = d;
         saveDifficulty(DIFFICULTY_KEY, d);
       }, campaign, visitBootHill);

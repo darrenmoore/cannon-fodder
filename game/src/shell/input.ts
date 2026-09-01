@@ -19,7 +19,9 @@ import type { World } from '../sim/world.js';
  *
  *   tap / left click          order the herd somewhere, or onto an enemy
  *   drag / middle-drag        pan the view
- *   pinch / wheel             zoom
+ *   pinch / +/- keys          zoom (the wheel is deliberately not one: a
+ *                             scroll meant for the page kept re-zooming the
+ *                             game, so zoom is only ever an intentional act)
  *   FIRE button / hold right  open fire toward a point or a heading
  *   GRENADE button / G / L+R  aim and throw
  *
@@ -56,7 +58,7 @@ export class Input {
 
   /** Raised by Esc and the PAUSE button; owned by the shell, not the mission. */
   onPause: (() => void) | null = null;
-  /** Raised by pinch and wheel. The shell re-derives the layout from it. */
+  /** Raised by pinch and the +/- keys. The shell re-derives the layout from it. */
   onZoom: ((delta: number, focal: Vec2) => void) | null = null;
 
   private readonly tracker: PointerTracker;
@@ -98,7 +100,6 @@ export class Input {
     this.on(window, 'keydown', (e) => this.onKeyDown(e as KeyboardEvent));
     this.on(window, 'keyup', (e) => this.onKeyUp(e as KeyboardEvent));
     this.on(window, 'blur', () => this.releaseAll());
-    this.on(canvas, 'wheel', (e) => this.onWheel(e as WheelEvent));
   }
 
   private on(target: EventTarget, type: string, fn: (e: Event) => void): void {
@@ -247,12 +248,6 @@ export class Input {
       this.pinchAnchor = scale;
       this.onZoom?.(-1, centre);
     }
-  }
-
-  private onWheel(e: WheelEvent): void {
-    if (!this.onZoom) return;
-    e.preventDefault();
-    this.onZoom(e.deltaY < 0 ? 1 : -1, { ...this.screen });
   }
 
   /**
