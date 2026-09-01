@@ -1,6 +1,6 @@
 # 003 — spec
 
-The brief is [003.md](003.md), in the owner's words. This is that brief turned
+The brief is [003.md](brief.md), in the owner's words. This is that brief turned
 into work: what each item means, what it is allowed to change, and how anyone
 can tell when it is done. Four decisions were taken by the owner up front and
 are recorded in place rather than left implicit.

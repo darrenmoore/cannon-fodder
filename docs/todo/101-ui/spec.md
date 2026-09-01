@@ -1,9 +1,9 @@
 # 007 — spec: the design batch
 
-The brief is [101-ui.md](101-ui.md), but this document is
+The brief is [101-ui.md](brief.md), but this document is
 wider than that brief. It is **everything across 004, 005, 007 and 008 that is
 judged by looking at it**, gathered into one place so it can be run as one
-[gauntlet loop](../../.claude/skills/gauntlet/SKILL.md) instead of as visual
+[gauntlet loop](../../../.claude/skills/gauntlet/SKILL.md) instead of as visual
 rounds smuggled into four mechanical batches.
 
 The split that decides what lands here is not "front end vs simulation". It is
@@ -24,7 +24,7 @@ gauntlet round.
 
 Three reasons, in order of how much they cost:
 
-1. **A gauntlet run needs a quiet tree.** [loop.md](../loop.md) records run 2
+1. **A gauntlet run needs a quiet tree.** [loop.md](../../loop.md) records run 2
    ending early for exactly this: another session was rewriting `ui/hud.ts` and
    the mission table through the same hour, the campaign went from 12 missions
    to 32 mid-round, and *"a capture that comes back showing a mission nobody
@@ -71,7 +71,7 @@ default and this list is longer than six.
 it an exact number of steps and photographs twelve moments, asserting what it
 captured **after** the screenshot rather than before — the fault that produced
 two confident false critiques in run 2, recorded in
-[loop.md](../loop.md#run-2--the-presentation-batch).
+[loop.md](../../loop.md#run-2--the-presentation-batch).
 
 **What it cannot yet capture is the entire front end.** There is no intro
 screen, no level-select dialog and no black between-missions plate to photograph,
@@ -89,19 +89,19 @@ objects, objects before icons.
 
 | # | item | from | state |
 |---|---|---|---|
-| 1 | The plate system — `frame.png`, four states, any width | [100 M1](100-improvements-spec.md), [101](101-ui.md) | new |
-| 2 | The between-missions black screen | [004 H2](004-spec.md), [100 K](100-improvements-spec.md) | open since 004 |
-| 3 | Fonts — one type system, not two | [004 H3](004-spec.md) | built, unwired |
-| 4 | The logo, dithered, with its hard drop shadow | [100 M3](100-improvements-spec.md) | new |
-| 5 | The intro screen: the attract world, the vignette, the composition **and the routing** | [100 M2/M4](100-improvements-spec.md) | new |
-| 6 | Level select: layout, groups, cards, stars, dialog | [101](101-ui.md) | new |
-| 7 | Settings and pause, restyled | [100 M6](100-improvements-spec.md) | new |
-| 8 | Explosions — one dithered sprite, hot core, legible arc | [004 H4](004-spec.md) | open since 004 |
-| 9 | Rank chevrons back on the name plates, counted | [004 gap 4](004-spec.md) | open since 004 |
-| 10 | The bazooka man reads as one | [004 H5](004-spec.md) | open since 004 |
-| 11 | The loading bootstrap — the first screen anybody sees | [100 M0](100-improvements-spec.md) | new |
-| 12 | The in-mission controls: exit, info, restart, and one confirmation | [100](100-improvements.md) | sprites made |
-| 13 | Desert sand and water, against the reference | [004 gap 6](004-spec.md) | **blocked** |
+| 1 | The plate system — `frame.png`, four states, any width | [100 M1](../100-improvements/spec.md), [101](brief.md) | new |
+| 2 | The between-missions black screen | [004 H2](../004-enemy-ai/spec.md), [100 K](../100-improvements/spec.md) | open since 004 |
+| 3 | Fonts — one type system, not two | [004 H3](../004-enemy-ai/spec.md) | built, unwired |
+| 4 | The logo, dithered, with its hard drop shadow | [100 M3](../100-improvements/spec.md) | new |
+| 5 | The intro screen: the attract world, the vignette, the composition **and the routing** | [100 M2/M4](../100-improvements/spec.md) | new |
+| 6 | Level select: layout, groups, cards, stars, dialog | [101](brief.md) | new |
+| 7 | Settings and pause, restyled | [100 M6](../100-improvements/spec.md) | new |
+| 8 | Explosions — one dithered sprite, hot core, legible arc | [004 H4](../004-enemy-ai/spec.md) | open since 004 |
+| 9 | Rank chevrons back on the name plates, counted | [004 gap 4](../004-enemy-ai/spec.md) | open since 004 |
+| 10 | The bazooka man reads as one | [004 H5](../004-enemy-ai/spec.md) | open since 004 |
+| 11 | The loading bootstrap — the first screen anybody sees | [100 M0](../100-improvements/spec.md) | new |
+| 12 | The in-mission controls: exit, info, restart, and one confirmation | [100](../100-improvements/brief.md) | sprites made |
+| 13 | Desert sand and water, against the reference | [004 gap 6](../004-enemy-ai/spec.md) | **blocked** |
 
 **Two more arrived when 100 was reconciled.** The **loading bootstrap** is a
 screen -- the first one anybody sees, and the one that decides what the game
@@ -126,7 +126,7 @@ this document's, composition and behaviour together -- including the attract
 world that plays behind the intro, which is a thing to look at before it is
 anything else.
 
-**Seven items left this list for [100](100-improvements-spec.md)** when the two
+**Seven items left this list for [100](../100-improvements/spec.md)** when the two
 documents were reorganised: `docs/style.md` and the `/style` skill, the two
 out-of-lore buildings, the bridges, the fences, the rubble and rock depth
 problems, and the sidebar that is not under the fade. **They are batch S over
@@ -148,7 +148,7 @@ it.
 
 Item 13 was struck during run 2 and stays struck: the gap is orange sand against
 navy water at a shoreline, and **neither desert mission has a drop of water on
-it**. It needs a desert map with a coast — which [100](100-improvements-spec.md)
+it**. It needs a desert map with a coast — which [100](../100-improvements/spec.md)
 batch R now has a reason to build anyway, since the desert theatre is five maps
 short of its quota.
 
@@ -283,7 +283,7 @@ first one ever made it into this document. Everything below was checked against
 the running game before it was written down; where a claim held, the cause is
 named.
 
-## The audit: what [101-ui.md](101-ui.md) asked for, and where it went
+## The audit: what [101-ui.md](brief.md) asked for, and where it went
 
 The brief is one table row. **Item 6 — "Level select: layout, groups, cards,
 stars, dialog" — is standing in for roughly a dozen separate asks**, and the
@@ -316,7 +316,7 @@ breaks. This addendum states them.
 
 **Both true, one cause, and it is one line.**
 
-[`style.css:968`](../../game/public/style.css) says:
+[`style.css:968`](../../../game/public/style.css) says:
 
 ```css
 [data-layout="wide"] #overlay { inset: 0 0 0 var(--sidebar-w); }
@@ -407,7 +407,7 @@ Numbered from 14 so the existing table is not renumbered under another session.
 | 18 | Dialogs restyled — briefing, result, pause, confirm | second brief |
 | 19 | The loading screen | 100 M0 / item 11 |
 | 20 | The intro screen, and how it arrives | 101, second brief |
-| 21 | Level select: the screen, the rail, the cards, the dialog | [101-ui.md](101-ui.md) |
+| 21 | Level select: the screen, the rail, the cards, the dialog | [101-ui.md](brief.md) |
 | 22 | The mission screen, from `next-mission.jpg` | 004 H2 / item 2 |
 | 23 | The transitions between all four screens | second brief |
 
@@ -482,7 +482,7 @@ buttons. The logo arrives — drops, settles — rather than appearing.
 
 ### 21 · Level select
 
-The whole of [101-ui.md](101-ui.md), which is listed in the audit above and not
+The whole of [101-ui.md](brief.md), which is listed in the audit above and not
 repeated here. Groups exist for every theatre whether or not they have missions;
 portraits may be placeholders. **The rail remembers which group was last open**,
 in the same store the campaign already uses.

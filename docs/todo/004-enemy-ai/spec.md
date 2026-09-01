@@ -1,10 +1,10 @@
 # 004 — spec
 
-The brief is [004.md](004.md), in the owner's words. This is that brief read
+The brief is [004.md](brief.md), in the owner's words. This is that brief read
 against the code: what is already true, what is actually broken, what each item
 means, and how anyone can tell when it is done.
 
-It is much larger than [003](003-spec.md) — sixteen items, several of them
+It is much larger than [003](../003-roof-damage/spec.md) — sixteen items, several of them
 systems rather than fixes. It is not one sitting's work, and pretending
 otherwise would produce a commit nobody can review. Batches are ordered so that
 every one of them is worth shipping on its own.
@@ -414,8 +414,8 @@ fast way over with a slow, defenceless alternative beside them.
 The largest batch, the one with the least mechanical risk, and the one that must
 **not** be judged by the session that builds it.
 
-H is run as a [gauntlet loop](../../.claude/skills/gauntlet/SKILL.md), the way
-`docs/original-images/map/` was matched in [loop.md](../loop.md). Its three
+H is run as a [gauntlet loop](../../../.claude/skills/gauntlet/SKILL.md), the way
+`docs/original-images/map/` was matched in [loop.md](../../loop.md). Its three
 elements, fixed here rather than at the moment a round gets hard:
 
 - **Objective.** The end-of-mission moment, the between-missions screen, and an
@@ -433,7 +433,7 @@ eleven moments, one per gap, by freezing the simulation and advancing it an
 exact number of steps -- so frame 4 of an explosion is frame 4 on every run.
 Every frame asserts what it captured and says so beside the image. The full
 account, and the two harness faults it caught in itself, are in
-[loop.md](../loop.md#run-2--the-presentation-batch).
+[loop.md](../../loop.md#run-2--the-presentation-batch).
 
 It also found that **gap 6 cannot be closed inside this boundary**: the gap is
 sand against water in the desert palette, and neither desert mission has a drop
@@ -643,7 +643,7 @@ the test level in Batch I.
 
 ---
 
-## Read ahead: what [100](100-improvements.md) does to Batch H
+## Read ahead: what [100](../100-improvements/brief.md) does to Batch H
 
 005 is not being built yet, but it lands on the same chrome H does, and three of
 its lines change how H should be built rather than what it is.

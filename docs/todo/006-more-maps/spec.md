@@ -1,6 +1,6 @@
 # 006 — spec
 
-The brief is [006.md](006.md). This is that brief read against the code: what is
+The brief is [006.md](brief.md). This is that brief read against the code: what is
 already true, what the brief gets wrong, what each item actually costs, and how
 anyone can tell when it is done. Four decisions were taken by the owner up front
 and are recorded in place.
@@ -51,8 +51,8 @@ imprecise, and one is wrong in a way that changes the work.
 
 ### The brief is right about
 
-**`generate-levels.mjs` is not a generator.** [`BUILDERS`](../../game/tools/generate-levels.mjs#L456)
-is twelve functions keyed by mission id, and [`CAMPAIGN`](../../game/tools/generate-levels.mjs#L969)
+**`generate-levels.mjs` is not a generator.** [`BUILDERS`](../../../game/tools/generate-levels.mjs#L456)
+is twelve functions keyed by mission id, and [`CAMPAIGN`](../../../game/tools/generate-levels.mjs#L969)
 is twelve rows that select one. Every builder runs the same skeleton — `frame`
 then `forest`/`scatter`, then `clearing`, `squad`, and scattered entities — and
 every terrain primitive places blobs at uniformly random positions. There is no
@@ -75,24 +75,24 @@ limitation of the system; it has simply never been asked for. What is missing is
 the *other* man-made primitives — there is no `wall()`, `compound()`,
 `streets()`, `trench()` or `pier()`.
 
-**Crates only give grenades.** [`pickups.ts`](../../game/src/sim/pickups.ts)
+**Crates only give grenades.** [`pickups.ts`](../../../game/src/sim/pickups.ts)
 sets `crate.alive = false` and adds `CONFIG.grenade.perCrate`. There is no
 collect objective and no notion of an objective item.
 
 **The hostage delivery machinery is reusable.**
-[`hostages.ts`](../../game/src/sim/hostages.ts) is free, then follow, then
-delivered at a tent, and [`objectives.ts`](../../game/src/sim/objectives.ts)
+[`hostages.ts`](../../../game/src/sim/hostages.ts) is free, then follow, then
+delivered at a tent, and [`objectives.ts`](../../../game/src/sim/objectives.ts)
 reports it as `done/total`. The progress and delivery shape transfers to a
 collect objective cleanly. The movement does not — and since the owner chose
 collect-on-touch, none of the follow steering is needed. See Decision 2.
 
 **Deep water is swimmable now**, and the doc still says impassable.
-[`tiles.ts:95`](../../game/src/sim/tiles.ts#L95) gives `DeepWater` `swim: true`
+[`tiles.ts:95`](../../../game/src/sim/tiles.ts#L95) gives `DeepWater` `swim: true`
 with `wade: true` and `speed: 0.34`, and `map.test.mjs` proves a swimmer's route
 prices a water tile at four. Nothing in the campaign is built around it.
 
 **The docs have rotted, further than the brief says.** Seventeen links across
-[`design.md`](../design.md) and [`map-format.md`](../map-format.md) point at
+[`design.md`](../../design.md) and [`map-format.md`](../../map-format.md) point at
 `game/src/<name>.ts` paths that have not existed since the 003 reorganisation.
 Only `config.ts` and `loop.ts` still resolve. Two of the seventeen are
 *ambiguous* rather than merely moved, and cannot be fixed by search-and-replace:
@@ -104,7 +104,7 @@ Only `config.ts` and `loop.ts` still resolve. Two of the seventeen are
 
 **Incompatible combinations are real, and one is already hard-coded.** `covert`
 is not an objective in its own right — it is `reach` plus a rule. It shares
-`reach`'s entire evaluation ([`objectives.ts`](../../game/src/sim/objectives.ts),
+`reach`'s entire evaluation ([`objectives.ts`](../../../game/src/sim/objectives.ts),
 `case 'covert': case 'reach':`) and adds one line to `isFailed`. So the fused
 value `covert` is the single point in the design where the brief's insight has
 already been half-implemented, badly: as a new objective name rather than as a
@@ -119,7 +119,7 @@ substantive point stands — none of them is ever *the thing a level is about* �
 but the counts are wrong and the spec should not repeat them.
 
 **"Assassinate — the original had this."** I could not verify it. Nothing in
-[`research.md`](../research.md) mentions a leader or officer target, and I am
+[`research.md`](../../research.md) mentions a leader or officer target, and I am
 not confident enough in the original's mission list to assert it. Built, it is
 our idea, not a restoration. Specced on that basis.
 
@@ -127,12 +127,12 @@ our idea, not a restoration. Specced on that basis.
 
 **"A map whose only route is through a hut costs no new code."** It does not,
 and as written it would be rejected by the gate.
-[`reachableFrom`](../../game/test/map.test.mjs#L73) floods using `isSolidAt`
-([line 89](../../game/test/map.test.mjs#L89)), and `Hut`, `Factory` and
+[`reachableFrom`](../../../game/test/map.test.mjs#L73) floods using `isSolidAt`
+([line 89](../../../game/test/map.test.mjs#L89)), and `Hut`, `Factory` and
 `Outpost` are all `solid: true`. The generator's own
-[`reachable()`](../../game/tools/generate-levels.mjs#L208) excludes them by name
+[`reachable()`](../../../game/tools/generate-levels.mjs#L208) excludes them by name
 in the same way. The demolition *effect* is real —
-[`collapse()`](../../game/src/sim/buildings.ts#L216) does set every tile of a
+[`collapse()`](../../../game/src/sim/buildings.ts#L216) does set every tile of a
 levelled building to `Rubble` — but any map depending on it fails
 `the objective is actually completable` before a player ever sees it. It needs a
 second flood fill and a declared map property. See Decision 4 and C3.
@@ -140,20 +140,20 @@ second flood fill and a declared map property. See Decision 4 and C3.
 ### Facts worth having before the work starts
 
 - **Adding an objective touches six lists**, not one: the `ObjectiveKind` union
-  and the `OBJECTIVES` array in [`map.ts`](../../game/src/sim/map.ts), the
+  and the `OBJECTIVES` array in [`map.ts`](../../../game/src/sim/map.ts), the
   `evaluate` case and `OBJECTIVE_TEXT` in
-  [`objectives.ts`](../../game/src/sim/objectives.ts), the allowed list at
-  [`map.test.mjs:229`](../../game/test/map.test.mjs#L229), and the `need` map at
-  [`generate-levels.mjs:1099`](../../game/tools/generate-levels.mjs#L1099).
+  [`objectives.ts`](../../../game/src/sim/objectives.ts), the allowed list at
+  [`map.test.mjs:229`](../../../game/test/map.test.mjs#L229), and the `need` map at
+  [`generate-levels.mjs:1099`](../../../game/tools/generate-levels.mjs#L1099).
   Anything with a fail condition also needs a hook in `isFailed`. The UI is
   loosely coupled — `OBJECTIVE_TEXT` lookups plus two special cases in
-  [`hud.ts`](../../game/src/ui/hud.ts#L198).
+  [`hud.ts`](../../../game/src/ui/hud.ts#L198).
 - **`npm run check` already validates hand-written maps.**
-  [`map.test.mjs:98`](../../game/test/map.test.mjs#L98) reads *every* `.map` in
+  [`map.test.mjs:98`](../../../game/test/map.test.mjs#L98) reads *every* `.map` in
   `data/`, not only generated ones. This is what makes the outside-agent
   workflow in A3 and the `/map` skill real rather than aspirational.
 - **The covert validator is the model for every spatial rule.** Both
-  [`generate-levels.mjs:1132`](../../game/tools/generate-levels.mjs#L1132) and
+  [`generate-levels.mjs:1132`](../../../game/tools/generate-levels.mjs#L1132) and
   `map.test.mjs` already prove, on the finished grid, that a route to the
   extraction exists that never enters a sentry's aggro radius. The brief's "we
   can't have the enemy standing next to the hostage" is that same check pointed
@@ -166,13 +166,13 @@ second flood fill and a declared map property. See Decision 4 and C3.
   saved. The level select groups by theme into three theatres and sorts by
   `order:`, so new maps file themselves.
 - **A new enemy kind is small.** `EnemyKind` has three members; a fourth needs a
-  twelve-colour palette beside [`paint.ts:78`](../../game/src/render/sprites/paint.ts#L78),
+  twelve-colour palette beside [`paint.ts:78`](../../../game/src/render/sprites/paint.ts#L78),
   a `bakeUnit` line, an atlas field, a stats entry at
-  [`world.ts:81`](../../game/src/sim/world.ts#L81), a spawn array, and a marker.
-  Note [`world.ts:183`](../../game/src/sim/world.ts#L183): everything that is
+  [`world.ts:81`](../../../game/src/sim/world.ts#L81), a spawn array, and a marker.
+  Note [`world.ts:183`](../../../game/src/sim/world.ts#L183): everything that is
   not `Rifle` is `rooted`.
 - **Twenty more maps quadruples `npm run shots`.**
-  [`shoot.mjs`](../../game/tools/shoot.mjs#L115) iterates `/api/maps` with no
+  [`shoot.mjs`](../../../game/tools/shoot.mjs#L115) iterates `/api/maps` with no
   filter.
 
 ---
@@ -212,7 +212,7 @@ the two ambiguous names by what the surrounding prose is talking about
 proved by a link check that can be re-run — a short script, not one careful
 read. It should cover `docs/` as a whole, so the next reorganisation is caught.
 
-> **Done.** [`check-links.mjs`](../../game/tools/check-links.mjs), in
+> **Done.** [`check-links.mjs`](../../../game/tools/check-links.mjs), in
 > `npm run check`. It found **thirty**, not seventeen — the earlier count came
 > from grepping one path shape. It also checks heading anchors, which found two
 > more the file-path sweep could not see.
@@ -224,12 +224,12 @@ Missing or wrong, all confirmed against the source:
 | Item | Where it really is |
 |---|---|
 | `covert` objective | Shipped, has a mission, has its own validator |
-| `O` — outpost tile | [`tiles.ts:123`](../../game/src/sim/tiles.ts#L123); `role: 'protect'`, mission lost if it falls |
-| `doctrine:` header | Five values in [`difficulty.ts`](../../game/src/sim/difficulty.ts#L137) |
+| `O` — outpost tile | [`tiles.ts:123`](../../../game/src/sim/tiles.ts#L123); `role: 'protect'`, mission lost if it falls |
+| `doctrine:` header | Five values in [`difficulty.ts`](../../../game/src/sim/difficulty.ts#L137) |
 | `waves: 5@22` header | Parsed and tested |
 | `squad:` header | Clamps downward; how Lone Wolf exists |
-| `dev:` header | Read by [`server.js`](../../game/server.js#L64), not by the parser |
-| `W` "Impassable" ([line 76](../map-format.md#L76)) | Swimmable: slow, no firing, shots still cross |
+| `dev:` header | Read by [`server.js`](../../../game/server.js#L64), not by the parser |
+| `W` "Impassable" ([line 76](../../map-format.md#L76)) | Swimmable: slow, no firing, shots still cross |
 | Campaign table lists 8 | There are twelve |
 
 Plus the three things that would make an outside model get a map wrong, none of
@@ -443,7 +443,7 @@ A fourth `EnemyKind` with its own palette, sprite and marker, and a win
 condition of "the officer is dead". Everything else on the map is optional.
 
 The officer is `rooted` by default like the sniper and bazookateer
-([`world.ts:183`](../../game/src/sim/world.ts#L183)). Making him run when the
+([`world.ts:183`](../../../game/src/sim/world.ts#L183)). Making him run when the
 shooting starts is a better mission and is deliberately *not* in this item.
 
 **Done when** an officer is distinguishable from a rifleman at normal zoom by
@@ -521,8 +521,8 @@ through. A map passes if the strict fill reaches its objective, or if the
 demolition fill does and the map declares itself demolition-gated.
 
 This lands in both places that flood-fill, and they must agree: the generator's
-[`reachable()`](../../game/tools/generate-levels.mjs#L208) and the test's
-[`reachableFrom()`](../../game/test/map.test.mjs#L73).
+[`reachable()`](../../../game/tools/generate-levels.mjs#L208) and the test's
+[`reachableFrom()`](../../../game/test/map.test.mjs#L73).
 
 **Done when** a hand-made map whose only route runs through a hut fails
 `npm run check` without the header and passes with it; every existing map still
@@ -605,7 +605,7 @@ and the level select has been looked at with everything in it.
 > Worse, it force-hid the briefing overlay instead of dismissing it, which left
 > `hud.briefingUp` true, which makes `hud.update()` return early — so every shot
 > carried the **previous** mission's name, squad and objective beside the new
-> map's terrain. That is exactly the failure [loop.md](../loop.md) is a record
+> map's terrain. That is exactly the failure [loop.md](../../loop.md) is a record
 > of, and it was found by reading a screenshot that looked fine. Both fixed; the
 > capture now waits until the panel names the mission it is photographing.
 >

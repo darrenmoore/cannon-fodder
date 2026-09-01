@@ -1,13 +1,13 @@
 # 001 — make it look like the original
 
 Worked through against `docs/original-images/`, using the loop in
-[../loop.md](../loop.md). Screenshots of the result are in `game/shots/final/`.
+[../loop.md](../../loop.md). Screenshots of the result are in `game/shots/final/`.
 
 ## Done
 
 - **a better hud** — the original's left sidebar, not a browser toolbar. The
   squad is listed by name, so a casualty reads as a name leaving a list.
-- **standard ui components** — [`ui.ts`](../../game/src/ui/ui.ts): panel, button,
+- **standard ui components** — [`ui.ts`](../../../game/src/ui/ui.ts): panel, button,
   plate, readout, meter. The sidebar, the mission select and the end-of-mission
   panel are all built from them, so they cannot drift apart.
 - **celebration and a clear button to next level or try again** — the end panel
@@ -41,7 +41,7 @@ Worked through against `docs/original-images/`, using the loop in
 
 Right about the metadata, and the fix keeps the one-character map. All the extra
 metadata is **derived** at load time rather than authored:
-[`terrain.ts`](../../game/src/render/terrain.ts) computes, per tile, its material
+[`terrain.ts`](../../../game/src/render/terrain.ts) computes, per tile, its material
 class, how deep inside its own mass it sits, which contiguous mass that is,
 8-neighbour match masks, and **signed distance fields** for water, foliage,
 trees, tall grass and rock.
@@ -55,7 +55,7 @@ Then: nothing that forms a mass is drawn per tile any more. Trees, tall grass an
 rock outcrops are each baked as one continuous layer — one sprite per tile on a
 16px grid is a repeating motif you can read across a whole mission.
 
-Full detail in [design.md](../design.md#terrain-as-shape).
+Full detail in [design.md](../../design.md#terrain-as-shape).
 
 ## Also done — the men
 
@@ -65,7 +65,7 @@ Fixed at three levels — the sprite (a lit helmet over a near-black body scatte
 with kit, nothing symmetrical), the roster (four baked variants per unit type,
 chosen by actor id so a man keeps his kit), and the spawn (`squad()` scatters
 them, and each starts on a slightly different facing). Corpses sprawl now, with
-the helmet knocked clear. See [design.md](../design.md#the-men).
+the helmet knocked clear. See [design.md](../../design.md#the-men).
 
 ## Not done
 

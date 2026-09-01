@@ -1,12 +1,12 @@
 # 100 — improvements
 
 The living backlog for **the game itself** — mechanics, balance, maps, AI and
-the behaviour of the shell. Screens and chrome are [101-ui.md](101-ui.md).
+the behaviour of the shell. Screens and chrome are [101-ui.md](../101-ui/brief.md).
 
 Two briefs in the owner's words, kept verbatim and dated rather than merged
 into one voice: they were written at different times against different builds,
 and flattening them would lose which complaint came from which session.
-The plan read out of both is [100-improvements-spec.md](100-improvements-spec.md).
+The plan read out of both is [spec.md](spec.md).
 
 ---
 

@@ -1,6 +1,6 @@
 # 002 — make losing someone cost something
 
-[001](001.md) closed the visual gap and ended with the honest note that the
+[001](../001-original-look/brief.md) closed the visual gap and ended with the honest note that the
 largest remaining one was not visual:
 
 > A Boot Hill: names are reissued every mission, so losing a soldier still costs
@@ -19,11 +19,11 @@ names it, and shows it back.
 
 ## Done
 
-- **Boot Hill** — [`boothill.ts`](../../game/src/ui/boothill.ts). A cross per man
+- **Boot Hill** — [`boothill.ts`](../../../game/src/ui/boothill.ts). A cross per man
   lost, laid out deterministically from the name so a grave stays where you left
   it. Reachable from the mission select and from the end-of-mission panel. It
   has no gameplay effect at all, which is the point of it.
-- **The roster persists** — [`campaign.ts`](../../game/src/sim/campaign.ts). One
+- **The roster persists** — [`campaign.ts`](../../../game/src/sim/campaign.ts). One
   record under one key. It is the only module in the game permitted to remember
   anything, so the whole meta-game can be reasoned about, tested and wiped in
   one place.
@@ -33,7 +33,7 @@ names it, and shows it back.
 - **Promotions** — `Soldier.rank` had been declared, documented and read by
   nothing at all since it was written. It now means what its comment always
   claimed: missions survived. Rank buys a real edge in the firing solution
-  (`veteranEdge` in [`troops.ts`](../../game/src/sim/troops.ts)), tuned by
+  (`veteranEdge` in [`troops.ts`](../../../game/src/sim/troops.ts)), tuned by
   `CONFIG.veteran`, interpolated across the ladder rather than stepped.
 - **Ribbons** — difficulty stopped being a preference and became a record. Four
   slots on every mission card, lit for each difficulty cleared.
@@ -42,7 +42,7 @@ names it, and shows it back.
   number, so a finished mission stays an open loop.
 - **The one name** — the player may rename one soldier, once, for the whole war.
 - **21 headless assertions** over the campaign
-  ([`test/campaign.test.mjs`](../../game/test/campaign.test.mjs), wired into
+  ([`test/campaign.test.mjs`](../../../game/test/campaign.test.mjs), wired into
   `npm run check`) and 12 more through a real browser in `npm run playtest`.
 
 ## The decisions worth arguing with
@@ -84,7 +84,7 @@ slots with two of them dark, on a card you are already looking at, is.
 `npm run check` and the back half of `npm run playtest` fail on a **separate,
 unfinished responsive/touch refactor** — `layout.ts`, `settings.ts`,
 `pointer.ts`, `aim.ts` and a rewritten `input.ts`, none of which
-[`main.ts`](../../game/src/main.ts) or [`game.ts`](../../game/src/sim/game.ts) were
+[`main.ts`](../../../game/src/main.ts) or [`game.ts`](../../../game/src/sim/game.ts) were
 updated for. At runtime `this.layout` is undefined inside `Input`, which throws
 every frame and takes the HUD down with it.
 

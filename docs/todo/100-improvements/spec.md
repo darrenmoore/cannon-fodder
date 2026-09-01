@@ -1,12 +1,12 @@
 # 100 — improvements: spec
 
-The brief is [100-improvements.md](100-improvements.md), in the owner's words —
+The brief is [100-improvements.md](brief.md), in the owner's words —
 both parts of it. This is that brief read against the running game: what is
 already true, what is actually broken, what each item turns out to be asking
 for, and how anyone else could tell whether it passed.
 
 **On the numbering.** 001–006 are finished briefs, kept for their record. 100
-and [101](101-ui-spec.md) are living workstreams that accumulate: **100 is the
+and [101](../101-ui/spec.md) are living workstreams that accumulate: **100 is the
 game** — mechanics, balance, maps, AI, and the behaviour of the shell — and
 **101 is the screens**. A new note goes to whichever of the two it is about, and
 nothing gets a new number for being new.
@@ -15,7 +15,7 @@ Seven headings in the brief become **four batches**. It is not one sitting, and
 the front end alone is three. Batches are ordered so each is worth shipping on
 its own, except where one genuinely cannot precede another — said so, where so.
 
-> **The visual half of this spec now lives in [101-ui-spec.md](101-ui-spec.md).**
+> **The visual half of this spec now lives in [101-ui/spec.md](../101-ui/spec.md).**
 > Everything whose verdict comes from looking at it — the plate system, the
 > logo, the vignette, the intro composition, the level-select screen, the
 > restyled settings, the black between-missions plate — was gathered there so it
@@ -114,7 +114,7 @@ card — 36 of them. What it does not have is the mock's dress: the black ground
 the riveted plates, the theatre column down the left, the logo on top.
 
 **The stars already exist, in a different shape.** This came in from
-[100-improvements.md](100-improvements.md) after the first draft, and it is much cheaper
+[100-improvements.md](brief.md) after the first draft, and it is much cheaper
 than it looked:
 
 - `MissionRecord.clears` **already records every difficulty a mission has been
@@ -274,7 +274,7 @@ Recorded here so a later session does not quietly re-litigate them.
 
 1. **Level select is chrome *and* stars — but not locking.** ~~The stars, the
    padlocks and the `5/12` counters are drawn as design.~~ **Amended** after
-   [100-improvements.md](100-improvements.md): the stars are real, and batch N builds them.
+   [100-improvements.md](brief.md): the stars are real, and batch N builds them.
    The **padlocks stay decoration** — 008 carries a whole unlocking scheme
    (first three of each theatre open, clearing one opens another, at least 15
    maps per theatre) which is a campaign-structure change with new maps behind
@@ -321,7 +321,7 @@ destination M4 routes to, so the routing has to exist first. L last only because
 it is the one batch that depends on nothing — it can be pulled forward whole if
 the front end is not what you want to spend a week on.
 
-**This whole spec now runs ahead of [101-ui-spec.md](101-ui-spec.md), not after it.**
+**This whole spec now runs ahead of [101-ui/spec.md](../101-ui/spec.md), not after it.**
 Everything here leaves the game working in its current dress; 007's run A then
 gives it one, and runs B and C put it on. Building a screen twice is the waste
 that ordering avoids — but a screen that does not exist yet cannot be judged
@@ -386,7 +386,7 @@ and a check that no second modal opens.
 
 ### N — three difficulties, and the stars — **DONE**
 
-One sitting. Pulled forward out of [100-improvements.md](100-improvements.md) at the
+One sitting. Pulled forward out of [100-improvements.md](brief.md) at the
 owner's instruction, because the stars on the level-select screen are meaningless
 until the ladder they measure is the one 008 describes.
 
@@ -439,9 +439,9 @@ rename. Those are campaign structure and new maps; they stay in 008.
 
 ---
 
-### M — the front end: **M6 only, and DONE; the rest is [101](101-ui-spec.md)**
+### M — the front end: **M6 only, and DONE; the rest is [101](../101-ui/spec.md)**
 
-Every screen in this game belongs to [101](101-ui-spec.md), whole -- composition
+Every screen in this game belongs to [101](../101-ui/spec.md), whole -- composition
 *and* behaviour. This spec used to keep the routing half of the intro on the
 grounds that a route is testable and a picture is not; that split put two
 sessions inside one screen and is withdrawn. **A screen has one owner.**
@@ -475,7 +475,7 @@ And Boot Hill leaves the pause sheet, as the brief asks. Its new door is in the
 front end, which is 101's; **this batch only removes the old one**, so the two
 halves must not both land before the door exists or the screen is orphaned.
 
-*What both sheets look like afterwards is [101](101-ui-spec.md) item 7.*
+*What both sheets look like afterwards is [101](../101-ui/spec.md) item 7.*
 
 > **Done when** no settings row is more than 1.4x the height of the shortest,
 > nothing overlaps at 390px or 1400px, the last row and `Done` are reachable
@@ -487,7 +487,7 @@ halves must not both land before the door exists or the screen is orphaned.
 
 ### K — between missions: the sequence — **DONE**
 
-One sitting. The **plate itself is [101-ui-spec.md item 3](101-ui-spec.md)**; what
+One sitting. The **plate itself is [101-ui/spec.md item 3](../101-ui/spec.md)**; what
 stays here is that the four states happen, in order, and that the screen is a
 destination rather than a step.
 
@@ -503,7 +503,7 @@ so it cannot be a thing that only happens between two missions.
 sidebar stays lit through it. `drawFadeOut` paints the canvas and the sidebar is
 `<aside id="hud">`, DOM, outside it — so no tuning reaches it. The fade has to
 become something both surfaces obey. That is small and architectural, it belongs
-here rather than with the pixels, and [101-ui-spec.md item 15](101-ui-spec.md) depends
+here rather than with the pixels, and [101-ui/spec.md item 15](../101-ui/spec.md) depends
 on it being done.
 
 > **Done when** finishing a mission and taking the next one passes through all
@@ -683,7 +683,7 @@ together in the order, and that the arctic theatre be renamed.
 
 **R2 · Unlocking — DONE.** First three of each theatre always open; clearing any
 mission opens another in that theatre. **This is the gate on
-[101-ui-spec.md](101-ui-spec.md)'s level-select screen**, which has a rule that
+[101-ui/spec.md](../101-ui/spec.md)'s level-select screen**, which has a rule that
 a mission with no stars cannot be chosen — a rule that locks the entire game on
 a fresh save unless R2 lands first.
 
@@ -938,7 +938,7 @@ loop's, and `/gauntlet` is the owner's to invoke.
 
 **Nothing here is a screen any more.** Every screen -- the loader, the intro,
 the logo, the level select, the settings restyle, the black between-missions
-plate, the in-mission controls -- is [101](101-ui-spec.md)'s, composition and
+plate, the in-mission controls -- is [101](../101-ui/spec.md)'s, composition and
 behaviour together. The one thing left in M is a `.sheet-row` that crushes its
 own label, which is a measurement rather than a judgement.
 
