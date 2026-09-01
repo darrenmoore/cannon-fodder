@@ -389,6 +389,29 @@ function patrol(world: World, e: Enemy, dt: number): Vec2 | null {
     e.pause -= dt;
     return null;
   }
+
+  /*
+   * A route is marched node to node, end to end and back, with a beat at each
+   * stop. This is the learnable patrol the QA brief asked for: the order never
+   * changes, so a watching player can time the march and slip through behind
+   * it. Only the pause length varies -- enough that two patrollers on one
+   * route drift apart instead of walking in lockstep forever. Getting wedged
+   * counts as arriving: pressing on to the next node is the unstick.
+   */
+  if (e.route) {
+    const node = e.route[e.routeIndex];
+    if (Math.hypot(node.x - e.pos.x, node.y - e.pos.y) < 6 || e.stuck > STUCK_TRIGGER) {
+      e.stuck = 0;
+      e.path.length = 0;
+      if (e.routeIndex + e.routeDir < 0 || e.routeIndex + e.routeDir >= e.route.length) e.routeDir *= -1;
+      e.routeIndex += e.routeDir;
+      const [lo, hi] = CONFIG.enemy.patrolPause;
+      e.pause = lo + Math.random() * (hi - lo);
+      return null;
+    }
+    return node;
+  }
+
   if (!e.goal || Math.hypot(e.goal.x - e.pos.x, e.goal.y - e.pos.y) < 5 || e.stuck > STUCK_TRIGGER) {
     e.goal = pickPatrolPoint(world, e);
     e.stuck = 0;

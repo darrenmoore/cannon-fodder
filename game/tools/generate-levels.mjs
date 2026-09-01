@@ -1409,10 +1409,32 @@ const BUILDERS = {
 
     // No snipers: 13 tiles of aggro would reach the lane from outside their own
     // clearance and turn the route into a shooting gallery.
+    const heads = [];
     for (let i = 0; i < 5; i++) {
       const anchor = lane[Math.round((lane.length * (i + 0.5)) / 5)];
       const head = post('E', { x: anchor.x, y: g.h / 2 }, 8, g.h / 2);
-      if (head) for (let k = 0; k < 2; k++) post('E', head, 5);
+      if (head) {
+        heads.push(head);
+        for (let k = 0; k < 2; k++) post('E', head, 5);
+      }
+    }
+    /*
+     * Two marched routes, through the second and fourth groups: three `p`
+     * nodes nine tiles apart, which is inside the twelve-tile chaining range
+     * (see chainPatrolRoutes in world.ts), so each chains into a fixed
+     * east-west march. The head of the group stands on the middle node and
+     * walks it; his flankmates enlist if they landed near enough. The march
+     * runs along the flank, never onto the lane -- on a no-kill map a patrol
+     * is something the player times, not a wall he cannot pass.
+     */
+    for (const head of [heads[1], heads[3]]) {
+      if (!head) continue;
+      for (let i = -1; i <= 1; i++) {
+        const nx = head.x + i * 9;
+        if (nx < 4 || nx > g.w - 5) continue;
+        g.disc(nx, head.y, 1.6, GRASS, [TREE, ROCK, TALL]);
+        g.set(nx, head.y, 'p');
+      }
     }
     post('c', lane[Math.round(lane.length * 0.5)], 10, 10);
   },

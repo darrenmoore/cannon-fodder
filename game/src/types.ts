@@ -179,6 +179,15 @@ export interface Enemy extends Actor {
   /** Anchor for patrolling enemies; null means this one holds its ground. */
   home: Vec2 | null;
   patrols: boolean;
+  /**
+   * The ordered chain of patrol nodes this enemy marches, end to end and back,
+   * when his node chained into one. Null (or a lone node) keeps the old random
+   * beat around `home`. Routes are what make a patrol *learnable*: the player
+   * can time a fixed march, never a random shuffle.
+   */
+  route: Vec2[] | null;
+  routeIndex: number;
+  routeDir: 1 | -1;
   /** Snipers and bazookateers hold their post rather than closing in. */
   rooted: boolean;
   goal: Vec2 | null;

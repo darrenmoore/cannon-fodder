@@ -136,7 +136,7 @@ tent, since a tent registers as an extraction zone.
 | `c` | A pickup crate (3 grenades; detonates if shot) |
 | `o` | An explosive barrel — no pickup, just a large blast |
 | `*` | A mine — invisible until something steps on it |
-| `p` | A patrol node — enemies spawned nearby walk a beat instead of holding ground |
+| `p` | A patrol node — enemies spawned nearby walk a beat instead of holding ground. Nodes within **12 tiles** of each other chain into an ordered **route** the enemy marches end to end and back — a fixed, learnable march. A lone node keeps the random beat |
 | `H` | A hostage |
 | `k` | A **supply box** — the objective of a `collect` mission. Not an ammo crate |
 | `C` | The enemy **officer** — the target of an `assassinate` mission. One per map |

@@ -20,7 +20,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 013 | [timer-clarity](013-timer-clarity.md) | done | d043054 |
 | 014 | [landing-ground-start](014-landing-ground-start.md) | done -- via 010 | f30507e |
 | 015 | [veteran-fire-range](015-veteran-fire-range.md) | done | 92b72ca |
-| 016 | [patrols](016-patrols.md) | open | |
+| 016 | [patrols](016-patrols.md) | done | (see log) |
 | 017 | [through-the-wall](017-through-the-wall.md) | open (after 010, 016) | |
 | 018 | [not-a-sound-variant](018-not-a-sound-variant.md) | open (after 010, 016) | |
 | 019 | [narrows-forest](019-narrows-forest.md) | open | |

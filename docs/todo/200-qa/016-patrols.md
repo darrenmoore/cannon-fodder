@@ -33,10 +33,10 @@ patrols cannot satisfy it by tuning.
    looping. A lone `p` keeps today's radius beat.
 2. Alert/Investigate/Engage still interrupt as now; a survivor returns to
    his route (the `home` field already exists).
-3. Map coverage: lay 2-4 node routes on not-a-sound (the covert showcase --
-   crossing routes the player times), swim for it, and through the wall.
-   `docs/map-format.md` gets the route semantics; the `/map` skill's
-   checklist mentions routes for covert maps.
+3. Map coverage: routes laid on not-a-sound (the covert showcase) with this
+   issue; swim for it gets its nodes in [020](020-swim-for-it.md) and
+   through the wall in [017](017-through-the-wall.md), whose builders are
+   being reworked anyway. `docs/map-format.md` carries the route semantics.
 
 ## Done when
 

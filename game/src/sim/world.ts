@@ -216,6 +216,9 @@ export function makeEnemy(
     patrols: home !== null,
     // Specialists hold their firing position instead of closing in.
     rooted: kind !== EnemyKind.Rifle,
+    route: null,
+    routeIndex: 0,
+    routeDir: 1,
     goal: null,
     path: [],
     target: null,
@@ -232,6 +235,58 @@ export function makeEnemy(
     grenadeCooldown: CONFIG.enemy.grenadeCooldown * Math.random(),
     spawnedBy,
   };
+}
+
+/**
+ * Chains patrol nodes that stand near one another into ordered routes.
+ *
+ * Nodes within twelve tiles of a neighbour join the same route; the route is
+ * then ordered greedily from its most outlying node, so a line of nodes reads
+ * as the line the author drew. Twelve tiles and not "any distance" because
+ * chaining is retroactive -- the shipped maps carry two or three scattered
+ * nodes each, and a chain spanning the whole map would send their sentries on
+ * marches no author asked for. A lone node keeps the old radius beat.
+ */
+function chainPatrolRoutes(nodes: Vec2[]): Vec2[][] {
+  const CHAIN = 12 * 16;
+  const groups: Vec2[][] = [];
+  const claimed = new Set<Vec2>();
+  for (const seed of nodes) {
+    if (claimed.has(seed)) continue;
+    const group = [seed];
+    claimed.add(seed);
+    for (let i = 0; i < group.length; i++) {
+      for (const n of nodes) {
+        if (claimed.has(n)) continue;
+        if (Math.hypot(n.x - group[i].x, n.y - group[i].y) <= CHAIN) {
+          group.push(n);
+          claimed.add(n);
+        }
+      }
+    }
+    groups.push(group);
+  }
+  return groups.map((group) => {
+    if (group.length < 2) return group;
+    const cx = group.reduce((s, n) => s + n.x, 0) / group.length;
+    const cy = group.reduce((s, n) => s + n.y, 0) / group.length;
+    let start = group[0];
+    for (const n of group) {
+      if (Math.hypot(n.x - cx, n.y - cy) > Math.hypot(start.x - cx, start.y - cy)) start = n;
+    }
+    const route = [start];
+    const left = new Set(group.filter((n) => n !== start));
+    while (left.size > 0) {
+      const last = route[route.length - 1];
+      let next: Vec2 | null = null;
+      for (const n of left) {
+        if (!next || Math.hypot(n.x - last.x, n.y - last.y) < Math.hypot(next.x - last.x, next.y - last.y)) next = n;
+      }
+      route.push(next!);
+      left.delete(next!);
+    }
+    return route;
+  });
 }
 
 export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Deployment[]): World {
@@ -302,6 +357,22 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
       if (squadAt.every((p) => Math.hypot(c.x - p.x, c.y - p.y) >= startClear)) { at = c; break; }
     }
     enemies.push(makeEnemy(counter, at, EnemyKind.Rifle, nearestNode(at), levers));
+  }
+
+  // Hand each patroller the route his node chained into. Matched by
+  // coordinates because makeEnemy clones `home`. Lone nodes chain into
+  // nothing and keep the radius beat.
+  const routes = chainPatrolRoutes(map.patrolNodes);
+  for (const e of enemies) {
+    if (!e.patrols || !e.home) continue;
+    for (const route of routes) {
+      const i = route.findIndex((n) => n.x === e.home!.x && n.y === e.home!.y);
+      if (i >= 0 && route.length > 1) {
+        e.route = route;
+        e.routeIndex = i;
+        break;
+      }
+    }
   }
 
   const buildings: Building[] = map.buildings.map((b, i) => {
