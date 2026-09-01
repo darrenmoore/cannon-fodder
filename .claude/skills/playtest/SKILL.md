@@ -54,7 +54,7 @@ Clean up after yourself: delete throwaway scripts, stop your own server.
 
 ## The test level
 
-Batch I of [004-spec.md](../../../docs/todo/004-spec.md) adds a dev-only mission
+Batch I of [the 004 spec](../../../docs/todo/004-enemy-ai/spec.md) adds a dev-only mission
 with every enemy, terrain, building state and hazard on one small map, plus
 debug switches. When it lands, this skill launches that by default and the
 staging above stops being necessary. Until then, stage what you need in a real

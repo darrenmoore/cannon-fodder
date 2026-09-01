@@ -54,7 +54,7 @@ never use it to sign off its own work.
 `docs/style.md` is read off the parts of the tree that work. When it and the
 code disagree, **the code is what is wrong** — the standing list of places that
 break the law is in `/pixel-check`, and the list of things that look wrong is
-batch S in [docs/todo/100-improvements-spec.md](../../../docs/todo/100-improvements-spec.md).
+batch S in [docs/todo/100-improvements/spec.md](../../../docs/todo/100-improvements/spec.md).
 
 If you find yourself wanting a rule that is not here, add it — but add it with
 the thing in the tree it was read off, or it is a preference rather than a

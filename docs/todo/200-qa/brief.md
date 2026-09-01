@@ -170,3 +170,14 @@ there is a guide arrow
 but it doesn't look in style or lore with the game
 it needs to be a lot bigger
 and it should slightly animate, like point them in the right direction
+
+---
+
+mission fail / win
+- need to align with our style using sprites and buttons
+- need to give the option for the player if they want to replay..
+    - then they can choose the difficulty level
+    - so i think they choose replay and then it shows them the difficulties
+    - and it makes it clear what they just did it on
+    - take ideas from the level select screen
+    - otherwise some players might not realise there are options for difficulty

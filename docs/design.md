@@ -558,5 +558,5 @@ tuning is edit-and-reload. Notable knobs:
 - Enemies manage range but do not seek cover.
 - Grenades cannot be cooked or bounced — they fly to the cursor and detonate.
 - Missions can still be played in any order. `Theatre.locked` remains unwired,
-  and deliberately so — see [the meta-game](todo/002.md) for why ribbons were
+  and deliberately so — see [the meta-game](todo/002-boot-hill/brief.md) for why ribbons were
   preferred to locks.

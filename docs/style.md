@@ -119,7 +119,7 @@ rule most often broken by the cheapest available fix.
 Two systems exist and that is one too many — a baked pixel font on the canvas
 (`render/pixelfont.ts`, `render/bigfont.ts`) and whatever monospace the player's
 machine supplies in the DOM. Closing that is
-[101](todo/101-ui-spec.md)'s item 3.
+[101](todo/101-ui/spec.md)'s item 3.
 
 Until it closes: **canvas text is baked, DOM text is uppercase with wide
 tracking**, and neither borrows the other's idiom.
@@ -131,7 +131,7 @@ tracking**, and neither borrows the other's idiom.
 It is not a defence of anything already drawn. Where the tree and this disagree,
 **the tree is what is wrong** — these rules were read off the parts that work,
 and the parts that do not are listed in `/pixel-check`'s worklist and in
-[100](todo/100-improvements-spec.md)'s batch S.
+[100](todo/100-improvements/spec.md)'s batch S.
 
 And it settles nothing about whether a drawing is *good*. That is still a
 critic's call, made by somebody who did not draw it, through
