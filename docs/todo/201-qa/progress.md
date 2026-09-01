@@ -20,7 +20,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 004 | [imbf-footer](004-imbf-footer.md) | done | 4a4738e |
 | 005 | [briefing-screen](005-briefing-screen.md) | done | |
 | 006 | [mac-fire-key](006-mac-fire-key.md) | done | 196d0dc |
-| 007 | [comms-panel](007-comms-panel.md) | open -- Q1 answered; sitting 1 can start, 2 waits on 005 + 006 | |
+| 007 | [comms-panel](007-comms-panel.md) | in progress -- sittings 1-2 landed; 3 (portrait, voice) and 4 (the skill) open | 63f0aa1 |
 | 008 | [merged-into-007](008-merged-into-007.md) | done -- merged, no work | |
 | 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | done | bac15ec |
 | 010 | [hiding-in-cover](010-hiding-in-cover.md) | done | 1df5840 |

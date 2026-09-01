@@ -531,6 +531,72 @@ html, body {
   width: 100%;
 }
 
+/* --- the comms panel (201-qa 007)
+ *
+ * Anchored to #viewport, not to the page, for the same reason the action bar
+ * is: it belongs inside the battlefield on a phone and inside the play area
+ * beside the sidebar on a desktop.
+ *
+ * Its bottom edge clears the action bar's cluster, which sits bottom-right (or
+ * bottom-left for a left-handed player) at 10px + the safe inset. Rather than
+ * dodge sideways -- which would put the strip somewhere different depending on
+ * a settings value -- it sits centred and *above* the cluster on both sides,
+ * so there is one position and it is always right.
+ *
+ * Wears the plotted banner. Nothing new is baked for it.
+ */
+#comms {
+  position: absolute;
+  left: 50%;
+  bottom: calc(10px + var(--safe-b));
+  z-index: 5;
+  max-width: min(760px, calc(100% - 32px));
+  padding: 10px 22px;
+  background: none;
+  border: 12px solid transparent;
+  border-image: var(--sk-banner) var(--sk-slice-banner) fill / 12px round;
+  image-rendering: pixelated;
+  text-align: center;
+  pointer-events: none;
+  /* Off the bottom of the play area until it is asked for. The translate is
+     on top of the -50% that centres it, so both live in one transform. */
+  transform: translate(-50%, calc(100% + 24px));
+  opacity: 0;
+  transition: transform 0.34s cubic-bezier(0.18, 1.5, 0.4, 1), opacity 0.2s linear;
+}
+#comms[hidden] { display: none; }
+#comms.in {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+/* The overshoot is the whole of the "bounces in" the brief asked for, so under
+   prefers-reduced-motion it is the whole of what goes. */
+#comms.still { transition: opacity 0.2s linear; }
+
+.comms-who {
+  display: block;
+  color: var(--gold);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.comms-line {
+  display: block;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+  line-height: 1.45;
+}
+
+/* Above the action bar's cluster rather than beside it, so the strip does not
+   move when a player switches hands. The cluster is roughly a tap target tall
+   plus its own inset. */
+@media (max-width: 900px) {
+  #comms { bottom: calc(20px + var(--tap) + var(--safe-b)); }
+}
+
 /* --- result
  *
  * Wears the plotted chrome like every other modal (200-qa 026) -- this was

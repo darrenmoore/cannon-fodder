@@ -4,7 +4,7 @@ objective: eliminate
 doctrine: garrison
 order: 1
 mechanic: move, and then fire
-brief: Five of them, in the open. Click to march; hold right-click, or FIRE, to shoot.
+brief: Five of them, in the open. Nothing between you and them.
 tile: 16
 ---
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

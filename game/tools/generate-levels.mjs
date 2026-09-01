@@ -2238,7 +2238,11 @@ const CAMPAIGN = [
     id: 'training-fire', doctrine: 'garrison', order: 1, seed: 110001, w: 52, h: 34,
     name: 'Basic Training', theme: 'jungle', objective: 'eliminate',
     mechanic: 'move, and then fire',
-    brief: 'Five of them, in the open. Click to march; hold right-click, or FIRE, to shoot.',
+    // No control names in here any more. This line named a right-click, which
+    // is a button Apple hardware does not have, and the briefing had no way to
+    // say anything else -- the comms panel does it now, branched per platform
+    // (201-qa 007).
+    brief: 'Five of them, in the open. Nothing between you and them.',
   },
   {
     id: 'training-bridge', doctrine: 'garrison', order: 2, seed: 110002, w: 46, h: 60,
