@@ -7,7 +7,7 @@ mechanic: ground, measured in seconds
 brief: Take the bunker on the crossroads and stand there. Four waves come for it. Leaving stops the clock.
 waves: 4@11
 tile: 16
-duration: 45
+duration: 75
 ---
 #####.#.##############################################################################################.#
 #####.#############################################################################################.#.#.

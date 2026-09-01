@@ -47,6 +47,39 @@ for (const m of waveMaps) {
     m.standing === 0, `${m.standing} men placed`);
 }
 
+// A hold mission must outlast its own wave schedule -- on every difficulty.
+// The sink declared four waves and a 45s hold, and on veteran a squad that
+// reached the zone early won before wave four had even spawned: a schedule
+// the player was promised and never shown. Paper math, worst case: first
+// wave lands at CONFIG.wave.lead, later ones every
+// interval * (1 - pace + pace * spawnInterval), and the slowest schedule is
+// the largest spawnInterval lever. Ten seconds of margin so the last wave is
+// met, not glimpsed.
+const configSrc = await readFile(
+  fileURLToPath(new URL('../src/sim/../config.ts', import.meta.url)), 'utf8');
+const difficultySrc = await readFile(
+  fileURLToPath(new URL('../src/sim/difficulty.ts', import.meta.url)), 'utf8');
+const lead = Number(/lead:\s*([\d.]+)/.exec(configSrc)?.[1]);
+const pace = Number(/pace:\s*([\d.]+)/.exec(configSrc)?.[1]);
+const slowest = Math.max(
+  ...[...difficultySrc.matchAll(/spawnInterval:\s*([\d.]+)/g)].map((m) => Number(m[1])));
+check('the wave schedule constants were found on paper',
+  Number.isFinite(lead) && Number.isFinite(pace) && Number.isFinite(slowest),
+  `lead=${lead} pace=${pace} slowest=${slowest}`);
+for (const f of files) {
+  const src = await readFile(join(DATA, f), 'utf8');
+  const head = src.split(/^---\r?$/m)[0];
+  if (!/^objective: hold$/m.test(head) || !/^waves:/m.test(head)) continue;
+  const duration = Number(/^duration:\s*(\d+)/m.exec(head)?.[1] ?? 90);
+  const spec = /^waves:\s*(\d+)(?:@(\d+))?/m.exec(head);
+  const count = Number(spec[1]);
+  const interval = Number(spec[2] ?? 22);
+  const lastWave = lead + (count - 1) * interval * (1 - pace + pace * slowest);
+  check(`${f.slice(0, -4)} holds long enough to meet all ${count} waves`,
+    duration >= lastWave + 10,
+    `last wave ~${lastWave.toFixed(1)}s, hold ${duration}s`);
+}
+
 // And the other half of the same rule: the proximity trickle is off while a
 // schedule is running, or the gaps that make waves legible as waves fill in.
 const buildings = await readFile(

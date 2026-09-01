@@ -88,8 +88,10 @@ export function evaluate(w: World, dt: number): Progress {
         w.extraction.some((z) => Math.hypot(z.x - s.pos.x, z.y - s.pos.y) <= z.pad + CONFIG.extraction.radius),
       );
       if (w.inZone) w.heldFor = Math.min(w.map.duration, w.heldFor + dt);
+      // Waves show here too, not just on `survive`: a holder on a wave map
+      // was winning against a schedule he was never shown.
       return {
-        status: `hold ${clock(w.heldFor)}/${clock(w.map.duration)}${w.inZone ? '' : ' · zone empty'}`,
+        status: `hold ${clock(w.heldFor)}/${clock(w.map.duration)}${w.inZone ? '' : ' · zone empty'}${waveStatus(w)}`,
         done: Math.round(w.heldFor),
         total: Math.round(w.map.duration),
         won: w.heldFor >= w.map.duration,

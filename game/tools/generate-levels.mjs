@@ -2078,7 +2078,7 @@ const CAMPAIGN = [
   },
   {
     id: 'hold-the-junction', layout: 'crossroads', doctrine: 'garrison', order: 28, seed: 265419, w: 104, h: 88,
-    duration: 45, waves: '4@11',
+    duration: 75, waves: '4@11',
     name: 'Hold the Junction', theme: 'desert', objective: 'hold',
     mechanic: 'ground, measured in seconds',
     brief: 'Take the bunker on the crossroads and stand there. Four waves come for it. Leaving stops the clock.',
@@ -2103,7 +2103,7 @@ const CAMPAIGN = [
   },
   {
     id: 'the-long-white', layout: 'gauntlet', doctrine: 'swarm', order: 32, seed: 488251, w: 150, h: 54,
-    duration: 45, waves: '4@11',
+    duration: 75, waves: '4@11',
     name: 'The Long White', theme: 'arctic', objective: 'hold',
     mechanic: 'holding a corridor',
     brief: 'Walk the length of it, take the far bunker, and keep somebody standing on it while they come.'
@@ -2239,7 +2239,7 @@ const CAMPAIGN = [
   },
   {
     id: 'frozen-lake', layout: 'island', doctrine: 'swarm', order: 46, seed: 322806, w: 84, h: 84,
-    duration: 45, waves: '4@11',
+    duration: 75, waves: '4@11',
     name: 'Frozen Lake', theme: 'arctic', objective: 'hold',
     mechanic: 'ground you cannot leave',
     brief: 'Take the bunker on the ice and stay on it. Four waves come across for it.',

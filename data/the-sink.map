@@ -3,7 +3,7 @@ theme: desert
 objective: hold
 doctrine: hunters
 order: 18
-duration: 45
+duration: 75
 mechanic: quicksand as a shape
 brief: Firm ground in the middle and sinks all round it. Four waves come out of the huts, and every one of them has to wade. They cannot fire while they do.
 waves: 4@11

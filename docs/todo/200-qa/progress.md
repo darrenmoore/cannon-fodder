@@ -25,7 +25,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 018 | [not-a-sound-variant](018-not-a-sound-variant.md) | open (after 010, 016) | |
 | 019 | [narrows-forest](019-narrows-forest.md) | open (after 010) | |
 | 020 | [swim-for-it](020-swim-for-it.md) | open (after 010) | |
-| 021 | [sink-waves](021-sink-waves.md) | open | |
+| 021 | [sink-waves](021-sink-waves.md) | done | (see log) |
 | 022 | [dust-devils](022-dust-devils.md) | open (after 003) | |
 | 023 | [grenade-pickups](023-grenade-pickups.md) | done | (see log) |
 | 024 | [pause-left-menu](024-pause-left-menu.md) | open | |
