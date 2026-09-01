@@ -252,8 +252,19 @@ async function boot(): Promise<void> {
         // The bed rides the draw, not the step: it needs the camera as drawn
         // and the renderer's wind clock, and it should keep breathing while
         // the debug pause holds the world still for a photograph.
+        /*
+         * The bed sounds through the briefing now, on the owner's ask: you
+         * are looking at a jungle and it should sound like one before you are
+         * standing in it. `hud.briefingUp` used to gate it off with the
+         * sheets, which lumped "the player is reading a card about this place"
+         * in with "the player has stepped out of the game".
+         *
+         * The sheets still silence it -- a paused world that goes on chirping
+         * is a world that has not really paused -- and so does a resolved
+         * mission, where the bed would play under the end banner.
+         */
         updateAmbience(camera, renderer.windTime, frameDt,
-          !sheetOpen() && !hud.briefingUp && game.world.phase === Phase.Playing);
+          !sheetOpen() && game.world.phase === Phase.Playing);
       }
     },
   );
