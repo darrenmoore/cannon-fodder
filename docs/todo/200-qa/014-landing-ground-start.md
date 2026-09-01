@@ -13,8 +13,8 @@ from the squad.
 
 ## Classification
 
-Broken, cause shared with 010. **Blocked on questions.md Q3** (the distance
-value), and resolved by 010's rule.
+Broken, cause shared with 010, resolved by 010's rule. **Decision (Q3):
+12 tiles.**
 
 ## Plan
 

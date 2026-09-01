@@ -34,12 +34,12 @@ difference comes from one lever, and it is small:
 Broken, cause found: the placed-enemy lever is a token +25%, invisible, and
 badly distributed.
 
-**Blocked on questions.md Q2** (the rookie number). The veteran number is
+**Decision (Q2, answered 2026-09-01): option 1** -- rookie +25%. Veteran was
 given in the brief: 2x on dry run -> `extraEnemies: 1.0`.
 
-## Plan (one sitting once Q2 is answered)
+## Plan (one sitting)
 
-1. Raise the lever: veteran `0.25 -> 1.0`, elite `0.5 -> 1.6`, rookie per Q2.
+1. Raise the lever: veteran `0.25 -> 1.0`, elite `0.5 -> 1.6`, rookie `0.25`.
 2. Fix distribution: spread extras across *all* anchors (shuffle by seed, not
    reading order) and widen the scatter so they read as a thicker garrison,
    not a clone beside each post.

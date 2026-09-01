@@ -26,10 +26,12 @@
 
 ## Classification
 
-New work (a validator rule) + broken maps found. **Blocked on questions.md
-Q3** -- the distance value.
+New work (a validator rule) + broken maps found.
 
-## Plan (one sitting once Q3 is answered)
+**Decision (Q3, answered 2026-09-01): option 1** -- 12 tiles minimum, every
+map, enforced by the checks.
+
+## Plan (one sitting)
 
 1. Add the rule to `validate()` in `generate-levels.mjs` AND to
    `test/map.test.mjs` (hand-written maps like the sink bypass the

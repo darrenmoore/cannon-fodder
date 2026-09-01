@@ -27,9 +27,10 @@ Already true (no reinforcements is the design, as in the original) -- so what
 this issue is really asking for is **feedback**: the game must *say* the squad
 is all you get, and *show* the hold clock pausing instead of silently stalling.
 
-**Blocked on questions.md Q1** -- whether the no-reinforcements design stands.
+**Decision (Q1, answered 2026-09-01): option 1** -- the no-reinforcements
+design stands; fix the feedback.
 
-## Plan (once Q1 is answered, assuming option 1)
+## Plan
 
 - Briefing/objective text for `hold`: include the duration ("hold it for
   0:45"), the way `timeLimit` already does (`objectives.ts:243-254`).
