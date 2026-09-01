@@ -17,7 +17,7 @@ import { Hud } from './ui/hud.js';
 import { Input } from './shell/input.js';
 import { startLoop } from './loop.js';
 import { parseMap } from './sim/map.js';
-import { fetchLevels, loadDifficulty, saveDifficulty } from './ui/menu.js';
+import { fetchLevels, groupByTheatre, loadDifficulty, saveDifficulty } from './ui/menu.js';
 import { showFront } from './ui/front.js';
 import { Renderer } from './render/render.js';
 import { showBootHill } from './ui/boothill.js';
@@ -291,6 +291,19 @@ async function boot(): Promise<void> {
     // round, so "next mission" is one click from where you finished.
     const index = campaignLevels.findIndex((l) => l.id === info.id);
     hud.hasNext = index >= 0 && index < campaignLevels.length - 1;
+    /*
+     * The briefing's heading. Numbered within its theatre, not across the
+     * campaign, for the same reason the level select is (front.ts): a desert
+     * list running 05, 07, 14 reads as a list with holes in it. Neither number
+     * is on `world.map`, so it is handed over here (201-qa 005).
+     */
+    {
+      const group = groupByTheatre(campaignLevels).find(
+        (g) => g.levels.some((l) => l.id === info.id),
+      );
+      hud.missionNumber = group ? group.levels.findIndex((l) => l.id === info.id) + 1 : 0;
+      hud.theatreName = group?.theatre.name ?? '';
+    }
     hud.onNext = (): void => { if (game) game.nextRequested = true; };
     hud.onRetry = (): void => {
       if (!game) return;
@@ -420,7 +433,7 @@ async function boot(): Promise<void> {
         { label: 'Resume', tone: 'good', key: 'Enter', primary: true, onPick: () => {} },
         { label: 'Restart', tone: 'warn', key: 'R', onPick: () => { void restartMission(); } },
         { label: 'Settings', onPick: () => showSettings(() => layout.apply()) },
-      ]);
+      ], true);   // and the controls, from the same list the briefing uses
     };
     input.onPause = openPause;
     hud.onPause = openPause;

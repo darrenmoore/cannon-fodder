@@ -2,6 +2,7 @@ import { CONFIG } from '../config.js';
 import { DIFFICULTIES } from '../sim/difficulty.js';
 import { objectiveText } from '../sim/objectives.js';
 import { formatTime, rankName, rankShort, rankTier } from '../sim/campaign.js';
+import { controlLines } from './controltext.js';
 import { protectedBuilding } from '../sim/objectives.js';
 import { bindKeys, button, fill, heading, meter, plate, readout } from './ui.js';
 import { setBlackout } from './blackout.js';
@@ -82,6 +83,17 @@ export class Hud {
   aftermath: Aftermath | null = null;
   /** How many are on the hill, for the briefing's one cold line. */
   buried = 0;
+  /**
+   * Which mission this is within its theatre, and what that theatre is called.
+   *
+   * The briefing is the one screen that names the mission, and the original
+   * headed it "MISSION 5 / PHASE 2 OF 3". We have no phases, but the level
+   * select already numbers missions within a theatre, so the same shape is
+   * available -- and neither number is anywhere on `world.map`, so main.ts
+   * hands them over beside `hasNext` (201-qa 005).
+   */
+  missionNumber = 0;
+  theatreName = '';
 
   constructor() {
     this.mission.className = 'hud-mission';
@@ -510,18 +522,41 @@ export class Hud {
 
     const card = document.createElement('div');
     card.className = 'briefing';
-    card.appendChild(Object.assign(document.createElement('div'), {
-      className: 'briefing-title', textContent: world.map.name,
-    }));
-    const objective = objectiveText(world.map);
-    card.appendChild(Object.assign(document.createElement('div'), {
-      className: 'briefing-obj', textContent: objective,
-    }));
-    if (world.map.brief) {
-      card.appendChild(Object.assign(document.createElement('div'), {
-        className: 'briefing-line', textContent: world.map.brief,
-      }));
+    const add = (cls: string, text: string, to: HTMLElement = card): HTMLElement => {
+      const el = Object.assign(document.createElement('div'), { className: cls, textContent: text });
+      to.appendChild(el);
+      return el;
+    };
+
+    /*
+     * The stack, matched by eye to docs/original-images/elements/next-mission.jpg:
+     *
+     *   MISSION 05            large, ruled underneath
+     *   THE JUNGLE            small, wide-tracked -- our stand-in for PHASE x OF y
+     *   ------------------
+     *   BASIC TRAINING        the largest type on the screen, ruled above and below
+     *   +----------------+
+     *   |    BRIEFING    |    a bordered box, wearing the plotted frame
+     *   |   objective    |
+     *   |   the squad    |
+     *   |   controls     |
+     *   +----------------+
+     *
+     * The original's box is far taller than its two lines of objective, with
+     * the bottom two thirds empty. That empty space is where the squad roll
+     * and the controls go -- so nothing new had to be invented to hold them.
+     */
+    if (this.missionNumber > 0) {
+      add('briefing-num', `MISSION ${String(this.missionNumber).padStart(2, '0')}`);
     }
+    if (this.theatreName) add('briefing-theatre', this.theatreName.toUpperCase());
+    add('briefing-title', world.map.name.toUpperCase());
+
+    const box = document.createElement('div');
+    box.className = 'briefing-box';
+    add('briefing-box-head', 'BRIEFING', box);
+    add('briefing-obj', objectiveText(world.map), box);
+    if (world.map.brief) add('briefing-line', world.map.brief, box);
 
     const roll = document.createElement('div');
     roll.className = 'briefing-squad';
@@ -534,14 +569,35 @@ export class Hud {
       chip.textContent = s.fresh ? `${s.name} — new` : `${s.name} ${rankShort(s.rank)}`;
       roll.appendChild(chip);
     }
-    card.appendChild(roll);
+    box.appendChild(roll);
 
-    if (this.buried > 0) {
-      card.appendChild(Object.assign(document.createElement('div'), {
-        className: 'briefing-hill',
-        textContent: `${this.buried} on Boot Hill`,
-      }));
+    if (this.buried > 0) add('briefing-hill', `${this.buried} on Boot Hill`, box);
+
+    /*
+     * The controls, in the space the original left empty.
+     *
+     * Here rather than only in the pause sheet because the owner's point was
+     * that his friend never found them: a strip on the screen you have to pass
+     * through to start the mission is the one place nobody misses. The pause
+     * sheet gets the same list from the same function, so the two cannot
+     * disagree (201-qa 005).
+     */
+    const controls = document.createElement('div');
+    controls.className = 'briefing-controls';
+    for (const line of controlLines()) {
+      const row = document.createElement('div');
+      row.className = 'briefing-ctl';
+      Object.assign(row.appendChild(document.createElement('span')), {
+        className: 'briefing-ctl-a', textContent: line.action,
+      });
+      Object.assign(row.appendChild(document.createElement('span')), {
+        className: 'briefing-ctl-k', textContent: line.keys,
+      });
+      controls.appendChild(row);
     }
+    box.appendChild(controls);
+
+    card.appendChild(box);
 
     fill(this.overlayCard, card);
     this.overlay.hidden = false;

@@ -410,15 +410,71 @@ html, body {
 /* The briefing is a caption; the result panel is a thing you click. */
 #overlay.interactive { pointer-events: auto; }
 
-/* --- briefing */
-.briefing { text-align: center; padding: 0 30px; }
+/* --- briefing
+ *
+ * Matched by eye to docs/original-images/elements/next-mission.jpg: a numbered
+ * heading, a small tracked sub-line, the mission name as the largest type on
+ * the screen with a rule above and below it, and then a bordered box titled
+ * BRIEFING. The original's box is far taller than its objective lines and the
+ * bottom two thirds are empty; ours puts the squad roll and the controls
+ * there, so nothing had to be invented to hold them (201-qa 005).
+ *
+ * The box wears --sk-frame, the plotted chrome, like every other panel in the
+ * game. It was the last screen in here still drawn as bare text on black --
+ * the result panel was the previous one and was dressed in 200-qa 026.
+ */
+.briefing {
+  text-align: center;
+  padding: 0 24px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.briefing-num {
+  color: var(--ink);
+  font-size: var(--fs-lg);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+}
+.briefing-theatre {
+  margin-top: 4px;
+  color: var(--ink-faint);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+/* Rules above and below the name, as in the reference. Whole pixels, flat
+   colour: a hairline or a gradient here would be the only soft edge on the
+   screen. */
 .briefing-title {
+  margin-top: 12px;
+  padding: 10px 0;
+  border-top: 2px solid var(--ink-dim);
+  border-bottom: 2px solid var(--ink-dim);
   color: var(--gold);
   font-size: var(--fs-display);
   font-weight: 700;
   letter-spacing: var(--track);
   text-transform: uppercase;
   text-shadow: 0 3px 0 #5c5210;
+}
+
+.briefing-box {
+  margin-top: 22px;
+  padding: 20px 22px 22px;
+  /* Exactly the form the result panel uses. `--sk-slice-frame` is a bare
+     number (18, not 18px), so it cannot be used as the border-width -- the
+     shorthand goes invalid, the border collapses to nothing, and border-image
+     has no box to paint into. `fill / 18px` is what actually draws it. */
+  background: none;
+  border: 18px solid transparent;
+  border-image: var(--sk-frame) var(--sk-slice-frame) fill / 18px round;
+  image-rendering: pixelated;
+}
+.briefing-box-head {
+  color: var(--ink);
+  font-size: var(--fs-lg);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
 }
 .briefing-obj {
   margin-top: 14px;
@@ -428,6 +484,52 @@ html, body {
   text-transform: uppercase;
 }
 .briefing-line { margin-top: 10px; color: var(--ink-dim); font-size: var(--fs-body); }
+
+/* --- the controls strip, in the space the original box leaves empty.
+ *
+ * Two columns, keys right-aligned so the eye runs down them. Faint action,
+ * bright keys: the player is looking for "what do I press", not for a list of
+ * things they might do. */
+.briefing-controls {
+  margin: 18px auto 0;
+  padding-top: 14px;
+  border-top: 2px solid var(--ink-faint);
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  column-gap: 22px;
+  row-gap: 5px;
+  text-align: left;
+  max-width: 460px;
+}
+.briefing-ctl { display: contents; }
+.briefing-ctl-a {
+  color: var(--ink-faint);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+}
+.briefing-ctl-k {
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  text-align: right;
+}
+
+/* The pause sheet's copy of the controls strip: the same two columns, sized
+   to the sheet rather than to the briefing box. */
+.sheet-controls {
+  margin: 18px auto 0;
+  padding-top: 14px;
+  border-top: 2px solid var(--ink-faint);
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+  column-gap: 18px;
+  row-gap: 5px;
+  text-align: left;
+  width: 100%;
+}
 
 /* --- result
  *

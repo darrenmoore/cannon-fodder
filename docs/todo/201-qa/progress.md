@@ -18,7 +18,7 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 | 002 | [favicon](002-favicon.md) | done | 5ea3c29 |
 | 003 | [music-on-first-visit](003-music-on-first-visit.md) | done -- already true, no work | |
 | 004 | [imbf-footer](004-imbf-footer.md) | done | 4a4738e |
-| 005 | [briefing-screen](005-briefing-screen.md) | open -- second sitting waits on 006 | |
+| 005 | [briefing-screen](005-briefing-screen.md) | done | |
 | 006 | [mac-fire-key](006-mac-fire-key.md) | done | 196d0dc |
 | 007 | [comms-panel](007-comms-panel.md) | open -- Q1 answered; sitting 1 can start, 2 waits on 005 + 006 | |
 | 008 | [merged-into-007](008-merged-into-007.md) | done -- merged, no work | |

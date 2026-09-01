@@ -1,5 +1,6 @@
 import { bindKeys, button, fill, segmented, slider } from './ui.js';
 import { settings, updateSettings } from './settings.js';
+import { controlLines } from './controltext.js';
 
 /**
  * The modal sheet: pause, and settings.
@@ -87,8 +88,17 @@ function open(render: (dismiss: () => void) => HTMLElement, onClose?: () => void
   card.querySelector('button')?.focus();
 }
 
-/** A titled list of full-width choices. The shape both sheets take. */
-export function showSheet(title: string, sub: string | null, actions: SheetAction[]): void {
+/**
+ * A titled list of full-width choices. The shape both sheets take.
+ *
+ * `controls` adds the same strip the briefing carries, from the same source.
+ * The briefing is where nobody misses it; this is where you go when you have
+ * forgotten, and two hand-written copies of "how do I fire" would disagree
+ * inside a month (201-qa 005).
+ */
+export function showSheet(
+  title: string, sub: string | null, actions: SheetAction[], controls = false,
+): void {
   open((dismiss) => {
     const body = document.createElement('div');
     body.className = 'sheet-body';
@@ -125,6 +135,24 @@ export function showSheet(title: string, sub: string | null, actions: SheetActio
       }
     }
     body.appendChild(list);
+
+    if (controls) {
+      const strip = document.createElement('div');
+      strip.className = 'sheet-controls';
+      for (const line of controlLines()) {
+        const row = document.createElement('div');
+        row.className = 'briefing-ctl';
+        Object.assign(row.appendChild(document.createElement('span')), {
+          className: 'briefing-ctl-a', textContent: line.action,
+        });
+        Object.assign(row.appendChild(document.createElement('span')), {
+          className: 'briefing-ctl-k', textContent: line.keys,
+        });
+        strip.appendChild(row);
+      }
+      body.appendChild(strip);
+    }
+
     return body;
   });
 }
