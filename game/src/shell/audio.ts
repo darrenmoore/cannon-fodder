@@ -135,6 +135,25 @@ function thump(freq: number, duration: number, gain: number): void {
   osc.stop(now + duration + 0.02);
 }
 
+/**
+ * Rate limit, shared by every sound the simulation can fire many times a step.
+ *
+ * Wading is the case that needs it: the splash particle is gated at an 8%
+ * chance per soldier per step, which is about five a second each and thirty a
+ * second for a squad crossing the sink together. Thirty overlapping plips is
+ * not a splash, it is a hiss. Same for a scream mechanic that repeats on a
+ * timer for every wounded man on the map.
+ *
+ * Keyed by sound rather than global, so a squelch never eats a klaxon.
+ */
+const lastAt = new Map<string, number>();
+function gate(key: string, minGap: number): boolean {
+  const now = performance.now() / 1000;
+  if (now - (lastAt.get(key) ?? -1e9) < minGap) return false;
+  lastAt.set(key, now);
+  return true;
+}
+
 /** Slight pitch variation per shot, or a burst turns into a machine-gun drone. */
 const vary = (base: number, spread = 0.18): number => base * (1 + (Math.random() * 2 - 1) * spread);
 
@@ -168,6 +187,30 @@ export const sfxPickup = (): void => {
   osc.connect(env).connect(master);
   osc.start(now);
   osc.stop(now + 0.18);
+};
+
+/**
+ * A boot going into water, or into the bog.
+ *
+ * Two patches off one call, because the simulation already decides which it is
+ * -- `fx.splash(pos, thick)` has branched on it since the mud got its own
+ * material -- and there was simply never a sound on the other end (201-qa 013).
+ *
+ * Water is bright and over immediately: a high band, no body. Mud is the same
+ * gesture slowed down and given a bottom, which is what a suck sounds like --
+ * the filter sweep is the pull and the sine under it is the weight.
+ *
+ * Deliberately does not touch `loudAt`. Wading is not gunfire, and scattering
+ * the birds every time somebody crosses a stream would make the ambience lie.
+ */
+export const sfxWade = (thick: boolean): void => {
+  if (!gate('wade', 0.12)) return;
+  if (thick) {
+    burst({ duration: 0.26, gain: 0.2, freq: vary(420, 0.1), q: 1.2, sweepTo: 140, type: 'lowpass' });
+    thump(vary(90, 0.12), 0.2, 0.22);
+    return;
+  }
+  burst({ duration: 0.09, gain: 0.22, freq: vary(2200), q: 2, sweepTo: vary(900) });
 };
 
 export const sfxOrder = (): void => burst({ duration: 0.045, gain: 0.16, freq: 2400, q: 3 });

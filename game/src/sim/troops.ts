@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { RANKS, rankTier } from './campaign.js';
-import { sfxOrder } from '../shell/audio.js';
+import { sfxOrder, sfxWade } from '../shell/audio.js';
 import { buildingAt } from './buildings.js';
 import { fire } from './combat.js';
 import { raiseNotice } from './enemies.js';
@@ -235,7 +235,13 @@ export function stepSoldiers(world: World, dt: number, manualFireAt: Vec2 | null
       // side that knows what he is standing in; `fx` decides what that looks
       // like, so no colour crosses the boundary.
       const t = tileAt(world.map, Math.floor(s.pos.x / world.map.tile), Math.floor(s.pos.y / world.map.tile));
-      world.fx.splash(s.pos, t === Tile.Quicksand);
+      const thick = t === Tile.Quicksand;
+      world.fx.splash(s.pos, thick);
+      // Your own men only. Every enemy in the sink wading audibly, most of them
+      // under fog, is noise the player cannot read anything from -- and the
+      // splash reads as a thing your squad is doing (201-qa 013). The emitter
+      // rate-limits itself; six men crossing together would otherwise hiss.
+      sfxWade(thick);
     }
 
     updateFiring(world, s, manualFireAt, cfg, cursor);
