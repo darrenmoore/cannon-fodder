@@ -136,7 +136,10 @@ function scaledStats(kind: EnemyKind, levers: Levers): EnemyStats {
     spread: base.spread * levers.spread,
     aggroRadius: base.aggroRadius * levers.aggro,
     reactionTime: base.reactionTime * levers.reaction,
-    preferredRange: base.preferredRange,
+    // Scaled by the same lever as fireRange: an unscaled standing distance
+    // meant veteran could *hit* from 6.2 tiles but still walked to 4.4 before
+    // settling -- reading as "they want to get very close before firing".
+    preferredRange: base.preferredRange * levers.fireRange,
   };
 }
 

@@ -19,7 +19,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 012 | [narrows-harder](012-narrows-harder.md) | open (after 003, 010) | |
 | 013 | [timer-clarity](013-timer-clarity.md) | done | (see log) |
 | 014 | [landing-ground-start](014-landing-ground-start.md) | blocked on Q3 (via 010) | |
-| 015 | [veteran-fire-range](015-veteran-fire-range.md) | open | |
+| 015 | [veteran-fire-range](015-veteran-fire-range.md) | done | (see log) |
 | 016 | [patrols](016-patrols.md) | open | |
 | 017 | [through-the-wall](017-through-the-wall.md) | open (after 010, 016) | |
 | 018 | [not-a-sound-variant](018-not-a-sound-variant.md) | open (after 010, 016) | |
