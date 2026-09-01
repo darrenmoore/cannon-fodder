@@ -4,7 +4,7 @@
  * A levelled building has to read as levelled from across the map.
  */
 
-import { addOutline, hashRnd, makeCanvas, px, rect } from './paint.js';
+import { TENT_RAMP, addOutline, hashRnd, makeCanvas, px, rect } from './paint.js';
 import type { Sprite } from './paint.js';
 
 /**
@@ -499,20 +499,73 @@ export function bakeFactory(stage: number): Sprite {
   return c;
 }
 
-/** MASH tent: where rescued hostages are delivered. */
+/**
+ * MASH tent: where rescued hostages are delivered, and what a `reach` mission
+ * often ends at -- so it is stared at while a whole squad walks to it.
+ *
+ * Redrawn for 200-qa 009. The first tent was one linear triangle in two
+ * eye-picked tones with a vertical stripe every fifth column: no lit slope,
+ * no grain, no shadow, nothing breaking the silhouette -- flat by every rule
+ * in docs/style.md at once. This one follows the vocabulary: NW light (west
+ * slope lit, east shaded, dither seam on the ridge line), three tones from
+ * the `tent` ramp in paint.ts, a hard cast shadow down-right, guy ropes as
+ * deliberate staircases, and a sagging ridge so no edge is ruler-straight.
+ */
 export function bakeTent(): Sprite {
   const { c, g } = makeCanvas(30, 26);
+  const rnd = hashRnd(53);
+  const P = TENT_RAMP;
+
+  // Cast shadow first, hard-edged, down and right -- the same move that
+  // roots the bunker. Without it the tent floats.
+  rect(g, 5, 23, 24, 2, '#26261f');
+
+  // The canvas. Apex at top, and the ridge line sags a pixel over mid-span
+  // the way loaded canvas actually hangs.
   for (let y = 0; y < 18; y++) {
-    const half = Math.round((y / 17) * 13);
+    const sag = y < 2 ? 1 : 0;
+    const half = Math.round(((y + sag) / 17) * 13);
     for (let x = 15 - half; x <= 14 + half; x++) {
-      px(g, x, y + 6, x % 5 === 0 ? '#b0a88f' : '#cdc5ab');
+      const west = x < 15;
+      // A dither seam where the two slopes meet, not a hard split.
+      const seam = Math.abs(x - 14.5) < 1.6 && (x + y) % 2 === 0;
+      let colour = seam ? P.canvas : west ? P.canvasLit : P.canvasShade;
+      // Grain: single pixels of the middle tone, never a pattern.
+      if (rnd() < 0.09) colour = P.canvas;
+      // The lit edge itself: the western hem catches the sun.
+      if (x === 15 - half && west) colour = P.canvasLit;
+      if (x === 14 + half && !west) colour = P.outline;
+      px(g, x, y + 6, colour);
     }
   }
-  rect(g, 11, 16, 8, 8, '#3a3529');
-  // Red cross.
-  rect(g, 13, 10, 4, 2, '#c8352a');
-  rect(g, 14, 9, 2, 4, '#c8352a');
-  addOutline(c, '#3a3529');
+
+  // Guy ropes: deliberate staircases from mid-slope to stakes in the ground.
+  for (const side of [-1, 1] as const) {
+    let x = 15 + side * 8;
+    let y = 16;
+    for (let s = 0; s < 4; s++) {
+      px(g, x, y, P.rope);
+      x += side;
+      if (s % 2 === 1) continue;
+      y += 1;
+    }
+    px(g, x, y + 1, P.rope);
+    px(g, x, y + 2, '#26261f'); // the stake
+  }
+
+  // The doorway: flap tied back, black interior, lit jamb on the west side.
+  rect(g, 12, 17, 6, 7, P.interior);
+  rect(g, 11, 17, 1, 7, P.canvasLit);
+  rect(g, 18, 17, 1, 7, P.canvasShade);
+
+  // The red cross rides a canvas patch so it reads at map zoom. Red is
+  // damage everywhere else in the game; this is the one standing exception,
+  // inherited -- it is how the extraction has always been marked.
+  rect(g, 12, 9, 6, 6, P.patch);
+  rect(g, 13, 11, 4, 2, P.cross);
+  rect(g, 14, 10, 2, 4, P.cross);
+
+  addOutline(c, P.outline);
   return c;
 }
 

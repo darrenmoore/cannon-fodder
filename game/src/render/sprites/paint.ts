@@ -169,6 +169,24 @@ export const PALETTES = {
   },
 } satisfies Record<string, Palette>;
 
+/**
+ * The MASH tent's canvas: sun-bleached khaki in three tones plus rope and
+ * interior. A named ramp rather than literals in the bake, because the old
+ * tent picked two colours by eye and had no shaded slope at all -- which is
+ * most of why it read as flat (200-qa 009). Its own shape, not a `Palette`:
+ * that interface describes a soldier.
+ */
+export const TENT_RAMP = {
+  outline: '#2a2620',
+  canvasLit: '#d8d0b4',
+  canvas: '#b8b096',
+  canvasShade: '#8e876f',
+  rope: '#6f684f',
+  interior: '#241f16',
+  cross: '#c8352a',
+  patch: '#e8e2cc',
+};
+
 export const makeCanvas = (w: number, h: number): { c: Sprite; g: CanvasRenderingContext2D } => {
   const c = document.createElement('canvas');
   c.width = w;
