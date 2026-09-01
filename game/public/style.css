@@ -556,6 +556,20 @@ html, body {
  * Wears the plotted banner. Nothing new is baked for it.
  */
 #comms {
+  /*
+   * One cell of the portrait strip on screen, and the bezel that rings it.
+   *
+   * 64px source at 2x. Twice the portrait this panel carried before, which is
+   * what the owner asked for -- and a 96px cut at 2x, which was the first
+   * answer, made the panel about two and a half times its old height and ate
+   * the bottom of the map. 64 is also the size that lets the phone breakpoint
+   * drop to 1x: every scale here is a whole number, because half a pixel of a
+   * pixel sprite is the one thing that would give it a soft edge.
+   */
+  --comms-face-px: 128px;
+  --comms-bezel-px: 144px;
+  --comms-inset: calc((var(--comms-bezel-px) - var(--comms-face-px)) / 2);
+
   position: absolute;
   /*
    * Centred by auto margins between left:0 and right:0, not by `left: 50%`
@@ -567,18 +581,27 @@ html, body {
    * a 495px panel while 760 was available and three would have done. Five rows
    * of panel over the bottom of the map is a real cost on a map you are trying
    * to read.
+   *
+   * `width` rather than the `fit-content` + `max-width` this carried before:
+   * with a 208px portrait beside it, fit-content still squeezed the line into
+   * six short rows, because the widest thing the text *has* to be is one word.
    */
   left: 0;
   right: 0;
   margin: 0 auto;
-  width: fit-content;
+  width: min(780px, calc(100% - 32px));
   bottom: calc(10px + var(--safe-b));
   z-index: 5;
-  max-width: min(760px, calc(100% - 32px));
-  padding: 10px 22px;
+  padding: 2px 8px;
   background: none;
-  border: 12px solid transparent;
-  border-image: var(--sk-banner) var(--sk-slice-banner) fill / 12px round;
+  /* Its own plate, not the shared banner. A banner is a ribbon -- pointed at
+     both ends, meant to carry a mission name -- and this is a slab someone is
+     talking out of. The slice is four numbers because the bottom notches are
+     anchored to the bottom corners and must land inside the side slices; see
+     skin.ts. */
+  border-style: solid;
+  border-width: 12px 30px 18px 30px;
+  border-image: var(--sk-comms) var(--sk-slice-comms) fill / 12px 30px 18px 30px round;
   image-rendering: pixelated;
   text-align: center;
   pointer-events: none;
@@ -590,24 +613,42 @@ html, body {
 #comms[hidden] { display: none; }
 
 /* With a face, the strip becomes two columns: the portrait on the left, as the
-   brief asked, and what he is saying beside it. */
+   brief asked, and what he is saying beside it. Aligned to the *top* rather
+   than centred -- a portrait this tall centred against three lines of text
+   floats, where lining its head up with his name reads as a person speaking. */
 #comms.with-face {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 18px;
   text-align: left;
 }
+
+/*
+ * The portrait: two background layers on one element.
+ *
+ * The bezel is listed first and so paints on top, which is what makes him look
+ * set into the panel rather than stuck onto it. Under it sits the whole frame
+ * strip, moved by `--comms-face-f` -- a frame *number* that ui/comms.ts writes
+ * on a timer. One decoded image and an offset, rather than a different data URL
+ * per frame: swapping the image made the first play of each frame a fresh
+ * decode, and a talk loop reaches every frame inside the first second of a
+ * line, so the first cycle flashed.
+ */
 .comms-face {
+  --comms-face-f: 0;
   flex: 0 0 auto;
-  width: 64px;
-  height: 64px;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  /* Whole-number scaling of a 32px sprite, nearest-neighbour: a portrait with
-     a soft edge would be the one anti-aliased thing on the screen. */
+  width: var(--comms-bezel-px);
+  height: var(--comms-bezel-px);
+  background-repeat: no-repeat, no-repeat;
+  background-position:
+    0 0,
+    calc(var(--comms-inset) - var(--comms-face-f) * var(--comms-face-px)) var(--comms-inset);
+  background-size:
+    var(--comms-bezel-px) var(--comms-bezel-px),
+    calc(var(--comms-face-n) * var(--comms-face-px)) var(--comms-face-px);
   image-rendering: pixelated;
 }
-.comms-said { flex: 1 1 auto; min-width: 0; }
+.comms-said { flex: 1 1 auto; min-width: 0; padding-top: 6px; }
 #comms.in {
   transform: translateY(0);
   opacity: 1;
@@ -622,7 +663,7 @@ html, body {
   font-size: var(--fs-micro);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .comms-line {
   display: block;
@@ -631,13 +672,33 @@ html, body {
   letter-spacing: var(--track-tight);
   text-transform: uppercase;
   line-height: 1.45;
+  /* Reserve the space the finished line will need, so the plate does not grow
+     a row at a time while type() appends. Invisible on a one-line banner; very
+     visible on a plate this tall with a portrait holding its height. */
+  min-height: calc(3 * 1.45em);
 }
 
-/* Above the action bar's cluster rather than beside it, so the strip does not
-   move when a player switches hands. The cluster is roughly a tap target tall
-   plus its own inset. */
-@media (max-width: 900px) {
-  #comms { bottom: calc(20px + var(--tap) + var(--safe-b)); }
+/*
+ * Above the action bar's cluster rather than beside it, so the strip does not
+ * move when a player switches hands. The cluster is roughly a tap target tall
+ * plus its own inset.
+ *
+ * The portrait drops to 1x here, not to something in between: at 360px wide a
+ * 192px portrait leaves about 130px for the text and turns three lines into
+ * eight. Also keyed on height, because a landscape phone has the width and not
+ * the room.
+ */
+@media (max-width: 900px), (max-height: 560px) {
+  #comms {
+    --comms-face-px: 64px;
+    --comms-bezel-px: 72px;
+    bottom: calc(20px + var(--tap) + var(--safe-b));
+    border-width: 10px 22px 14px 22px;
+    border-image-width: 10px 22px 14px 22px;
+    width: calc(100% - 20px);
+  }
+  #comms.with-face { gap: 10px; }
+  .comms-line { min-height: calc(4 * 1.45em); }
 }
 
 /* --- result
@@ -2548,7 +2609,7 @@ html, body {
 .mi-desc { margin: 0; color: var(--ink); font-size: var(--fs-body); line-height: 1.5; }
 .mi-meta { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .mi-chip {
-  padding: 4px 10px;
+  padding: 2px 8px;
   background: rgba(0, 0, 0, 0.28);
   box-shadow: inset 0 0 0 1px #3b4d26;
   color: #9db97a;

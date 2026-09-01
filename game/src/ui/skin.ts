@@ -26,8 +26,8 @@
  * size it will be drawn would be a bigger data URL saying the same thing.
  */
 
-import { bakeBanner, bakeButton, bakeFrame, bakeIcon, bakeLock, bakePlate, bakeStar } from '../render/sprites/plates.js';
-import { SPEAKER_FRAMES, SPEAKER_IDS, bakeSpeaker } from '../render/sprites/speaker.js';
+import { bakeBanner, bakeBezel, bakeButton, bakeComms, bakeFrame, bakeIcon, bakeLock, bakePlate, bakeStar } from '../render/sprites/plates.js';
+import { SPEAKER_IDS, bakeSpeakerStrip, speakerFace } from '../render/sprites/speaker.js';
 import { buildAtlas } from '../render/sprites/index.js';
 import type { Sprite } from '../render/sprites/paint.js';
 
@@ -46,6 +46,14 @@ const BTN = { w: 64, h: 64 };
 const PLATE = { w: 64, h: 64 };
 const FRAME = { w: 128, h: 128 };
 const BANNER = { w: 160, h: 40 };
+/*
+ * The comms plate is baked wider and taller than the others because its corner
+ * slices carry more than a corner: the bottom notches are anchored a fixed
+ * distance in from each bottom corner, so they have to fall *inside* the left
+ * and right slices. A border-image repeats its bottom-middle slice, and a notch
+ * caught in that one would come back once per tile all the way across.
+ */
+const COMMS = { w: 160, h: 120 };
 
 /**
  * The slice, in source pixels, that each corner occupies.
@@ -56,7 +64,7 @@ const BANNER = { w: 160, h: 40 };
  * Slicing tighter cuts a corner in half; slicing wider drags the middle's
  * texture into it and the stretch shows.
  */
-const SLICE = { btn: 10, plate: 10, frame: 18, banner: 12 };
+const SLICE = { btn: 10, plate: 10, frame: 18, banner: 12, comms: [12, 30, 18, 30] };
 
 const url = (s: Sprite): string => `url("${s.toDataURL('image/png')}")`;
 
@@ -86,6 +94,7 @@ export function installSkin(): void {
 
     '--sk-frame': url(bakeFrame(FRAME.w, FRAME.h, 'brass', true)),
     '--sk-banner': url(bakeBanner(BANNER.w, BANNER.h, { stars: false })),
+    '--sk-comms': url(bakeComms(COMMS.w, COMMS.h)),
 
     '--sk-ic-door': url(bakeIcon('door')),
     '--sk-ic-restart': url(bakeIcon('restart')),
@@ -104,19 +113,33 @@ export function installSkin(): void {
     '--sk-slice-plate': String(SLICE.plate),
     '--sk-slice-frame': String(SLICE.frame),
     '--sk-slice-banner': String(SLICE.banner),
+    // Four numbers, not one: see COMMS above.
+    '--sk-slice-comms': SLICE.comms.join(' '),
   };
 
   /*
-   * Comms portraits, one property per speaker per frame:
-   * `--sk-face-trumper-0`. Published the same way as the logo -- used at its
-   * own size, not sliced -- and keyed by id so a second speaker is a second
-   * entry in the art table and nothing here changes (201-qa 007).
+   * Comms portraits: **one strip per speaker**, not one property per frame.
+   *
+   * The per-frame version worked and was still wrong. Swapping
+   * `background-image` between six data URLs means the first play of each frame
+   * is a fresh decode, and a talk loop reaches every frame inside the first
+   * second of a line -- so the first cycle flashed. One image, decoded once,
+   * moved with `background-position`, cannot.
+   *
+   * It also shortens `comms.ts`'s reach into the art. It still builds one var
+   * name from the speaker's id -- `--sk-face-${portrait}` -- which is fine,
+   * because that id comes out of the SPEAKERS table rather than being written
+   * down there. What it no longer does is rebuild that name on every frame of
+   * every loop: the frame is a *number* set on the element, and the stylesheet
+   * turns it into an offset (201-qa 007).
    */
   for (const id of SPEAKER_IDS) {
-    for (let f = 0; f < SPEAKER_FRAMES; f++) {
-      set[`--sk-face-${id}-${f}`] = url(bakeSpeaker(id, f));
-    }
+    set[`--sk-face-${id}`] = url(bakeSpeakerStrip(id));
+    set[`--sk-face-${id}-n`] = String(speakerFace(id).count);
   }
+  // One cell is square and the same for every speaker, so it is published once.
+  set['--sk-face-cell'] = `${speakerFace(SPEAKER_IDS[0]).cell}px`;
+  set['--sk-bezel'] = url(bakeBezel(speakerFace(SPEAKER_IDS[0]).cell));
 
   const root = document.documentElement;
   for (const [k, v] of Object.entries(set)) root.style.setProperty(k, v);

@@ -1,0 +1,494 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Trumper frame bench</title>
+<style>
+  :root {
+    --plate: #3f4618; --ink: #e8e2c4; --dim: #9aa07a; --gold: #e8bc44;
+    --bg: #14170c; --line: #2c3116;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 13px/1.5 ui-monospace, Consolas, monospace;
+  }
+  h2 { font-size: 13px; letter-spacing: .18em; text-transform: uppercase;
+       color: var(--gold); margin: 0 0 10px; font-weight: 600; }
+  .wrap { max-width: 1500px; margin: 0 auto; padding: 18px; }
+  section { border: 1px solid var(--line); padding: 14px; margin-bottom: 16px; background: #191d10; }
+  canvas { image-rendering: pixelated; display: block; }
+  .muted { color: var(--dim); }
+  .row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+  label { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; white-space: nowrap; }
+  input[type=range] { width: 130px; vertical-align: middle; }
+  input[type=number] { width: 56px; background: #0e1108; color: var(--ink);
+                        border: 1px solid var(--line); padding: 2px 4px; font: inherit; }
+  select, button { background: #0e1108; color: var(--ink); border: 1px solid #4a5320;
+                   padding: 4px 9px; font: inherit; cursor: pointer; }
+  button:hover { background: #222811; }
+  button.on { background: var(--plate); border-color: var(--gold); color: #fff; }
+  #sheetWrap { position: relative; display: inline-block; }
+  #grid { position: absolute; inset: 0; }
+  .cellbtn { position: absolute; border: 2px solid transparent; cursor: pointer; }
+  .cellbtn:hover { border-color: #ffffff66; }
+  .cellbtn.picked { border-color: var(--gold); }
+  .cellbtn span { position: absolute; left: 3px; top: 2px; background: #000c;
+                  padding: 0 4px; font-size: 11px; }
+  .frames { display: flex; gap: 10px; flex-wrap: wrap; }
+  .frame { border: 1px solid var(--line); padding: 8px; background: #0e1108; }
+  .frame.sel { border-color: var(--gold); }
+  .frame h3 { margin: 0 0 6px; font-size: 11px; letter-spacing: .1em; color: var(--dim); }
+  .nudge { display: flex; gap: 4px; align-items: center; margin-top: 6px; font-size: 11px; }
+  .nudge input { width: 42px; }
+  pre { background: #0b0d06; border: 1px solid var(--line); padding: 12px;
+        overflow: auto; color: #cfe0a0; font-size: 12px; max-height: 260px; }
+  .hint { color: var(--dim); margin: 0 0 12px; }
+  kbd { background: #0e1108; border: 1px solid #4a5320; padding: 0 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section>
+  <h2>1 &mdash; pick the frames</h2>
+  <p class="hint">
+    Click a cell to add or remove it. <b>Order matters</b> &mdash; the number on a
+    picked cell is its place in the strip, and <b>frame 0 is the resting face</b>
+    (what he shows when he is not talking). Click a picked cell again to drop it.
+    <br>Row 1 is him talking, row 2 is him idling, and <b>r0c3 has the hand in it</b>.
+  </p>
+  <div id="sheetWrap">
+    <canvas id="sheet"></canvas>
+    <div id="grid"></div>
+  </div>
+</section>
+
+<section>
+  <h2>2 &mdash; size and crop</h2>
+  <p class="hint">
+    <b>Alignment</b> is the thing that makes it look like talking rather than
+    lurching. <i>Union</i> crops every cell to one box measured across all of
+    them &mdash; if the artist drew the two rows at different sizes, his whole
+    head changes scale when he opens his mouth. <i>Per cell</i> measures each one
+    separately and lines them up on a common anchor, which usually fixes it.
+  </p>
+  <div class="row">
+    <label>cell px
+      <select id="cell">
+        <option>64</option><option>80</option><option selected>96</option>
+        <option>112</option><option>128</option><option>160</option>
+      </select>
+    </label>
+    <label>fill <input type="range" id="fill" min="0.7" max="1.4" step="0.02" value="1">
+      <span id="fillV" class="muted">1.00</span></label>
+    <label>colours <input type="range" id="colors" min="8" max="64" step="2" value="34">
+      <span id="colorsV" class="muted">34</span></label>
+    <label>align
+      <select id="align">
+        <option value="union">union (one box for all)</option>
+        <option value="cell-top" selected>per cell, top + centre</option>
+        <option value="cell-bottom">per cell, bottom + centre</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="disc" checked> clip to disc</label>
+  </div>
+</section>
+
+<section>
+  <h2>3 &mdash; nudge each frame</h2>
+  <p class="hint">
+    Each frame is shown with <b>frame 0 ghosted over it in red</b>. Anything
+    that should not move &mdash; the cap, the badge, the eyes &mdash; should sit
+    dead on top of its ghost. If it does not, nudge with the arrows, or click the
+    frame and use <kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd>.
+  </p>
+  <div class="row" style="margin-bottom:10px">
+    <label>zoom <input type="range" id="zoom" min="1" max="6" step="1" value="3">
+      <span id="zoomV" class="muted">3x</span></label>
+    <label><input type="checkbox" id="ghost" checked> show ghost</label>
+    <button id="autoAlign">auto-align to frame 0</button>
+    <button id="resetNudge">reset nudges</button>
+  </div>
+  <div class="frames" id="frames"></div>
+</section>
+
+<section>
+  <h2>4 &mdash; does it look like talking?</h2>
+  <div class="row">
+    <div>
+      <div class="row" style="margin-bottom:10px">
+        <label>hold ms <input type="range" id="hold" min="40" max="240" step="5" value="90">
+          <span id="holdV" class="muted">90</span></label>
+        <label>order <input type="text" id="order" value="" style="width:190px;background:#0e1108;color:var(--ink);border:1px solid var(--line);padding:3px 6px;font:inherit"></label>
+        <button id="talkBtn" class="on">talking</button>
+        <button id="restBtn">resting</button>
+      </div>
+      <div class="row">
+        <div><div class="muted" style="margin-bottom:4px">1x</div><canvas id="p1"></canvas></div>
+        <div><div class="muted" style="margin-bottom:4px">2x &mdash; the size it ships at</div><canvas id="p2"></canvas></div>
+        <div><div class="muted" style="margin-bottom:4px">4x</div><canvas id="p4"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>5 &mdash; hand this back</h2>
+  <p class="hint">Copy this and paste it to me, and I will bake exactly it.</p>
+  <button id="copy">copy</button>
+  <pre id="out"></pre>
+</section>
+
+</div>
+
+<script src="sheet.js" onerror="document.body.insertAdjacentHTML('afterbegin',
+  '<section style='border-color:#a0512a'><h2 style='color:#e8a04a'>sheet.js is missing</h2>' +
+  '<p class='hint'>It is gitignored -- 2.8MB of base64 of a PNG that is already in the repo. ' +
+  'Regenerate it from <code>game/</code>:</p>' +
+  '<pre>printf 'window.SHEET = \\"data:image/png;base64,' &gt; ../temp/sheet.js
+' +
+  'base64 -w0 ../docs/original-images/elements/major-trumper.png &gt;&gt; ../temp/sheet.js
+' +
+  'printf '\\";\n' &gt;&gt; ../temp/sheet.js</pre></section>')"></script>
+<script>
+/* The sheet's content box, measured with tools/pixelate.mjs read --rect auto. */
+const SHEET = { x: 18, y: 22, w: 2147, h: 696, cols: 6, rows: 2 };
+const isChroma = (r, g, b) => g > 150 && r < 130 && b < 130;
+
+let img, cellData = [];           // one keyed+measured canvas per sheet cell
+/*
+ * Sheet cell indices, in strip order. Frame 0 is the rest face.
+ *
+ * r1c0 to rest, then the talking row in a shape that opens and closes rather
+ * than flapping. r0c3 is deliberately absent -- that is the one with the raised
+ * hand in it.
+ */
+let picked = [6, 0, 4, 1, 2, 5];
+let nudge = {};                   // cellIndex -> [dx, dy]
+let selected = null;
+let playing = true, playIdx = 0, timer = 0;
+
+const $ = (id) => document.getElementById(id);
+const cellIndex = (r, c) => r * SHEET.cols + c;
+
+/* ---------------------------------------------------------------- the sheet */
+
+function keyCell(r, c) {
+  const cw = SHEET.w / SHEET.cols, ch = SHEET.h / SHEET.rows;
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(cw); cv.height = Math.round(ch);
+  const g = cv.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, SHEET.x + c * cw, SHEET.y + r * ch, cw, ch, 0, 0, cv.width, cv.height);
+  const d = g.getImageData(0, 0, cv.width, cv.height);
+  let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+  for (let i = 0; i < d.data.length; i += 4) {
+    if (isChroma(d.data[i], d.data[i + 1], d.data[i + 2])) {
+      d.data[i] = d.data[i + 1] = d.data[i + 2] = d.data[i + 3] = 0;
+      continue;
+    }
+    if (d.data[i + 3] < 8) continue;
+    const p = i / 4, x = p % cv.width, y = (p / cv.width) | 0;
+    if (x < x0) x0 = x; if (x > x1) x1 = x;
+    if (y < y0) y0 = y; if (y > y1) y1 = y;
+  }
+  g.putImageData(d, 0, 0);
+  return { cv, box: { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 } };
+}
+
+function buildSheetView() {
+  const c = $('sheet'), g = c.getContext('2d');
+  const scale = 1180 / img.naturalWidth;
+  c.width = Math.round(img.naturalWidth * scale);
+  c.height = Math.round(img.naturalHeight * scale);
+  g.imageSmoothingEnabled = true;
+  g.drawImage(img, 0, 0, c.width, c.height);
+
+  const grid = $('grid');
+  grid.innerHTML = '';
+  const cw = (SHEET.w / SHEET.cols) * scale, ch = (SHEET.h / SHEET.rows) * scale;
+  for (let r = 0; r < SHEET.rows; r++) {
+    for (let col = 0; col < SHEET.cols; col++) {
+      const i = cellIndex(r, col);
+      const b = document.createElement('div');
+      b.className = 'cellbtn';
+      b.style.left = (SHEET.x * scale + col * cw) + 'px';
+      b.style.top = (SHEET.y * scale + r * ch) + 'px';
+      b.style.width = cw + 'px'; b.style.height = ch + 'px';
+      b.innerHTML = '<span></span>';
+      b.onclick = () => {
+        const at = picked.indexOf(i);
+        if (at === -1) picked.push(i); else picked.splice(at, 1);
+        redraw();
+      };
+      b.dataset.i = i;
+      grid.appendChild(b);
+    }
+  }
+}
+
+function paintGridLabels() {
+  for (const b of document.querySelectorAll('.cellbtn')) {
+    const i = +b.dataset.i, at = picked.indexOf(i);
+    b.classList.toggle('picked', at !== -1);
+    const r = (i / SHEET.cols) | 0, c = i % SHEET.cols;
+    b.querySelector('span').textContent =
+      at === -1 ? `r${r}c${c}` : `${at}  ← r${r}c${c}`;
+  }
+}
+
+/* ------------------------------------------------------------ frame drawing */
+
+/** The crop box for one picked cell, under the current alignment mode. */
+function boxFor(i, mode, union) {
+  const b = cellData[i].box;
+  if (mode === 'union') return { ...union };
+  // Per cell: its own size, but anchored so a common landmark lines up.
+  const x = b.x + b.w / 2 - union.w / 2;
+  const y = mode === 'cell-top' ? b.y : b.y + b.h - union.h;
+  return { x, y, w: union.w, h: union.h };
+}
+
+function drawFrame(target, i, cell, opts) {
+  const g = target.getContext('2d');
+  g.clearRect(0, 0, target.width, target.height);
+  const mode = $('align').value;
+  const union = unionBox();
+  const box = boxFor(i, mode, union);
+  const fill = +$('fill').value;
+  const dw = Math.round(cell * fill);
+  const dh = Math.round((box.h * dw) / box.w);
+  const dx = Math.round((cell - dw) / 2) + (nudge[i]?.[0] ?? 0);
+  const dy = (cell - dh) + (nudge[i]?.[1] ?? 0);
+
+  const tmp = document.createElement('canvas');
+  tmp.width = cell; tmp.height = cell;
+  const tg = tmp.getContext('2d', { willReadFrequently: true });
+  tg.imageSmoothingEnabled = true;
+  tg.imageSmoothingQuality = 'high';
+  tg.drawImage(cellData[i].cv, box.x, box.y, box.w, box.h, dx, dy, dw, dh);
+
+  // Hard alpha, then the disc: exactly what the cutter does.
+  const d = tg.getImageData(0, 0, cell, cell);
+  const r = cell / 2 - 0.5, mid = cell / 2 - 0.5;
+  for (let p = 0; p < d.data.length; p += 4) {
+    const q = p / 4, x = q % cell, y = (q / cell) | 0;
+    const out = $('disc').checked && ((x - mid) ** 2 + (y - mid) ** 2 > r * r);
+    if (out) { d.data[p + 3] = 0; continue; }
+    if (d.data[p + 3] >= 128) { d.data[p + 3] = 255; continue; }
+    if ($('disc').checked) {                       // the housing behind him
+      d.data[p] = 0x1a; d.data[p + 1] = 0x20; d.data[p + 2] = 0x10; d.data[p + 3] = 255;
+    } else d.data[p + 3] = 0;
+  }
+  tg.putImageData(d, 0, 0);
+
+  const z = opts.zoom;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(tmp, 0, 0, cell * z, cell * z);
+
+  /*
+   * The ghost goes on *top*, not behind.
+   *
+   * Behind was the obvious way round and it does not work: with the disc on,
+   * every pixel inside the circle is opaque -- he is drawn over a housing
+   * colour -- so a ghost underneath is covered completely and the panel just
+   * looks like it has no ghost. Over the top at low alpha, tinted red, a
+   * misaligned cap shows up as a red fringe on one side of it.
+   */
+  if (opts.ghost && i !== picked[0]) {
+    const ghost = document.createElement('canvas');
+    ghost.width = ghost.height = cell;
+    drawRaw(ghost, picked[0], cell);
+    g.globalAlpha = 0.4;
+    g.filter = 'grayscale(1) sepia(1) saturate(8) hue-rotate(-30deg)';
+    g.drawImage(ghost, 0, 0, cell * z, cell * z);
+    g.filter = 'none'; g.globalAlpha = 1;
+  }
+}
+
+/** The same crop without the disc or the ghost, for the ghost itself. */
+function drawRaw(target, i, cell) {
+  const g = target.getContext('2d');
+  const union = unionBox();
+  const box = boxFor(i, $('align').value, union);
+  const fill = +$('fill').value;
+  const dw = Math.round(cell * fill), dh = Math.round((box.h * dw) / box.w);
+  const dx = Math.round((cell - dw) / 2) + (nudge[i]?.[0] ?? 0);
+  const dy = (cell - dh) + (nudge[i]?.[1] ?? 0);
+  g.imageSmoothingEnabled = true;
+  g.drawImage(cellData[i].cv, box.x, box.y, box.w, box.h, dx, dy, dw, dh);
+}
+
+let _union = null, _unionKey = '';
+function unionBox() {
+  const key = picked.join(',');
+  if (_unionKey === key && _union) return _union;
+  let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+  for (const i of picked) {
+    const b = cellData[i].box;
+    x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
+    x1 = Math.max(x1, b.x + b.w - 1); y1 = Math.max(y1, b.y + b.h - 1);
+  }
+  _union = { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  _unionKey = key;
+  return _union;
+}
+
+/* ------------------------------------------------------------------- panels */
+
+function buildFrames() {
+  const host = $('frames');
+  host.innerHTML = '';
+  const cell = +$('cell').value, z = +$('zoom').value;
+  picked.forEach((i, at) => {
+    const r = (i / SHEET.cols) | 0, c = i % SHEET.cols;
+    const div = document.createElement('div');
+    div.className = 'frame' + (selected === i ? ' sel' : '');
+    div.onclick = () => { selected = i; buildFrames(); };
+    const cv = document.createElement('canvas');
+    cv.width = cell * z; cv.height = cell * z;
+    div.innerHTML = `<h3>${at}${at === 0 ? ' · rest' : ''} · r${r}c${c}</h3>`;
+    div.appendChild(cv);
+    const n = document.createElement('div');
+    n.className = 'nudge';
+    n.innerHTML =
+      `x <input type="number" value="${nudge[i]?.[0] ?? 0}" step="1">` +
+      `y <input type="number" value="${nudge[i]?.[1] ?? 0}" step="1">`;
+    const [nx, ny] = n.querySelectorAll('input');
+    const set = () => { nudge[i] = [+nx.value | 0, +ny.value | 0]; redraw(); };
+    nx.onchange = set; ny.onchange = set;
+    nx.onclick = ny.onclick = (e) => e.stopPropagation();
+    div.appendChild(n);
+    host.appendChild(div);
+    drawFrame(cv, i, cell, { zoom: z, ghost: $('ghost').checked });
+  });
+}
+
+function paintPlayback() {
+  const cell = +$('cell').value;
+  const order = parseOrder();
+  const i = playing && order.length ? order[playIdx % order.length] : 0;
+  const src = picked[i] ?? picked[0];
+  if (src === undefined) return;
+  for (const [id, z] of [['p1', 1], ['p2', 2], ['p4', 4]]) {
+    const cv = $(id);
+    cv.width = cell * z; cv.height = cell * z;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#3f4618';
+    g.fillRect(0, 0, cv.width, cv.height);
+    drawFrame(cv, src, cell, { zoom: z, ghost: false });
+  }
+}
+
+function parseOrder() {
+  const raw = $('order').value.trim();
+  if (!raw) return picked.map((_, i) => i).slice(1);
+  return raw.split(/[\s,]+/).map(Number).filter((n) => !isNaN(n) && n < picked.length);
+}
+
+function tick() {
+  clearTimeout(timer);
+  paintPlayback();
+  playIdx++;
+  timer = setTimeout(tick, +$('hold').value);
+}
+
+function emit() {
+  $('out').textContent = JSON.stringify({
+    cell: +$('cell').value,
+    fill: +$('fill').value,
+    colors: +$('colors').value,
+    align: $('align').value,
+    holdMs: +$('hold').value,
+    frames: picked.map((i) => ({
+      cell: `r${(i / SHEET.cols) | 0}c${i % SHEET.cols}`,
+      nudge: nudge[i] ?? [0, 0],
+    })),
+    talkOrder: parseOrder(),
+  }, null, 2);
+}
+
+function redraw() {
+  paintGridLabels();
+  buildFrames();
+  paintPlayback();
+  emit();
+}
+
+/* --------------------------------------------------------------------- wire */
+
+for (const id of ['cell', 'fill', 'colors', 'align', 'disc', 'zoom', 'ghost', 'hold', 'order']) {
+  $(id).addEventListener('input', () => {
+    $('fillV').textContent = (+$('fill').value).toFixed(2);
+    $('colorsV').textContent = $('colors').value;
+    $('zoomV').textContent = $('zoom').value + 'x';
+    $('holdV').textContent = $('hold').value;
+    _unionKey = '';
+    redraw();
+  });
+}
+
+$('resetNudge').onclick = () => { nudge = {}; redraw(); };
+$('talkBtn').onclick = () => { playing = true; $('talkBtn').classList.add('on'); $('restBtn').classList.remove('on'); };
+$('restBtn').onclick = () => { playing = false; $('restBtn').classList.add('on'); $('talkBtn').classList.remove('on'); paintPlayback(); };
+$('copy').onclick = () => navigator.clipboard.writeText($('out').textContent);
+
+/*
+ * Auto-align: slide each frame against frame 0 and keep the offset with the
+ * least difference over the top third only -- the cap and the brow, which do
+ * not move. Matching over the whole face would try to line the mouths up too,
+ * which is the one thing that is *supposed* to differ.
+ */
+$('autoAlign').onclick = () => {
+  const cell = +$('cell').value;
+  const ref = document.createElement('canvas'); ref.width = ref.height = cell;
+  const save = { ...nudge };
+  nudge = {};
+  drawRaw(ref, picked[0], cell);
+  const R = ref.getContext('2d').getImageData(0, 0, cell, cell).data;
+  const band = Math.round(cell * 0.42);
+  for (const i of picked.slice(1)) {
+    let best = [0, 0], bestScore = Infinity;
+    for (let dy = -6; dy <= 6; dy++) {
+      for (let dx = -6; dx <= 6; dx++) {
+        nudge[i] = [dx, dy];
+        const t = document.createElement('canvas'); t.width = t.height = cell;
+        drawRaw(t, i, cell);
+        const T = t.getContext('2d').getImageData(0, 0, cell, band).data;
+        let s = 0;
+        for (let p = 0; p < T.length; p += 4) {
+          s += Math.abs(T[p] - R[p]) + Math.abs(T[p + 1] - R[p + 1]) + Math.abs(T[p + 2] - R[p + 2])
+             + Math.abs(T[p + 3] - R[p + 3]);
+        }
+        if (s < bestScore) { bestScore = s; best = [dx, dy]; }
+      }
+    }
+    nudge[i] = best;
+  }
+  nudge[picked[0]] = save[picked[0]] ?? [0, 0];
+  redraw();
+};
+
+addEventListener('keydown', (e) => {
+  if (selected === null) return;
+  const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+  if (!d) return;
+  e.preventDefault();
+  const n = nudge[selected] ?? [0, 0];
+  nudge[selected] = [n[0] + d[0], n[1] + d[1]];
+  redraw();
+});
+
+img = new Image();
+img.onload = () => {
+  for (let r = 0; r < SHEET.rows; r++) {
+    for (let c = 0; c < SHEET.cols; c++) cellData[cellIndex(r, c)] = keyCell(r, c);
+  }
+  buildSheetView();
+  redraw();
+  tick();
+};
+img.src = window.SHEET;
+</script>
+</body>
+</html>

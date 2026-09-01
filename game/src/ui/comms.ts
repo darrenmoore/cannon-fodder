@@ -37,6 +37,7 @@ import { DEFAULT_SPEAKER } from '../sim/map.js';
 import type { GameMap } from '../sim/map.js';
 import { reducedMotion, settings } from './settings.js';
 import { sfxVoice } from '../shell/audio.js';
+import { speakerFace } from '../render/sprites/speaker.js';
 import type { SpeakerVoice } from '../shell/audio.js';
 
 /** Who is talking. */
@@ -102,7 +103,7 @@ let root: HTMLElement | null = null;
 let inTimer = 0;
 let outTimer = 0;
 let typeTimer = 0;
-let blinkTimer = 0;
+let faceTimer = 0;
 
 /** Seconds per character while typing. */
 const TYPE_STEP = 0.035;
@@ -124,11 +125,11 @@ const clearTimers = (): void => {
   window.clearTimeout(inTimer);
   window.clearTimeout(outTimer);
   window.clearInterval(typeTimer);
-  window.clearInterval(blinkTimer);
+  window.clearInterval(faceTimer);
   inTimer = 0;
   outTimer = 0;
   typeTimer = 0;
-  blinkTimer = 0;
+  faceTimer = 0;
 };
 
 /**
@@ -139,13 +140,23 @@ const clearTimers = (): void => {
  * deliberately two different checks: somebody who has turned motion down has
  * not necessarily turned the sound off.
  */
-function type(into: HTMLElement, text: string, voice: SpeakerVoice | undefined): void {
+function type(
+  into: HTMLElement, text: string, voice: SpeakerVoice | undefined, mouth: Mouth,
+): void {
   if (reducedMotion() || !voice) { into.textContent = text; return; }
   into.textContent = '';
   let i = 0;
   let spoken = 0;
+  // The mouth starts with the first character and stops with the last, so the
+  // two are driven by one thing and cannot drift apart.
+  mouth.talk();
   typeTimer = window.setInterval(() => {
-    if (i >= text.length) { window.clearInterval(typeTimer); typeTimer = 0; return; }
+    if (i >= text.length) {
+      window.clearInterval(typeTimer);
+      typeTimer = 0;
+      mouth.rest();
+      return;
+    }
     const ch = text[i++];
     into.textContent += ch;
     if (SILENT.test(ch)) return;
@@ -155,29 +166,74 @@ function type(into: HTMLElement, text: string, voice: SpeakerVoice | undefined):
   }, TYPE_STEP * 1000);
 }
 
+/** A portrait that can be told to start and stop talking. */
+interface Mouth {
+  talk(): void;
+  rest(): void;
+}
+
 /**
- * Blinks the portrait, and shifts it a pixel now and then.
+ * Drives a portrait: one interval, one state, one handle to cancel.
  *
- * Frames on a timer rather than a tween, per the house rule that sprite work
- * has no interpolation -- a fading eyelid is alpha by another name. Stopped
- * under reduced motion, where a face twitching in the corner is exactly the
- * thing the setting exists to turn off.
+ * **Why one timer.** The version before this ran a blink interval that
+ * scheduled three bare `setTimeout`s per blink, and only the interval was
+ * cancellable -- retract the panel mid-blink and three callbacks still fired,
+ * writing onto an element that had already been thrown away. Harmless while it
+ * was a blink; with a loop running for the whole of a line it becomes the thing
+ * that fights the retract. So: one interval, and `clearTimers` has exactly one
+ * thing to clear.
+ *
+ * **Why it does not stop mid-word.** `rest()` lets the current cycle finish
+ * rather than cutting to the idle frame where it stands. A mouth that snaps
+ * shut on the last character reads as the animation being switched off; one
+ * that closes and then rests reads as someone finishing a sentence.
+ *
+ * **Why the frame goes in `dataset` too.** It is what `tools/moment.mjs` reads
+ * to prove the mouth is moving during a line and stopped after it -- which is
+ * the one thing about this that a screenshot cannot show.
+ *
+ * This file still names no speaker: it asks `speakerFace` what the loops are
+ * and sets a frame *number*, so a second portrait needs nothing here.
  */
-function animate(face: HTMLElement, portrait: string): void {
+function animate(face: HTMLElement, portrait: string): Mouth {
   const set = (f: number): void => {
-    face.style.backgroundImage = `var(--sk-face-${portrait}-${f})`;
+    face.style.setProperty('--comms-face-f', String(f));
+    face.dataset.frame = String(f);
   };
-  set(0);
-  if (reducedMotion()) return;
-  blinkTimer = window.setInterval(() => {
-    // Roughly one blink every few seconds, at an uneven beat: a metronome
-    // blink reads as a fault.
-    if (Math.random() > 0.25) return;
-    set(1);
-    window.setTimeout(() => set(2), 70);
-    window.setTimeout(() => set(1), 150);
-    window.setTimeout(() => set(0), 220);
-  }, 900);
+  const { idle, talk } = speakerFace(portrait);
+
+  set(idle.frames[0]);
+  // Under reduced motion the face is a still. `type()` puts the whole line up
+  // at once anyway, so there is nothing for a mouth to be in step with, and a
+  // no-op Mouth means the call site needs no branch.
+  if (reducedMotion()) return { talk: () => {}, rest: () => {} };
+
+  let loop = idle;
+  let stopping = false;
+  let i = 0;
+  let held = 0;
+  const TICK = 30;
+
+  faceTimer = window.setInterval(() => {
+    held += TICK / 1000;
+    if (held < loop.hold) return;
+    held = 0;
+    i++;
+    if (i >= loop.frames.length) {
+      i = 0;
+      if (stopping) { stopping = false; loop = idle; }
+    }
+    set(loop.frames[i]);
+  }, TICK);
+
+  return {
+    talk: () => {
+      if (loop === talk) { stopping = false; return; }
+      loop = talk; stopping = false; i = 0; held = 0;
+      set(talk.frames[0]);
+    },
+    rest: () => { if (loop === talk) stopping = true; },
+  };
 }
 
 /** Puts one transmission on the wire. Replaces whatever was up. */
@@ -192,10 +248,17 @@ export function showTransmission(
   el.dataset.speaker = speaker.id;
   el.classList.toggle('with-face', !!speaker.portrait);
 
+  let mouth: Mouth = { talk: () => {}, rest: () => {} };
   if (speaker.portrait) {
     const face = Object.assign(document.createElement('i'), { className: 'comms-face' });
+    // The strip and its frame count are the speaker's; the frame *number* is
+    // this file's. See skin.ts for why that split matters.
+    // Bezel first: the first layer in the list paints on top, and the ring has
+    // to sit over the portrait or he is pasted onto it rather than set into it.
+    face.style.backgroundImage = `var(--sk-bezel), var(--sk-face-${speaker.portrait})`;
+    face.style.setProperty('--comms-face-n', `var(--sk-face-${speaker.portrait}-n)`);
     el.appendChild(face);
-    animate(face, speaker.portrait);
+    mouth = animate(face, speaker.portrait);
   }
 
   const said = document.createElement('div');
@@ -224,7 +287,7 @@ export function showTransmission(
       // The typing starts once it has arrived, not on the way in: a line being
       // spelled out while the panel is still sliding reads as two effects
       // fighting rather than as someone talking.
-      window.setTimeout(() => type(line, text, speaker.voice), reducedMotion() ? 0 : 260);
+      window.setTimeout(() => type(line, text, speaker.voice, mouth), reducedMotion() ? 0 : 260);
     });
     if (!opts.sticky) {
       outTimer = window.setTimeout(hideComms, (opts.seconds ?? DEFAULT_SECONDS) * 1000);

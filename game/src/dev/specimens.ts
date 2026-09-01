@@ -19,7 +19,8 @@
  * in the atlas, where the game can actually use it, and it appears here free.
  */
 
-import { TONE_NAMES, bakeBanner, bakeButton, bakeFrame, bakeIcon, bakeLock, bakePlate, bakeStar } from '../render/sprites/plates.js';
+import { TONE_NAMES, bakeBanner, bakeBezel, bakeButton, bakeComms, bakeFrame, bakeIcon, bakeLock, bakePlate, bakeStar } from '../render/sprites/plates.js';
+import { SPEAKER_IDS, bakeSpeaker, bakeSpeakerStrip, speakerFace } from '../render/sprites/speaker.js';
 import { chromeText } from '../render/chromefont.js';
 import type { Sprite } from '../render/sprites/paint.js';
 
@@ -174,5 +175,37 @@ export const SPECIMENS: Specimen[] = [
     group: 'ui',
     note: 'a level-select container: 280x150, brass and steel',
     draw: () => [bakeFrame(280, 150), bakeFrame(280, 150, 'steel')],
+  },
+
+  /*
+   * The comms panel's own hardware.
+   *
+   * Two widths, because the plate ships as a border-image and the notches and
+   * corner rivets are anchored to the corners: whether they survive is a
+   * question about the narrow one, and it cannot be asked of a single sample.
+   */
+  {
+    id: 'ui.comms',
+    group: 'ui',
+    note: '400x150 and 240x96 -- the bottom notches and the corner rivets have to survive both',
+    draw: () => [bakeComms(400, 150), bakeComms(240, 96)],
+  },
+  ...SPEAKER_IDS.map((id): Specimen => ({
+    id: `ui.face.${id}`,
+    group: 'ui',
+    note: 'every frame, strip order: rest, blink half, blink shut, then the four mouths',
+    draw: () => Array.from({ length: speakerFace(id).count }, (_, f) => bakeSpeaker(id, f)),
+  })),
+  ...SPEAKER_IDS.map((id): Specimen => ({
+    id: `ui.face.${id}.strip`,
+    group: 'ui',
+    note: 'the sheet as skin.ts bakes it -- one image, background-position picks the cell',
+    draw: () => bakeSpeakerStrip(id),
+  })),
+  {
+    id: 'ui.bezel',
+    group: 'ui',
+    note: 'the ring the portrait is set into: a 64px window, and a 32px one',
+    draw: () => [bakeBezel(64), bakeBezel(32)],
   },
 ];

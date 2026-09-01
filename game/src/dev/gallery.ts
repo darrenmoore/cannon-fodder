@@ -194,6 +194,27 @@ function collect(): Entry[] {
     if (s.note) entry.note = s.note;
     out.push(entry);
   }
+
+  /*
+   * The same debug handle `buildAtlas()` publishes, for the half of the drawing
+   * that is not in the atlas.
+   *
+   * `tools/pixelate.mjs beside` resolves its `--sprite` against `window.__atlas`,
+   * which means the parametric bakes -- every plate, the comms panel, the
+   * portrait -- were the one part of the chrome that could not be put beside the
+   * reference it was copied from. Since blindness is the whole value of that
+   * comparison, and these are precisely the sprites most often argued about,
+   * they go on a global too. Flat and keyed by the specimen id, because a
+   * specimen id is already a string and nesting it would only have to be undone.
+   */
+  const bench: Record<string, Sprite[]> = {};
+  for (const e of out) {
+    if (SPECIMENS.some((s) => s.id === e.id)) Object.defineProperty(bench, e.id, {
+      enumerable: true, configurable: true, get: e.sprites,
+    });
+  }
+  (window as unknown as { __specimens: Record<string, Sprite[]> }).__specimens = bench;
+
   return out;
 }
 

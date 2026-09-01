@@ -27,7 +27,7 @@
 import { Mask, paintBevel } from './bevel.js';
 import { addOutline } from './paint.js';
 import { chromeText, chromeTextWidth } from '../chromefont.js';
-import { makeCanvas } from './paint.js';
+import { makeCanvas, rect } from './paint.js';
 import type { BevelStyle } from './bevel.js';
 import type { Sprite } from './paint.js';
 
@@ -683,6 +683,190 @@ export function bakeFrame(w: number, h: number, tone: ToneName = 'brass', flat =
     [in4, H - in4 - NOTCH], [W - in4 - NOTCH, H - in4 - NOTCH],
   ]) field.rect(x, y, NOTCH, NOTCH, 0);
   paintBevel(g, field, 0, 0, dress(t.field));
+
+  return c;
+}
+
+/* -------------------------------------------------------------- comms panel */
+
+/**
+ * The strip Major Trumper talks out of, and the ring his face sits in.
+ *
+ * Measured off `docs/original-images/elements/comms-panel.png`, which is one
+ * long chamfered slab: a brass rim, an olive field recessed into it, a rivet
+ * inside each corner, a line scribed parallel to the field's edge, and two
+ * shallow notches bitten out of the bottom. Until now `#comms` wore
+ * `bakeBanner`, which is a *ribbon* -- pointed at both ends, meant to carry a
+ * mission name. A ribbon and a slab are different objects and the panel has
+ * been reading as the wrong one.
+ *
+ * **Why these are two functions and not one.** The plate ships to the DOM as a
+ * `border-image`: its four corners land untouched and everything between them
+ * repeats. The ring sits at a fixed inset from the *left end* and is taller
+ * than the top and bottom slices put together, so it would straddle three
+ * slices, two of which stretch. A border-image cannot carry it at any slicing.
+ * So the ring is its own sprite, stacked as a second background layer on the
+ * same element, and the plate never knows it is there.
+ */
+
+/** The bezel's ring, in pixels, either side of the window it holds. */
+const BEZEL_RING = 4;
+
+/**
+ * The ring the portrait is set into.
+ *
+ * `inner` is the window -- pass the portrait's own size and the sprite comes
+ * back `inner + 2 * BEZEL_RING` square, so the caller never does the sum.
+ *
+ * ## Why this is plotted rather than bevelled
+ *
+ * The first version handed the annulus to `paintBevel`, on the reasoning that
+ * it reads `exterior()` to tell a hole from the outside world and lights the
+ * two from opposite sides -- which is true, and still produced a ring that was
+ * clean on its lit side and visibly ragged on its shadowed one. The cause is
+ * the same one written down beside `rivet()`: **at four pixels thick there is
+ * no interior for a face to sit in**, so nearly every pixel comes out as rim or
+ * shade, and which one it gets depends on a diagonal neighbour test that steps
+ * unevenly around a stepped circle. On the screen it read as damage to the
+ * panel rather than as a machined hoop.
+ *
+ * So the ring is decided per pixel, from the two radii it sits between: outer
+ * edge lit above the middle and shaded below, inner edge the other way round
+ * because the inside of a hole faces the opposite way, and the band between
+ * them the plain face tone. Same lighting model, no neighbour test, symmetric
+ * by construction.
+ *
+ * ## Why there are no screws
+ *
+ * The reference has four. They were drawn, on the diagonals, and at this ring
+ * thickness a three-pixel rivet is wider than the ring it sits on -- so it
+ * swallowed the hoop locally and read as four chips out of the rim. A clean
+ * ring beats four marks that have to be explained.
+ */
+export function bakeBezel(inner: number, tone: ToneName = 'brass'): Sprite {
+  const t = TONES[tone];
+  const size = inner + BEZEL_RING * 2;
+  const { c, g } = makeCanvas(size, size);
+  const mid = size / 2 - 0.5;
+  const rOut = size / 2 - 0.5;
+  const rIn = inner / 2 - 0.5;
+
+  const [faceLit, faceDark] = [t.frame.face[0], t.frame.face[t.frame.face.length - 1]];
+
+  for (let y = 0; y < size; y++) {
+    const dy = y - mid;
+    for (let x = 0; x < size; x++) {
+      const dx = x - mid;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > rOut * rOut || d2 <= rIn * rIn) continue;
+      const d = Math.sqrt(d2);
+      const top = dy + dx < 0;                 // north-west of the diagonal
+      let ink: string;
+      if (d >= rOut - 1) ink = top ? t.frame.rim : t.frame.shade;
+      else if (d <= rIn + 1) ink = top ? t.frame.shade : t.frame.rim;
+      else ink = top ? faceLit : faceDark;
+      rect(g, x, y, 1, 1, ink);
+    }
+  }
+
+  // The keyline, outside the hoop, so it reads against the panel behind it.
+  addOutline(c, t.frame.keyline);
+  return c;
+}
+
+export interface CommsOptions {
+  /** Two notches bitten out of the bottom edge, as the reference wears them. */
+  notches?: boolean;
+  /** See `PlateOptions.flat`. This is a border-image source, so normally true. */
+  flat?: boolean;
+}
+
+/** How deep the corner is cut. Bigger than a button's: this is a big slab. */
+const COMMS_CUT = 6;
+/** How far in from each bottom corner a notch starts, how wide, how deep. */
+const NOTCH_IN = 10;
+const NOTCH_W = 10;
+const NOTCH_D = 3;
+
+/**
+ * The comms plate, at any size.
+ *
+ * Built with the *frame* construction rather than the plate one -- rim, dark
+ * channel, ledge, field -- and that is measured, not preference. On the
+ * reference the border between the outer edge and the field is 5% of the
+ * plate's height and carries a groove down the middle of it; drawn as a
+ * button's single 3px rim it came back as a gold pinstripe round a flat green
+ * rectangle, which is what a screenshot of the first attempt shows. A slab this
+ * long needs a border with depth in it or the eye reads the field as a hole.
+ *
+ * The border widths are still absolute and still do not scale with the panel,
+ * per this file's standing rule. This is a different casting from a button, not
+ * a button stretched.
+ *
+ * The notches are placed at a **fixed inset from each bottom corner**, not at a
+ * fraction of the width as the reference has them. That is forced rather than
+ * chosen: a `border-image` repeats its bottom-middle slice, so a notch at 25%
+ * of the width would come back once per tile. Anchored to the corners they fall
+ * inside the left and right slices, land untouched at every panel width, and
+ * read as a detail of the casting -- which is what they are.
+ */
+export function bakeComms(w: number, h: number, opts: CommsOptions = {}): Sprite {
+  const t = TONES.brass;
+  const dress = opts.flat === false ? (s: BevelStyle): BevelStyle => s : flatten;
+  const W = Math.max(w, NOTCH_IN * 2 + NOTCH_W * 2 + 24), H = Math.max(h, 44);
+  const { c, g } = makeCanvas(W, H);
+
+  const shell = box(W, H, 0, COMMS_CUT);
+  if (opts.notches !== false) {
+    /*
+     * A step with a flat floor and 45-degree shoulders, not a V.
+     *
+     * A V at the end of an olive strip is what `bakeBanner` cuts, and it is
+     * exactly the read this plate exists to stop being confused with: a ribbon
+     * carrying a mission name rather than a slab someone is talking out of.
+     */
+    for (const x0 of [NOTCH_IN, W - NOTCH_IN - NOTCH_W]) {
+      for (let y = H - NOTCH_D; y < H; y++) {
+        const in1 = y - (H - NOTCH_D);
+        for (let x = x0 + in1; x < x0 + NOTCH_W - in1; x++) shell.set(x, y, 0);
+      }
+    }
+  }
+  paintBevel(g, shell, 0, 0, dress(t.frame));
+
+  // The groove, lit from the far side like any hollow -- the same two lines
+  // bakeFrame uses, and the reason the border reads as having a floor.
+  paintBevel(g, box(W, H, RIM, Math.max(1, COMMS_CUT - RIM)), 0, 0, {
+    ...t.field, face: [t.field.shade, t.field.keyline], sheen: [0.5, 0.5],
+  });
+  paintBevel(g, box(W, H, RIM + CH, Math.max(1, COMMS_CUT - RIM - CH)), 0, 0, dress(t.frame));
+
+  const in3 = RIM * 2 + CH;
+  paintBevel(g, box(W, H, in3, Math.max(1, COMMS_CUT - in3)), 0, 0, dress(t.field));
+
+  /*
+   * The scribed line: one pixel of the field's own shade, inset from its edge.
+   *
+   * Every large flat panel on the reference carries one, and it is doing real
+   * work -- a field this big with nothing on it reads as a hole rather than as
+   * a surface. One tone darker, never a second colour.
+   */
+  const s = in3 + 3;
+  const scribe = box(W, H, s, Math.max(1, COMMS_CUT - s));
+  g.fillStyle = t.field.shade;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (!scribe.at(x, y)) continue;
+      if (scribe.at(x - 1, y) && scribe.at(x + 1, y) && scribe.at(x, y - 1) && scribe.at(x, y + 1)) continue;
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+
+  const i = in3 + RIVET_INSET;
+  for (const [x, y] of [
+    [i, i], [W - i - RIVET, i],
+    [i, H - i - RIVET], [W - i - RIVET, H - i - RIVET],
+  ]) rivet(g, x, y, t);
 
   return c;
 }

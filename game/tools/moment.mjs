@@ -192,6 +192,56 @@ const MOMENTS = [
       };`,
     expect: (s) => (s.overlay ? null : 'the briefing was not up'),
   },
+  /*
+   * The comms panel, twice: mid-sentence and after it.
+   *
+   * These two are the only check in the project that the *mouth* works, and
+   * they have to assert rather than photograph. The harness freezes the
+   * simulation, but the panel runs on wall-clock timers -- the entrance, the
+   * typing and the mouth are all `setInterval` -- so a screenshot taken at the
+   * wrong moment shows a plausible panel and proves nothing about the loop.
+   *
+   * `dataset.frame`, written by ui/comms.ts on every tick, is what makes it
+   * checkable: a talking frame is any index above 0, and index 0 is the idle
+   * face from the sheet's other row.
+   */
+  {
+    name: 'comms-typing',
+    gap: 'the comms panel: plate, bezel and the mouth mid-sentence',
+    mission: 'chicken-run',
+    target: 'viewport',
+    dismiss: true,
+    note: 'Caught while the line is still typing, so the mouth is mid-loop.',
+    setup: `
+      await new Promise((r) => setTimeout(r, 3000 + 260 + 22 * 35));`,
+    check: `
+      const el = document.getElementById('comms');
+      const line = el && el.querySelector('.comms-line');
+      const face = el && el.querySelector('.comms-face');
+      return {
+        in: !!(el && el.classList.contains('in')),
+        typed: line ? line.textContent.length : 0,
+        frame: face ? Number(face.dataset.frame) : -1,
+      };`,
+    expect: (s) => (s.in && s.typed > 4 && s.frame > 0
+      ? null : `expected a panel mid-type on a talking frame, saw ${JSON.stringify(s)}`),
+  },
+  {
+    name: 'comms-rest',
+    gap: 'the comms panel: the mouth back at rest once the line has finished',
+    mission: 'chicken-run',
+    target: 'viewport',
+    dismiss: true,
+    note: 'After the last character. This is the proof the loop stops.',
+    setup: `
+      await new Promise((r) => setTimeout(r, 9000));`,
+    check: `
+      const el = document.getElementById('comms');
+      const face = el && el.querySelector('.comms-face');
+      return { frame: face ? Number(face.dataset.frame) : -1 };`,
+    expect: (s) => (s.frame === 0
+      ? null : `expected the mouth back at the idle frame, saw ${JSON.stringify(s)}`),
+  },
   // Three stages of one blast, which is the whole of gap 3: the reference is a
   // dithered sprite scattered at several stages, and ours is particles that
   // only ever look like particles.
@@ -414,6 +464,23 @@ async function main() {
 
   for (const mo of picked) {
     await page.goto(BASE, { waitUntil: 'networkidle' });
+    /*
+     * Get past the front screen if it is up.
+     *
+     * A clean Playwright profile has no saved progress, so the app opens on the
+     * front rather than on the mission list -- which this tool used to walk
+     * straight into, and then time out waiting for a menu that was never going
+     * to appear. Nothing to do with the moment being captured; it failed
+     * identically for every one of them.
+     */
+    await page.evaluate(() => {
+      const front = document.getElementById('front');
+      if (!front || front.hidden) return;
+      const btns = [...front.querySelectorAll('.fx-btn')];
+      const pick = btns.find((b) => /LEVEL SELECT/i.test(b.textContent || '')) ?? btns[0];
+      pick?.click();
+    });
+    await page.waitForTimeout(600);
     await page.waitForSelector('#menu-list .m-name', { timeout: 10000 });
     const listed = await page.$(`#menu-list button[data-id="${mo.mission}"]`);
     if (!listed) {
@@ -477,7 +544,8 @@ async function main() {
     const file = join(OUT, `${mo.name}.png`);
     const shot = mo.target === 'canvas' ? page.locator('canvas')
       : mo.target === 'hud' ? page.locator('#hud')
-        : page;
+        : mo.target === 'viewport' ? page.locator('#viewport')
+          : page;
     await shot.screenshot({ path: file });
 
     // Read after the shot, so what is reported is what was photographed.

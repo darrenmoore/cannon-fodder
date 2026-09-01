@@ -13,6 +13,17 @@ terrain is derived, and the sound effects are synthesised with WebAudio
 1 September 2026, not a precedent: adding a runtime dependency, a PNG, or a
 second audio file still breaks the premise — generate it instead.
 
+**Major Trumper's portrait is the second exception**, taken the same day and
+the same way. He was plotted by hand first; the owner looked at that beside
+`docs/original-images/elements/major-trumper.png` and chose the reference. It
+still ships no image: `tools/cut-sheet.mjs` runs by hand and writes
+`render/sprites/trumper-art.ts` — a palette and a run-length-encoded index per
+pixel, plotted at boot through the same `rect()` calls as everything else, with
+alpha hard-thresholded and the tones median-cut so no anti-aliased edge or
+gradient survives. **It covers one character.** Every plate, unit, building and
+tile is still drawn in code, and a second imported sprite is a decision to take
+again, not one already taken.
+
 ## Commands
 
 All from `game/`:

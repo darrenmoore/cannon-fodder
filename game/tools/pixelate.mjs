@@ -59,6 +59,11 @@ if (!MODE || !['read', 'beside'].includes(MODE) || !IMAGE) {
                      For art sitting on a dark ground rather than on chroma --
                      a gold glyph over shadow -- this is the whole difference
                      between reading the glyph and reading the whole picture.
+    --lum-max N      and require luminance below N. The other half of --lum, and
+                     the one that reads art *darker* than its ground: a black cap
+                     brim and a brown moustache on chroma green are both below
+                     everything around them, and --lum alone can only ever select
+                     the bright half. Pass both to read a band.
     --colors N       report the N most common colours, as hex, with counts.
     --out FILE       write the resampled region as a PNG.
     --zoom N         scale that PNG by N, nearest neighbour (default 4).
@@ -78,6 +83,7 @@ const WIDTH = Number(flag('width', 0)) || 0;
 const GRID = flag('grid', '');
 const INK = Number(flag('ink', 0.5));
 const LUM = Number(flag('lum', 0)) || 0;
+const LUM_MAX = Number(flag('lum-max', 255));
 const COLORS = Number(flag('colors', 0)) || 0;
 const OUT = flag('out', '');
 const ZOOM = Number(flag('zoom', 4));
@@ -108,7 +114,7 @@ await page.evaluate(async (url) => {
 
 /* ------------------------------------------------------------------ measure */
 
-const result = await page.evaluate(({ rect, width, grid, ink, lum, colors, sprite, zoom, mode }) => {
+const result = await page.evaluate(({ rect, width, grid, ink, lum, lumMax, colors, sprite, zoom, mode }) => {
   const img = window.__ref;
   const W = img.naturalWidth, H = img.naturalHeight;
   const src = document.createElement('canvas');
@@ -158,6 +164,16 @@ const result = await page.evaluate(({ rect, width, grid, ink, lum, colors, sprit
    * Keyed before downsampling rather than after, because keying afterwards
    * leaves a green fringe: the resample has already averaged green into every
    * edge pixel, and no threshold recovers what was mixed.
+   *
+   * **Keyed to transparent, not to grey.** It used to paint the ground
+   * `#6b6b66` here, and that quietly broke every masked measurement: the mask
+   * pass below re-tests `isChroma` on the *resampled* buffer, where the ground
+   * is no longer green, so the test never fired -- and grey's luminance is 117,
+   * which clears any sane `--lum`. The result was a perfectly confident,
+   * perfectly inverted mask: background as ink, art as holes. The grey is now
+   * painted once, at the very end, *under* the resampled image, which gives the
+   * same fringe-free flat ground for `beside` and leaves alpha meaning what it
+   * says everywhere in between.
    */
   const flat = document.createElement('canvas');
   flat.width = box.w; flat.height = box.h;
@@ -166,7 +182,7 @@ const result = await page.evaluate(({ rect, width, grid, ink, lum, colors, sprit
   const fd = fg.getImageData(0, 0, box.w, box.h);
   for (let i = 0; i < fd.data.length; i += 4) {
     if (!isChroma(fd.data[i], fd.data[i + 1], fd.data[i + 2])) continue;
-    fd.data[i] = 0x6b; fd.data[i + 1] = 0x6b; fd.data[i + 2] = 0x66;
+    fd.data[i] = 0; fd.data[i + 1] = 0; fd.data[i + 2] = 0; fd.data[i + 3] = 0;
   }
   fg.putImageData(fd, 0, 0);
 
@@ -191,8 +207,12 @@ const result = await page.evaluate(({ rect, width, grid, ink, lum, colors, sprit
         for (let x = x0; x < x1; x++) {
           const i = (y * tw + x) * 4;
           tot++;
+          // Alpha alone decides what is background: the chroma was keyed to
+          // transparent above, so a second isChroma test here would only ever
+          // punch holes in art that happens to be green -- of which this game
+          // has a great deal.
           const bright = S[i] * 0.3 + S[i + 1] * 0.6 + S[i + 2] * 0.1;
-          if (S[i + 3] > 128 && !isChroma(S[i], S[i + 1], S[i + 2]) && bright >= lum) lit++;
+          if (S[i + 3] > 128 && bright >= lum && bright <= lumMax) lit++;
         }
       }
       row += lit / Math.max(1, tot) >= ink ? '#' : '.';
@@ -245,7 +265,7 @@ const result = await page.evaluate(({ rect, width, grid, ink, lum, colors, sprit
   }
 
   return { box, tw, th, rows, palette, png, ours: ours ? [ours.width, ours.height] : null };
-}, { rect: RECT, width: WIDTH, grid: GRID, ink: INK, lum: LUM, colors: COLORS, sprite: SPRITE, zoom: ZOOM, mode: MODE });
+}, { rect: RECT, width: WIDTH, grid: GRID, ink: INK, lum: LUM, lumMax: LUM_MAX, colors: COLORS, sprite: SPRITE, zoom: ZOOM, mode: MODE });
 
 await browser.close();
 

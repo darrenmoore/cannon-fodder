@@ -14,3 +14,9 @@ game/shots/
 game/public/sprites.js
 game/public/sprites.js.map
 game/public/sprites.html
+
+# The frame bench's copy of the reference sheet: 2.8MB of base64 regenerated in
+# one command, and the PNG it comes from is already tracked beside it. The bench
+# itself (temp/trumper-frames.html) IS tracked -- it is what settled which cells
+# Major Trumper animates on, and cut-sheet.mjs cites it.
+temp/sheet.js
