@@ -14,25 +14,24 @@ Two briefs feed this directory. The mapping from paragraph to issue:
 
 | # | issue | status | commit |
 |---|---|---|---|
-| 001 | [mine-depth-sort](001-mine-depth-sort.md) | done | |
-| 002 | [favicon](002-favicon.md) | done | |
+| 001 | [mine-depth-sort](001-mine-depth-sort.md) | done | c854a85 |
+| 002 | [favicon](002-favicon.md) | done | 5ea3c29 |
 | 003 | [music-on-first-visit](003-music-on-first-visit.md) | done -- already true, no work | |
-| 004 | [imbf-footer](004-imbf-footer.md) | done | |
+| 004 | [imbf-footer](004-imbf-footer.md) | done | 4a4738e |
 | 005 | [briefing-screen](005-briefing-screen.md) | open -- second sitting waits on 006 | |
-| 006 | [mac-fire-key](006-mac-fire-key.md) | done | |
+| 006 | [mac-fire-key](006-mac-fire-key.md) | done | 196d0dc |
 | 007 | [comms-panel](007-comms-panel.md) | open -- Q1 answered; sitting 1 can start, 2 waits on 005 + 006 | |
 | 008 | [merged-into-007](008-merged-into-007.md) | done -- merged, no work | |
-| 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | done | |
-| 010 | [hiding-in-cover](010-hiding-in-cover.md) | done | |
-| 011 | [end-of-mission-stats](011-end-of-mission-stats.md) | done | |
-| 012 | [shell-casings](012-shell-casings.md) | done | |
-| 013 | [wading-sfx](013-wading-sfx.md) | done | |
-| 014 | [wounded-scream](014-wounded-scream.md) | done | |
-| 015 | [wave-klaxon](015-wave-klaxon.md) | done | |
-| 016 | [collapse-rumble](016-collapse-rumble.md) | done | |
+| 009 | [no-autopause-over-a-dialog](009-no-autopause-over-a-dialog.md) | done | bac15ec |
+| 010 | [hiding-in-cover](010-hiding-in-cover.md) | done | 1df5840 |
+| 011 | [end-of-mission-stats](011-end-of-mission-stats.md) | done | b18dce8 |
+| 012 | [shell-casings](012-shell-casings.md) | done | cca4aa0 |
+| 013 | [wading-sfx](013-wading-sfx.md) | done | 3722cbe |
+| 014 | [wounded-scream](014-wounded-scream.md) | done | 91fbe9e |
+| 015 | [wave-klaxon](015-wave-klaxon.md) | done | d64b299 |
+| 016 | [collapse-rumble](016-collapse-rumble.md) | done | 0847faa |
 | 017 | [theme-ambience-beds](017-theme-ambience-beds.md) | done -- already built, no work | |
-| 018 | [ui-clicks](018-ui-clicks.md) | done | |
-
+| 018 | [ui-clicks](018-ui-clicks.md) | done | 663af0b |
 ## Suggested order
 
 `009` and `006` first -- both are a handful of lines and both fix something a
@@ -108,3 +107,37 @@ outside all of it and can be picked up at any point.
   which is what makes the next character free. 007 is four sittings and will
   land as four commits, all tagged `201-qa 007`; the panel and the tutorial
   copy are shippable without any face or voice at all.
+
+- **2026-09-01, working session** -- thirteen landed, one commit each, leaving
+  005 and 007. In order: 009 (auto-pause), 006 (the F key), 001 (the mine),
+  002 (the favicon), 004 (the IMBF credit), 018 (UI clicks), 013 (wading),
+  015 (the klaxon), 016 (collapse), 014 (the scream), 012 (casings),
+  011 (end-panel stats), 010 (concealment).
+
+  Five things the *spec* had not found, each caught by driving the real game
+  rather than by reading:
+
+  - **006** -- `onUp` never calls `fireUp()`; it idles the aim itself. So a
+    fourth site had to learn about the F key, and without it holding F and
+    clicking the right button left the player holding a dead key.
+  - **002** -- a double hyphen inside an SVG comment is an XML parse error,
+    not a warning. The house em dash is exactly that pair, so the first draft
+    of the icon's docblock silently broke the whole file and every reference
+    to it rendered as a broken image.
+  - **004** -- `#front` is itself the scroll container, so an absolutely
+    positioned footer rode the mission list up and off the top of the screen.
+  - **011** -- the end panel read `world.time`, which keeps running while the
+    banner holds, so it printed a time two seconds slower than the "fastest"
+    ribbon directly beneath it. Only the screenshot showed it.
+  - **010** -- the balance pass the decision demanded was run twice. The first
+    version returned identical numbers on both builds because it measured
+    nothing at all; the second showed the feared imbalance does not appear,
+    and *why*: the dense maps were already concealing, because inside a grass
+    field the tiles between two men are grass too.
+
+  Three harness lessons worth keeping: `PLAY NOW` picks the first *unplayed*
+  mission, so a test that clears a map then replays it silently moves to a
+  different one; a result panel must be waited out before the next one is
+  read, or every assertion after the first reads a stale card; and
+  `Tile.Tree` is 2, which an early "clear lane" filter let through and so
+  measured a treeline instead of the mechanic.
