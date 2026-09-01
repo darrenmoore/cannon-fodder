@@ -26,7 +26,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 019 | [narrows-forest](019-narrows-forest.md) | open | |
 | 020 | [swim-for-it](020-swim-for-it.md) | done | 3032db4 |
 | 021 | [sink-waves](021-sink-waves.md) | done | e04472d |
-| 022 | [dust-devils](022-dust-devils.md) | open -- re-judge difficulty first, 003 landed | |
+| 022 | [dust-devils](022-dust-devils.md) | done | (see log) |
 | 023 | [grenade-pickups](023-grenade-pickups.md) | done | e553ec2 |
 | 024 | [pause-left-menu](024-pause-left-menu.md) | done | a4c5298 |
 | 025 | [guide-arrow](025-guide-arrow.md) | done | 989cc08 |

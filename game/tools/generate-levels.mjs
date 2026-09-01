@@ -1954,6 +1954,32 @@ function populate(g, place, spec, at) {
   place.put('c', spawn.x + 9, spawn.y, 6);
   place.put('c', pick(1).x, pick(1).y, 7);
   for (let i = 0; i < 2; i++) place.put('o', pick(i + 2).x, pick(i + 2).y, 6, 5);
+
+  /*
+   * Camps: garrisoned spots a table row pins by hand, as map fractions.
+   *
+   * The layouts route everything through their hubs, which is what leaves a
+   * corner of the map empty when no hub landed there -- Dust Devils shipped
+   * with a bare bottom-left quarter (200-qa 022). `camps` lets a row say
+   * "and put something *there*" without the mission graduating to a
+   * hand-written builder: a clearing, riflemen, a short patrol beat between
+   * two nodes, barrels, optionally spawner huts. Skipped wholesale on wave
+   * maps, whose fields must open empty.
+   */
+  for (const camp of waveMission ? [] : spec.camps ?? []) {
+    const cx = Math.round(g.w * camp.at[0]);
+    const cy = Math.round(g.h * camp.at[1]);
+    clearing(g, cx, cy, 6);
+    for (let i = 0; i < (camp.huts ?? 0); i++) {
+      building(g, cx - 5 + (i % 2) * 8, cy - 4 + ((i / 2) | 0) * 7, 2, 2, HUT);
+    }
+    for (let i = 0; i < (camp.guards ?? 0); i++) place.put('E', cx, cy, 6, 3);
+    for (let i = 0; i < (camp.barrels ?? 0); i++) place.put('o', cx, cy, 7, 4);
+    // Two nodes eight tiles apart: inside chaining range, so the camp's
+    // guards march a short fixed beat rather than standing in a ring.
+    place.put('p', cx - 4, cy, 3, 3);
+    place.put('p', cx + 4, cy, 3, 3);
+  }
 }
 
 /** Builds a mission from a layout rather than from a hand-written builder. */
@@ -2242,6 +2268,10 @@ const CAMPAIGN = [
   },
   {
     id: 'dust-devils', layout: 'ridgeline', doctrine: 'hunters', order: 41, seed: 706233, w: 104, h: 80,
+    // The ridgeline's hubs left the bottom-left quarter bare (200-qa 022);
+    // a pinned camp with a marched beat fills it without rerolling a map the
+    // owner called nice.
+    camps: [{ at: [0.16, 0.82], guards: 5, barrels: 2 }],
     name: 'Dust Devils', theme: 'desert', objective: 'eliminate',
     mechanic: 'high ground, both ways',
     brief: 'They own the ridge and they will not stay on it. Take it anyway.',
