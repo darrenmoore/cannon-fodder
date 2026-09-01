@@ -19,7 +19,7 @@ import type { Camera } from './camera.js';
 import type { GameMap } from '../sim/map.js';
 import type { Atlas, Foliage, Sprite } from './sprites/index.js';
 import type { TerrainInfo } from './terrain.js';
-import type { Actor, Building, Enemy, Hostage, Vec2 } from '../types.js';
+import type { Actor, Building, Crate, Enemy, Hostage, Mine, Supply, Vec2 } from '../types.js';
 import type { World } from '../sim/world.js';
 
 /**
@@ -87,6 +87,21 @@ interface SceneryItem {
   buildingId?: number;
 }
 
+/**
+ * One thing to draw, and where its feet are.
+ *
+ * Mines, crates and supply boxes joined the actors and the scenery here rather
+ * than staying in the "on top of the world" pass, because a thing standing on
+ * the ground is occluded by whatever stands in front of it. A mine drawn after
+ * every soldier put its casing through the head of the man walking past it,
+ * which is what the owner saw; a crate is taller and read worse (201-qa 001).
+ *
+ * Only the *body* of each moved. Their overlays -- a triggered mine's shock
+ * ring and blink, a crate's findability pulse -- stay in the later pass on
+ * purpose: those are signals to the player, not objects in the world, and a
+ * warning hidden behind the man who set it off is the one frame he most needs
+ * to see.
+ */
 interface DrawItem {
   sortY: number;
   scenery?: SceneryItem;
@@ -94,6 +109,9 @@ interface DrawItem {
   building?: Building;
   actor?: Actor;
   hostage?: Hostage;
+  mine?: Mine;
+  crate?: Crate;
+  supply?: Supply;
 }
 
 /** Scrambles a tile coordinate pair, so sprite variants do not visibly band. */
@@ -474,12 +492,37 @@ export class Renderer {
       if (!world.fog.isVisible(h.pos.x, h.pos.y)) continue;
       this.drawList.push({ sortY: h.pos.y, hostage: h });
     }
+    // Ground furniture, sorted with everything else so a soldier in front of a
+    // crate is in front of it and a soldier behind a mine is behind it. The
+    // margin is generous because these sprites are drawn from their feet
+    // upward and a tall barrel is still visible with its base off-screen.
+    for (const m of world.mines) {
+      if (!m.alive) continue;
+      if (m.pos.x < viewL - 16 || m.pos.x > viewR + 16) continue;
+      if (m.pos.y < viewT - 24 || m.pos.y > viewB + 16) continue;
+      this.drawList.push({ sortY: m.pos.y, mine: m });
+    }
+    for (const c of world.crates) {
+      if (!c.alive) continue;
+      if (c.pos.x < viewL - 16 || c.pos.x > viewR + 16) continue;
+      if (c.pos.y < viewT - 24 || c.pos.y > viewB + 16) continue;
+      this.drawList.push({ sortY: c.pos.y, crate: c });
+    }
+    for (const box of world.supplies) {
+      if (!box.alive || box.collected) continue;
+      if (box.pos.x < viewL - 16 || box.pos.x > viewR + 16) continue;
+      if (box.pos.y < viewT - 24 || box.pos.y > viewB + 16) continue;
+      this.drawList.push({ sortY: box.pos.y, supply: box });
+    }
     this.drawList.sort((p, q) => p.sortY - q.sortY);
 
     for (const item of this.drawList) {
       if (item.scenery) this.drawScenery(item.scenery, item.building);
       else if (item.actor) this.drawActor(item.actor, alpha);
       else if (item.hostage) this.drawHostage(item.hostage, alpha);
+      else if (item.mine) this.drawMine(item.mine);
+      else if (item.crate) this.drawCrate(item.crate);
+      else if (item.supply) this.drawSupply(item.supply);
     }
 
     // 4. The treeline, over the actors: a soldier at the hem stands under the
@@ -489,9 +532,11 @@ export class Renderer {
     }
 
     // 5. Everything that belongs on top of the world.
-    this.drawCrates(world);
-    this.drawSupplies(world);
-    this.drawMines(world);
+    // The bodies of these went through the depth sort above; what is left is
+    // the part that must never be occluded -- a live fuse, and the pulse that
+    // says "there is a crate here" (201-qa 001).
+    this.drawCratePulses(world);
+    this.drawMineFuses(world);
     this.drawTargetMarkers(world, alpha);
     this.drawBullets(world);
     this.drawGrenades(world, alpha);
@@ -1205,38 +1250,46 @@ export class Renderer {
    * standing list of breaches, and copying it to make a new object match would
    * be spreading the bug rather than matching a style.
    */
-  private drawSupplies(world: World): void {
+  /** One supply box, from the depth sort. */
+  private drawSupply(box: Supply): void {
     const ctx = this.ctx;
     const sprite = this.atlas.supply;
-    for (const box of world.supplies) {
-      if (!box.alive || box.collected) continue;
-      const x = Math.round(box.pos.x - sprite.width / 2);
-      const y = Math.round(box.pos.y - sprite.height + 3);
-      ctx.fillStyle = '#1b2a12';
-      ctx.fillRect(x + 1, Math.round(box.pos.y) + 1, sprite.width - 2, 2);
-      ctx.drawImage(sprite, x, y);
-    }
+    const x = Math.round(box.pos.x - sprite.width / 2);
+    const y = Math.round(box.pos.y - sprite.height + 3);
+    ctx.fillStyle = '#1b2a12';
+    ctx.fillRect(x + 1, Math.round(box.pos.y) + 1, sprite.width - 2, 2);
+    ctx.drawImage(sprite, x, y);
   }
 
-  private drawCrates(world: World): void {
+  /** One crate or barrel, from the depth sort. Its pulse is drawn later. */
+  private drawCrate(c: Crate): void {
+    const ctx = this.ctx;
+    const sprite = c.barrel ? this.atlas.barrel : this.atlas.crate;
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#0d1a08';
+    ctx.beginPath();
+    ctx.ellipse(c.pos.x, c.pos.y + 3, 5.5, 2.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.drawImage(sprite, Math.round(c.pos.x - sprite.width / 2), Math.round(c.pos.y - sprite.height + 3));
+  }
+
+  /**
+   * The crate pulse, over everything.
+   *
+   * A soft blink so crates are findable in dense jungle -- which is a message
+   * to the player rather than part of the crate, so it survives the depth sort
+   * the crate itself now goes through.
+   */
+  private drawCratePulses(world: World): void {
     const ctx = this.ctx;
     for (const c of world.crates) {
-      if (!c.alive) continue;
-      const sprite = c.barrel ? this.atlas.barrel : this.atlas.crate;
-      ctx.globalAlpha = 0.3;
-      ctx.fillStyle = '#0d1a08';
-      ctx.beginPath();
-      ctx.ellipse(c.pos.x, c.pos.y + 3, 5.5, 2.4, 0, 0, Math.PI * 2);
-      ctx.fill();
+      if (!c.alive || c.barrel) continue;
+      const sprite = this.atlas.crate;
+      ctx.globalAlpha = 0.25 + Math.sin(this.time * 3) * 0.15;
+      ctx.fillStyle = '#ffe27a';
+      ctx.fillRect(Math.round(c.pos.x - 2), Math.round(c.pos.y - sprite.height + 1), 4, 1);
       ctx.globalAlpha = 1;
-      ctx.drawImage(sprite, Math.round(c.pos.x - sprite.width / 2), Math.round(c.pos.y - sprite.height + 3));
-      if (!c.barrel) {
-        // A soft pulse so crates are findable in dense jungle.
-        ctx.globalAlpha = 0.25 + Math.sin(this.time * 3) * 0.15;
-        ctx.fillStyle = '#ffe27a';
-        ctx.fillRect(Math.round(c.pos.x - 2), Math.round(c.pos.y - sprite.height + 1), 4, 1);
-        ctx.globalAlpha = 1;
-      }
     }
   }
 
@@ -1248,13 +1301,18 @@ export class Renderer {
    * skill, just an ambush you could not have seen. Visible, the same map
    * becomes a question about where the lane is.
    */
-  private drawMines(world: World): void {
+  /** One mine's casing, from the depth sort. Its fuse is drawn later. */
+  private drawMine(m: Mine): void {
+    const sprite = this.atlas.mine;
+    this.ctx.drawImage(
+      sprite, Math.round(m.pos.x - sprite.width / 2), Math.round(m.pos.y - sprite.height + 2),
+    );
+  }
+
+  private drawMineFuses(world: World): void {
     const ctx = this.ctx;
     for (const m of world.mines) {
-      if (!m.alive) continue;
-      const sprite = this.atlas.mine;
-      ctx.drawImage(sprite, Math.round(m.pos.x - sprite.width / 2), Math.round(m.pos.y - sprite.height + 2));
-      if (m.fuse < 0) continue;
+      if (!m.alive || m.fuse < 0) continue;
 
       /*
        * The fuse, drawn as a shock front rather than a circle.
