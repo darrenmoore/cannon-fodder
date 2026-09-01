@@ -242,6 +242,10 @@ export class Hud {
       this.grenades.set(String(world.grenadesHeld));
     }
     this.objective.textContent = world.status;
+    // A hold clock that stops is a mission that quietly stopped moving: say it
+    // in colour, not only in the two words at the end of the status line.
+    this.objective.classList.toggle('stalled',
+      world.map.objective === 'hold' && !world.inZone && world.phase === Phase.Playing);
 
     // Two different clocks, drawn the same way: `survive` counts you toward
     // winning, `timelimit` counts you toward losing. Both are "seconds left",
@@ -507,5 +511,8 @@ function failureReason(world: World): string {
   if (world.map.nokill && world.kills > 0) {
     return 'Somebody died. A covert approach is over the moment it makes a body.';
   }
-  return 'The squad was wiped out.';
+  // Says the part of the rules the mission never states on screen: the men
+  // you brought were the mission's whole supply (200-qa 001 -- the owner sat
+  // waiting for reinforcements that do not exist in this game).
+  return 'The squad was wiped out. Nobody else was coming.';
 }

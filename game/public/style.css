@@ -365,6 +365,9 @@ html, body {
   letter-spacing: var(--track-tight);
   text-transform: uppercase;
 }
+/* A hold whose clock is paused: the whole line goes amber, stepped, no fade —
+   the same tone the difficulty chip already uses for veteran. */
+.hud-objective.stalled { color: #f0c878; }
 
 .hud-hint {
   padding: 8px 7px 0;

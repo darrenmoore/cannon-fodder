@@ -242,7 +242,7 @@ export const OBJECTIVE_TEXT: Record<string, string> = {
 };
 
 /** What this mission asks, objective and modifiers together. */
-export function objectiveText(map: { objective: string; nokill: boolean; timeLimit?: number }): string {
+export function objectiveText(map: { objective: string; nokill: boolean; timeLimit?: number; duration?: number }): string {
   const base = OBJECTIVE_TEXT[map.objective] ?? map.objective;
   // `reach` + nokill reads better as its own line than as the general form, and
   // it is on the menu beside thirty others. `covert` reaches here only from the
@@ -252,5 +252,9 @@ export function objectiveText(map: { objective: string; nokill: boolean; timeLim
   const withRule = map.nokill && carriesRule
     ? OBJECTIVE_TEXT.covert
     : map.nokill ? `${base} — without killing anybody` : base;
-  return map.timeLimit ? `${withRule}, inside ${clock(map.timeLimit)}` : withRule;
+  if (map.timeLimit) return `${withRule}, inside ${clock(map.timeLimit)}`;
+  // A hold states its price up front the way a time limit does: "45 seconds"
+  // arriving as a surprise mid-mission read as the clock being broken.
+  if (map.objective === 'hold' && map.duration) return `${withRule} for ${clock(map.duration)}`;
+  return withRule;
 }
