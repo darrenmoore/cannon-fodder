@@ -397,6 +397,31 @@ for (const map of maps) {
     }
   });
 
+  // Dev ranges put everything on one small field on purpose; they are not
+  // missions and the opening-distance rule does not apply to them.
+  if (!map.id.startsWith('test-')) {
+    check(`${map.id}: no enemy starts within 12 tiles of the squad`, () => {
+      /*
+       * The mirror of START_CLEAR in generate-levels.mjs, run on the shipped
+       * file so hand-written maps obey it too. Twelve tiles is just past a
+       * veteran rifleman's notice radius; an enemy inside it is shooting
+       * before the player has moved, which is a lost squad, not a hard start.
+       */
+      const START_CLEAR = 12 * map.tile;
+      const enemies = [
+        ...map.enemySpawns, ...map.sniperSpawns, ...map.bazookaSpawns, ...map.officers,
+      ];
+      for (const e of enemies) {
+        for (const p of map.playerSpawns.slice(0, map.squadSize)) {
+          const d = Math.hypot(e.x - p.x, e.y - p.y);
+          assert.ok(d >= START_CLEAR,
+            `enemy at ${Math.floor(e.x / map.tile)},${Math.floor(e.y / map.tile)} is `
+            + `${(d / map.tile).toFixed(1)} tiles from a squad spawn (min 12)`);
+        }
+      }
+    });
+  }
+
   check(`${map.id}: the objective is actually completable`, () => {
     /*
      * Two fills, and which one a map is judged by is the map's own declaration.

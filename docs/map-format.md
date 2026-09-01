@@ -147,6 +147,13 @@ you from about **8 tiles** away, a bazookateer from **9**, and a sniper from
 **13**. Keep those three numbers in your head — every stealth or approach
 decision on a map is really a statement about them.
 
+One of them is enforced: **no enemy (`E`, `S`, `B`, `C`) may start within 12
+tiles of any squad spawn (`P`)** — just past a veteran rifleman's notice
+radius, so the squad always gets a beat to move before anything opens fire.
+`npm run check` fails a map that breaks it, and the generator's placer sheds
+a garrison outward from a hub that sits too near the spawn. Close openings
+are fine; an opening the player cannot survive by reacting is not.
+
 Any other character is a parse error naming the offending coordinates, so typos
 fail loudly rather than rendering as a hole in the world.
 

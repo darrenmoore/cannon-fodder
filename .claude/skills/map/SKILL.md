@@ -75,6 +75,10 @@ Each proves something the other two cannot. All three are required.
 npm run check     # parses, spawns are legal, the objective is reachable
 ```
 
+Among what it enforces: **no enemy starts within 12 tiles of a squad spawn**
+(see map-format.md). Place your garrison against that rule from the start
+rather than discovering it in red — close is fine, adjacent is a wiped squad.
+
 `npm run check` reads *every* `.map` in `data/`, so a hand-written mission is
 held to exactly the same standard as a generated one. Read the failure, fix it,
 run it again. Do not move on from a red check.

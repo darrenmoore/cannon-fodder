@@ -387,12 +387,16 @@ function squad(g, place, at, count = 6) {
     taken.add(key);
     g.set(x, y, 'P');
     place.used.push({ x, y });
+    place.squad.push({ x, y });
     placed++;
   }
   // A mission is not shippable with a short squad, and the validator will say
   // so -- but fall back to the lattice rather than silently writing five men.
   for (let i = placed; i < count; i++) {
-    g.set(at.x - 2 + (i % 3) * 2, at.y - 1 + Math.floor(i / 3) * 2, 'P');
+    const fx = at.x - 2 + (i % 3) * 2;
+    const fy = at.y - 1 + Math.floor(i / 3) * 2;
+    g.set(fx, fy, 'P');
+    place.squad.push({ x: fx, y: fy });
   }
 }
 
@@ -565,6 +569,8 @@ class Placer {
      * it at placement time is better than rerolling a whole map's seed.
      */
     this.reachable = null;
+    /** Where the squad actually stands; enemy placement keeps clear of it. */
+    this.squad = [];
   }
 
   /** Restricts future placement to what is reachable from the squad's spawn. */
@@ -573,7 +579,7 @@ class Placer {
   }
 
   /** Nearest open tile to (x, y) that is `spacing` away from everything placed. */
-  near(x, y, spread, spacing = 2) {
+  near(x, y, spread, spacing = 2, clearOfSquad = false) {
     for (let attempt = 0; attempt < 400; attempt++) {
       const a = this.g.rnd() * Math.PI * 2;
       const r = Math.sqrt(this.g.rnd()) * spread;
@@ -582,6 +588,9 @@ class Placer {
       if (!this.g.isOpen(px, py)) continue;
       if (this.reachable && !this.reachable.has(`${px},${py}`)) continue;
       if (this.used.some((p) => Math.hypot(p.x - px, p.y - py) < spacing)) continue;
+      // Half a tile over the validator's 12 so a placement can never sit
+      // exactly on the boundary it is about to be judged against.
+      if (clearOfSquad && this.squad.some((p) => Math.hypot(p.x - px, p.y - py) < 12.5)) continue;
       this.used.push({ x: px, y: py });
       return { x: px, y: py };
     }
@@ -589,7 +598,9 @@ class Placer {
   }
 
   put(marker, x, y, spread, spacing = 2) {
-    const p = this.near(x, y, spread, spacing);
+    // Enemies respect the squad's opening ground (START_CLEAR in validate());
+    // a hub beside the spawn sheds its garrison outward instead of onto it.
+    const p = this.near(x, y, spread, spacing, 'ESBC'.includes(marker));
     if (p) this.g.set(p.x, p.y, marker);
     return p;
   }
@@ -2324,6 +2335,24 @@ function validate(spec, grid) {
   const want = spec.squad ?? 6;
   if (squad.length !== want) problems.push(`expected ${want} player spawns, found ${squad.length}`);
   if (squad.length === 0) return problems;
+
+  /*
+   * Nobody opens the mission already in the fight: every enemy at least
+   * twelve tiles from every squad spawn. Twelve is just past a veteran
+   * rifleman's notice radius (132px x 1.25 over 16px tiles = 10.3) and the
+   * figure the hand-built maps had already chosen for themselves. Close is
+   * fine -- No Way Off opened a rifleman 3.6 tiles out, inside his own fire
+   * range before the player touched the mouse, and that is what this forbids.
+   * Mirrored in test/map.test.mjs, which also judges the hand-written maps
+   * this generator never sees.
+   */
+  const START_CLEAR = 12;
+  for (const e of [...find('E'), ...find('S'), ...find('B'), ...find(OFFICER)]) {
+    const d = Math.min(...squad.map((p) => Math.hypot(e.x - p.x, e.y - p.y)));
+    if (d < START_CLEAR) {
+      problems.push(`enemy at ${e.x},${e.y} starts ${d.toFixed(1)} tiles from the squad (min ${START_CLEAR})`);
+    }
+  }
 
   // Judged by the fill the map declares: strict by default, and the one that
   // treats a hut as a door only for a mission built around levelling it.

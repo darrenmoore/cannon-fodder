@@ -14,11 +14,11 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 007 | [cabin-white-line](007-cabin-white-line.md) | done | fd329dd |
 | 008 | [hut-door](008-hut-door.md) | open | |
 | 009 | [tent-sprite](009-tent-sprite.md) | open | |
-| 010 | [spawn-distance](010-spawn-distance.md) | blocked on Q3 | |
+| 010 | [spawn-distance](010-spawn-distance.md) | done | (see log) |
 | 011 | [cold-keep-note](011-cold-keep-note.md) | done -- no work, noted | |
 | 012 | [narrows-harder](012-narrows-harder.md) | open (after 003, 010) | |
 | 013 | [timer-clarity](013-timer-clarity.md) | done | d043054 |
-| 014 | [landing-ground-start](014-landing-ground-start.md) | blocked on Q3 (via 010) | |
+| 014 | [landing-ground-start](014-landing-ground-start.md) | done -- via 010, playtest verified | (see log) |
 | 015 | [veteran-fire-range](015-veteran-fire-range.md) | done | 92b72ca |
 | 016 | [patrols](016-patrols.md) | open | |
 | 017 | [through-the-wall](017-through-the-wall.md) | open (after 010, 016) | |
