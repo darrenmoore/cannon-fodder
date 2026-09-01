@@ -17,7 +17,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 | 010 | [spawn-distance](010-spawn-distance.md) | blocked on Q3 | |
 | 011 | [cold-keep-note](011-cold-keep-note.md) | done -- no work, noted | |
 | 012 | [narrows-harder](012-narrows-harder.md) | open (after 003, 010) | |
-| 013 | [timer-clarity](013-timer-clarity.md) | open | |
+| 013 | [timer-clarity](013-timer-clarity.md) | done | (see log) |
 | 014 | [landing-ground-start](014-landing-ground-start.md) | blocked on Q3 (via 010) | |
 | 015 | [veteran-fire-range](015-veteran-fire-range.md) | open | |
 | 016 | [patrols](016-patrols.md) | open | |

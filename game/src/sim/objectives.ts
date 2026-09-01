@@ -173,7 +173,7 @@ export function waveStatus(w: World): string {
   const spec = w.map.waves;
   if (!spec) return '';
   if (w.wavesSent >= spec.count) return ' · last wave';
-  return ` · wave ${w.wavesSent + 1}/${spec.count} in ${Math.max(0, Math.ceil(w.waveTimer))}s`;
+  return ` · wave ${w.wavesSent + 1}/${spec.count} in ${clock(Math.max(0, w.waveTimer))}`;
 }
 
 /** True when the mission can no longer be completed, whatever the objective. */

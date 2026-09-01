@@ -257,8 +257,9 @@ export class Hud {
       // which one he was looking at.
       const head = this.timer.root.querySelector('.ui-meter-label');
       if (head) head.textContent = world.map.timeLimit > 0 ? 'time left' : 'hold';
+      // m:ss, not a bare seconds count -- "240S" read as a unit nobody ships.
       const left = Math.max(0, span - world.time);
-      this.timer.set(1 - left / span, `${Math.ceil(left)}s`);
+      this.timer.set(1 - left / span, formatTime(Math.ceil(left)));
     } else {
       this.timer.root.hidden = true;
     }

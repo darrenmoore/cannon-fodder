@@ -199,7 +199,7 @@ export function showFront(
       const doctrine = isDoctrineId(level.doctrine) ? DOCTRINES[level.doctrine].name : level.doctrine;
       meta.appendChild(el('span', 'mi-chip', doctrine.toUpperCase()));
       if (level.nokill) meta.appendChild(el('span', 'mi-chip warn', 'NO KILLING'));
-      if (level.timeLimit > 0) meta.appendChild(el('span', 'mi-chip warn', `${level.timeLimit}S LIMIT`));
+      if (level.timeLimit > 0) meta.appendChild(el('span', 'mi-chip warn', `${formatTime(level.timeLimit)} LIMIT`));
       body.appendChild(meta);
 
       const earned = el('div', 'mi-earned');
