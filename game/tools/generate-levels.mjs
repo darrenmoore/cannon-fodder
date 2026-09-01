@@ -1490,6 +1490,17 @@ const BUILDERS = {
     place.put('c', spawn.x + 8, spawn.y + 4, 4);
     place.put('o', wallX - 5, gapY, 4);
 
+    /*
+     * The approach has teeth now (200-qa 017): a three-man picket walking a
+     * fixed north-south beat in front of the wall. The mission used to be an
+     * uncontested stroll to a demolition; the picket makes the walk itself a
+     * timing problem, and the beat is learnable -- the nodes chain (see
+     * chainPatrolRoutes in world.ts).
+     */
+    const picketX = Math.round(wallX * 0.68);
+    for (const dy of [-9, 0, 9]) place.put('E', picketX, gapY + dy, 5, 3);
+    for (const dy of [-8, 0, 8]) place.put('p', picketX, gapY + dy, 3, 3);
+
     // Everything past the wall is unreachable until it falls, so it is placed
     // by hand rather than through the confined Placer.
     const far = (mx, my, ch) => {
@@ -1505,9 +1516,23 @@ const BUILDERS = {
       return null;
     };
     for (let i = 0; i < 4; i++) far(g.w * 0.72, g.h * (0.25 + i * 0.17), 'k');
-    for (let i = 0; i < 7; i++) far(g.w * 0.7, g.h * g.rnd(), 'E');
+    for (let i = 0; i < 10; i++) far(g.w * 0.7, g.h * g.rnd(), 'E');
     far(g.w * 0.85, g.h * 0.3, 'S');
     far(g.w * 0.85, g.h * 0.7, 'B');
+    // A marched line between the supplies, so the far side moves.
+    for (const fy of [0.35, 0.5, 0.65]) far(g.w * 0.66, g.h * fy, 'p');
+
+    /*
+     * The wall answers back (200-qa 017). Spawner huts behind it arm the
+     * proximity trickle the moment the squad pushes through the breach --
+     * "take the factory down and then have a few enemies" becomes take it
+     * down and meet the men it was protecting. Flanking the gap, not on the
+     * line through it, so the route to the supplies stays honest; seven
+     * tiles clear of the wall so their yards cannot eat the rock.
+     */
+    building(g, wallX + 7, gapY - 11, 2, 2, HUT);
+    building(g, wallX + 7, gapY + 9, 2, 2, HUT);
+    building(g, Math.round(g.w * 0.82), gapY - 1, 2, 2, HUT);
   },
 
   'last-stand'(g, place) {
