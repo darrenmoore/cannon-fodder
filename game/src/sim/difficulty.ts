@@ -89,7 +89,7 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
     blurb: 'They shoot slowly and badly, but a shot nearby brings a neighbour looking.',
     levers: {
       spread: 1.4, fireInterval: 1.4, aggro: 1.05, reaction: 1.3, speed: 0.95, fireRange: 0.95,
-      extraEnemies: 0, spawnInterval: 1.7, maxSpawned: 2,
+      extraEnemies: 0.25, spawnInterval: 1.7, maxSpawned: 2,
       hearing: 95, hunters: 0.15, rushers: 0, grenadiers: 0, flank: 0, camo: 0, wander: 0.85,
       vision: 0,
       grenades: 4,
@@ -100,8 +100,10 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
     name: 'Veteran',
     blurb: 'They hunt you across the map, flank hard, and the huts keep feeding. No fog.',
     levers: {
+      // extraEnemies 1.0 doubles every placed rifleman: the owner played Dry
+      // Run's +25% and called it a left-to-right stroll (200-qa 003).
       spread: 0.7, fireInterval: 0.76, aggro: 1.25, reaction: 0.68, speed: 1.12, fireRange: 1.12,
-      extraEnemies: 0.25, spawnInterval: 0.66, maxSpawned: 4,
+      extraEnemies: 1.0, spawnInterval: 0.66, maxSpawned: 4,
       hearing: 220, hunters: 0.55, rushers: 0.3, grenadiers: 0.12, flank: 0.55, camo: 0.32, wander: 1.15,
       // Fog belongs to Elite alone now. Veteran is the middle of a three-rung
       // ladder and it earns its place by how they fight, not by taking the map
@@ -117,7 +119,7 @@ export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
     blurb: 'Thick fog. They swarm, they flank, and they throw grenades.',
     levers: {
       spread: 0.48, fireInterval: 0.58, aggro: 1.5, reaction: 0.42, speed: 1.26, fireRange: 1.22,
-      extraEnemies: 0.5, spawnInterval: 0.45, maxSpawned: 6,
+      extraEnemies: 1.6, spawnInterval: 0.45, maxSpawned: 6,
       hearing: 320, hunters: 0.85, rushers: 0.5, grenadiers: 0.28, flank: 0.8, camo: 0.5, wander: 1.3,
       vision: 160,
       grenades: 2,
@@ -223,6 +225,8 @@ export function describeLevers(levers: Levers): string[] {
   if (levers.rushers >= 0.35) notes.push('charges');
   if (levers.grenadiers > 0) notes.push('grenades');
   if (levers.flank >= 0.5) notes.push('flanks');
-  if (levers.extraEnemies >= 0.4) notes.push(`+${Math.round(levers.extraEnemies * 100)}% enemies`);
+  // Any increase is worth admitting to -- rookie's +25% was invisible here
+  // and read as the game lying about its own difficulty ladder.
+  if (levers.extraEnemies > 0) notes.push(`+${Math.round(levers.extraEnemies * 100)}% enemies`);
   return notes;
 }

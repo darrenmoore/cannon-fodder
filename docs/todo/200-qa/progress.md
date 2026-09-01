@@ -7,7 +7,7 @@ with the commit hash when it lands. One issue, one commit, via `/commit`.
 |---|---|---|---|
 | 001 | [sink-no-spawn](001-sink-no-spawn.md) | blocked on Q1 | |
 | 002 | [mud-render](002-mud-render.md) | open | |
-| 003 | [veteran-balance](003-veteran-balance.md) | blocked on Q2 | |
+| 003 | [veteran-balance](003-veteran-balance.md) | done | (see log) |
 | 004 | [house-circle](004-house-circle.md) | open | |
 | 005 | [idle-face-mouse](005-idle-face-mouse.md) | done | 28e117b |
 | 006 | [factory-sprite](006-factory-sprite.md) | open | |

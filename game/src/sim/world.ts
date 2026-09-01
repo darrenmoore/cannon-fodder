@@ -279,13 +279,28 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
   ];
 
   // Higher difficulties thicken the garrison by doubling up on existing posts,
-  // which keeps reinforcements where the level author meant them to be.
+  // which keeps reinforcements where the level author meant them to be. The
+  // anchors are shuffled so the thickening spreads over the whole garrison
+  // rather than stacking on whichever posts the file listed first, and an
+  // extra never lands inside the 12-tile opening the maps guarantee the squad
+  // (the anchor itself already honours it, so it is the safe fallback).
   const extra = Math.round(map.enemySpawns.length * levers.extraEnemies);
-  for (let i = 0; i < extra && map.enemySpawns.length > 0; i++) {
-    const anchor = map.enemySpawns[i % map.enemySpawns.length];
-    const a = Math.random() * Math.PI * 2;
-    const r = 12 + Math.random() * 26;
-    const at = nearestWalkable(map, { x: anchor.x + Math.cos(a) * r, y: anchor.y + Math.sin(a) * r });
+  const anchors = [...map.enemySpawns];
+  for (let i = anchors.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [anchors[i], anchors[j]] = [anchors[j], anchors[i]];
+  }
+  const startClear = 12 * map.tile;
+  const squadAt = map.playerSpawns.slice(0, map.squadSize);
+  for (let i = 0; i < extra && anchors.length > 0; i++) {
+    const anchor = anchors[i % anchors.length];
+    let at = anchor;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 12 + Math.random() * 26;
+      const c = nearestWalkable(map, { x: anchor.x + Math.cos(a) * r, y: anchor.y + Math.sin(a) * r });
+      if (squadAt.every((p) => Math.hypot(c.x - p.x, c.y - p.y) >= startClear)) { at = c; break; }
+    }
     enemies.push(makeEnemy(counter, at, EnemyKind.Rifle, nearestNode(at), levers));
   }
 
