@@ -844,30 +844,28 @@ export class Renderer {
     }
 
     /*
-     * Objectives: the reason a 220-tile map is navigable at phone zoom at all.
+     * The guide arrow, and the one mission it is for.
      *
-     * The extraction arrow is gated on the objective, because it used to point
-     * at every extraction zone on every map that happened to have one -- and
-     * tents *become* extraction zones, so a rescue mission grew a green arrow
-     * pointing at a tent from the first frame, before the player had anybody
-     * to put in it. An arrow is a promise that going there is the job; on a
-     * map where it is not, it is a lie with a signpost on it.
+     * "get all the troops to the finish line" -- so `reach` alone, which is
+     * also what `covert` unfolds into. Nothing else gets one.
      *
-     * So: `reach` (which is also what `covert` becomes) and `hold`, where
-     * getting to the spot *is* the mission; and `rescue` only once somebody is
-     * actually following you, which is the moment the tent stops being scenery.
-     * Everything else -- eliminate, demolish, collect, survive, assassinate --
-     * gets none, whatever markers the map happens to carry.
+     * This has now been narrowed twice, and both times for the same reason.
+     * First it pointed at every extraction zone on every map that had one,
+     * and tents *become* extraction zones, so a rescue grew a green arrow at a
+     * tent before the player had anybody to put in it. Then it still pointed
+     * at the hostages on a rescue and at the zone on a hold, on my reasoning
+     * that finding them is the job -- and Ice Station was covered in arrows
+     * the owner had not asked for.
+     *
+     * The rule that survives is his: an arrow is for the mission where the
+     * destination *is* the objective. On every other kind of map, finding the
+     * thing is the mission, and an arrow hands it over.
+     *
+     * Threat arrows are untouched. They are a different feature -- an offscreen
+     * enemy who can see you -- and they warn rather than navigate.
      */
-    const obj = world.map.objective;
-    const carrying = world.hostages.some((h) => h.alive && h.freed && !h.delivered);
-    const wantsExtraction = obj === 'reach' || obj === 'hold' || (obj === 'rescue' && carrying);
-    if (wantsExtraction) {
+    if (world.map.objective === 'reach') {
       for (const z of world.extraction) if (outside(z)) mark(z, '#8fd44a');
-    }
-    // Hostages are always worth an arrow on a rescue: finding them is the job.
-    for (const h of world.hostages) {
-      if (h.alive && !h.delivered && outside(h.pos)) mark(h.pos, '#8fb0d4');
     }
     void camera;
   }
