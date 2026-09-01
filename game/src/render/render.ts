@@ -843,8 +843,29 @@ export class Renderer {
       mark(e.pos, d > e.stats.fireRange ? dimInk(ink) : ink);
     }
 
-    // Objectives: the reason a 220-tile map is navigable at phone zoom at all.
-    for (const z of world.extraction) if (outside(z)) mark(z, '#8fd44a');
+    /*
+     * Objectives: the reason a 220-tile map is navigable at phone zoom at all.
+     *
+     * The extraction arrow is gated on the objective, because it used to point
+     * at every extraction zone on every map that happened to have one -- and
+     * tents *become* extraction zones, so a rescue mission grew a green arrow
+     * pointing at a tent from the first frame, before the player had anybody
+     * to put in it. An arrow is a promise that going there is the job; on a
+     * map where it is not, it is a lie with a signpost on it.
+     *
+     * So: `reach` (which is also what `covert` becomes) and `hold`, where
+     * getting to the spot *is* the mission; and `rescue` only once somebody is
+     * actually following you, which is the moment the tent stops being scenery.
+     * Everything else -- eliminate, demolish, collect, survive, assassinate --
+     * gets none, whatever markers the map happens to carry.
+     */
+    const obj = world.map.objective;
+    const carrying = world.hostages.some((h) => h.alive && h.freed && !h.delivered);
+    const wantsExtraction = obj === 'reach' || obj === 'hold' || (obj === 'rescue' && carrying);
+    if (wantsExtraction) {
+      for (const z of world.extraction) if (outside(z)) mark(z, '#8fd44a');
+    }
+    // Hostages are always worth an arrow on a rescue: finding them is the job.
     for (const h of world.hostages) {
       if (h.alive && !h.delivered && outside(h.pos)) mark(h.pos, '#8fb0d4');
     }
