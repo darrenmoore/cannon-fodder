@@ -74,7 +74,14 @@ rest are open.
 4. **Grenade thrower ring** — an `arc` around the man who will throw.
 5. **Crate, barrel and bullet shadows** — `ellipse` with alpha, where every
    other shadow in the game is a hard silhouette.
-6. **Quicksand ripples** (`ground.ts`) — concentric `ellipse` strokes in `rgba`.
-   Baked into terrain, so it is a stamped-in violation rather than a drawn one.
+6. ~~**Quicksand ripples**~~ — were concentric `ellipse` strokes in `rgba`
+   baked into the terrain; rewritten as stepped `fillRect` crust rings, then
+   (200-qa 002) made rare, jittered and free to straddle tiles once mud got
+   its own `Material` and stopped needing them to be visible at all.
+7. **Target brackets** (`drawTargetMarkers`, render.ts) — `stroke()`ed
+   corner brackets at a *fractional pulsing radius* (`8 + sin(t*7) * 0.8`),
+   found while fixing 3. The greps above do not catch it: the sin is in the
+   radius, not an `arc`. Same family as 2.
 
-Fixing 2 and 3 would remove the two a player sees most.
+With 3 and 6 gone, fixing 2 removes the violation a player sees most; 7 is
+its cousin and the same sitting could take both.

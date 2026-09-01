@@ -44,6 +44,13 @@ you are committing. Then stage those paths by name. If you see work you do not
 recognise and the user has not told you to include it, leave it alone and say so
 at the end — do not commit it, and do not revert it either.
 
+One trap that has already bitten: **`git mv` stages the rename, not your later
+edits to the moved file.** A session that moves files and then rewrites their
+contents (link fixes, say) will commit the renames with *stale* content unless
+it re-adds the paths — and the tell is a rename shown as `(100%)` similarity
+that should not be. Check `git status` again after any batch of edits that
+followed a move.
+
 Two things about this repo in particular:
 
 - **`data/*.map` are generated.** `game/tools/generate-levels.mjs` writes them.

@@ -139,7 +139,7 @@ All checked in under `.claude/skills/`, so they work for anyone who clones this.
 
 | | |
 |---|---|
-| `/spec` | Turns a raw brief in `docs/todo/` into a plan, checking every claim against the code first. That check has caught a wrong assumption in every brief so far. |
+| `/spec` | Breaks a raw brief in `docs/todo/<n>-<slug>/` into one file per issue, checking every claim against the code first — that check has caught a wrong assumption in every brief so far. Decisions the owner must make go to `questions.md`; `progress.md` is the shared ledger, one issue one commit. |
 | `/gauntlet` | The build-and-critique loop against a visual reference. Long and expensive; user-invoked only. |
 | `/grill` | One round of the loop's judgement, on one screen, without the loop. |
 | `/pixel-check` | The "is this in lore?" check: drawing code against the visual laws, and where the renderer still breaks them. |

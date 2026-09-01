@@ -79,6 +79,17 @@ Among what it enforces: **no enemy starts within 12 tiles of a squad spawn**
 (see map-format.md). Place your garrison against that rule from the start
 rather than discovering it in red — close is fine, adjacent is a wiped squad.
 
+Two placement tools worth designing with, both from 200-qa:
+
+- **Patrol routes**: `p` nodes within 12 tiles of each other chain into an
+  ordered march the enemy walks end to end and back — fixed, timeable, the
+  thing a stealth or approach map is built around. Three nodes nine tiles
+  apart is the proven recipe; a lone node is only a random beat.
+- **`camps`** (generated missions only): a campaign-table row can pin a
+  garrisoned spot by map fraction — `camps: [{ at: [0.16, 0.82], guards: 5,
+  barrels: 2, huts: 0 }]` — for when a layout leaves a corner bare. It
+  comes with its own two-node beat and is skipped on wave maps.
+
 `npm run check` reads *every* `.map` in `data/`, so a hand-written mission is
 held to exactly the same standard as a generated one. Read the failure, fix it,
 run it again. Do not move on from a red check.

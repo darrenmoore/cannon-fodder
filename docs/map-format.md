@@ -445,6 +445,12 @@ terrain and places what that objective needs. Everything is seeded, so the same
 table always produces the same maps — **change a seed to reroll one level**
 without disturbing the others.
 
+A row can also pin garrisoned spots the layout would not have chosen —
+`camps: [{ at: [0.16, 0.82], guards: 5, barrels: 2, huts: 0 }]`, placed by
+map fraction with a two-node patrol beat of its own — for when a layout
+leaves a corner bare and rerolling would lose a map somebody likes. Camps are
+skipped on `waves:` maps, whose fields must open empty.
+
 **A generated map is overwritten on the next `npm run levels`.** Hand edits to
 any file with an entry in `CAMPAIGN` are lost. A hand-written mission must use
 an id that appears nowhere in that table.

@@ -139,6 +139,13 @@ edit this tree too. Then the next issue. Never batch three issues into one
 commit: the owner controls scope by reverting and reordering commits, and a
 batched commit takes that away.
 
+`/commit` is user-invocation-only, so an agent's Skill call will be refused.
+When it is, follow the skill's discipline by hand — stage each path by name
+after accounting for it, match the log's voice, never `git add -A`, never
+push — and know its one recorded trap: `git mv` stages the rename but not
+your later edits to the moved file, so re-add those paths or the commit
+ships stale content behind a `(100%)` rename.
+
 ## Anything you will not do
 
 Licensing, scope you think is wrong, a decision you would make differently —
