@@ -34,7 +34,7 @@ import { installSkin } from './skin.js';
 import { resolveUnlocks } from '../sim/unlock.js';
 import type { CampaignState } from '../sim/campaign.js';
 import type { DifficultyId } from '../sim/difficulty.js';
-import type { LevelInfo, MenuChoice } from './menu.js';
+import type { FrontChoice, LevelInfo } from './menu.js';
 
 /**
  * Which theatre the rail was left on.
@@ -100,7 +100,7 @@ export function showFront(
   onDifficultyChange: (d: DifficultyId) => void,
   campaign: CampaignState,
   _onBootHill: () => Promise<void>,
-): Promise<MenuChoice> {
+): Promise<FrontChoice> {
   installSkin();
 
   const root = document.getElementById('front')!;
@@ -116,9 +116,10 @@ export function showFront(
   const unlocks = resolveUnlocks(levels, campaign);
   const groups = groupByTheatre(levels);
 
-  return new Promise<MenuChoice>((resolve) => {
+  return new Promise<FrontChoice>((resolve) => {
     let settled = false;
-    const choose = (id: string): void => {
+    /** Leaves the front screen, whatever is on the other side of it. */
+    const leave = (with_: FrontChoice): void => {
       if (settled) return;
       settled = true;
       /*
@@ -136,9 +137,10 @@ export function showFront(
         document.removeEventListener('keydown', onKey);
         root.hidden = true;
         root.classList.remove('leaving');
-        resolve({ id, difficulty });
+        resolve(with_);
       }, 260);
     };
+    const choose = (id: string): void => leave({ id, difficulty });
 
     /* ---------------------------------------------------------- the panes */
 
@@ -171,6 +173,18 @@ export function showFront(
       if (target) choose(target);
     }));
     introActions.appendChild(button('LEVEL SELECT', '', () => goto('select')));
+    /*
+     * The way into the CPU-vs-CPU arena, and dev-only for now.
+     *
+     * `__DEV__` is a literal `false` under `npm run build`, so esbuild folds
+     * this branch away and the button is *absent* from a production bundle
+     * rather than hidden in it -- the same rule the debug panel follows. The
+     * arena's real home is behind this screen rather than in front of it: see
+     * `docs/todo/300-cpu-vs-cpu/`.
+     */
+    if (__DEV__) {
+      introActions.appendChild(button('BATTLE', '', () => leave({ arena: true })));
+    }
     // BOOT HILL left this screen on the owner's say-so. Note what that means:
     // the graves are reachable from nowhere until somebody rehomes the door --
     // the same hole the old menu's comment records being caught by a playtest.

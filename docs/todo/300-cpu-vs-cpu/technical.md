@@ -1,5 +1,13 @@
 # 300 -- CPU vs CPU: the work
 
+> **Built.** Every item below is implemented and `npm run check` is green.
+> [progress.md](progress.md) is the ledger and carries the five bugs that turned
+> up in the building -- four of which were invisible for the first thirty
+> seconds of a battle, which is the argument for the headless soak in one
+> paragraph. Two things in this document were **wrong** and are corrected in
+> place: `spawnAggroRange` is 260px, not 190; and item 011's feedback loop is
+> pointed the opposite way to what is argued here. See the note under it.
+
 Instructions for the agent doing this. Read [plan.md](plan.md) first for *why*;
 this file is *what*, in order, with the proof each step owes.
 
@@ -125,14 +133,32 @@ Veteran, ten sim-seconds each. Assert per map:
 that catch a *behavioural* regression rather than a crash.
 
 - **Target acquisition** (guards item 001). On one fixed map, place one enemy
-  and two soldiers at fixed coordinates and assert which one it acquires, at
-  what range, and that it acquires nobody through a tree. Record the numbers
-  *before* touching `enemies.ts`, and assert the same numbers after.
-- **Hut reinforcement** (guards item 002). On a one-hut map, with the squad
-  parked inside `spawnAggroRange` and then outside it, assert the exact count of
-  units produced over sixty seconds at each difficulty. This is the proximity
-  gate the arena removes, and this test is what proves it was only removed for
-  the arena.
+  and two soldiers at fixed coordinates and assert which one it acquires, and
+  that it acquires nobody through a tree.
+
+  *Built.* Note the one adjustment: the notice **radius** is not stable to a
+  tile -- an idle man drifts around his post, so sweeping for the distance at
+  which he first sees you returns 9, 9, then 10. It is asserted instead as two
+  probes either side of it (notices at seven tiles, does not at sixteen), which
+  is stable at every difficulty and still catches a search that has stopped
+  working or now reaches across the map. The two-soldier test runs at Rookie,
+  because Veteran's `extraEnemies` lever doubles every placed rifleman and the
+  test is about one man's choice.
+- **Hut reinforcement** (guards item 003). On a one-hut map, with the squad
+  parked inside `spawnAggroRange` and then outside it, assert the count of units
+  produced over sixty seconds. This is the proximity gate the arena removes, and
+  this test is what proves it was only removed for the arena.
+
+  *Built, and two things this paragraph originally got wrong turned up in the
+  building.* `spawnAggroRange` is **260px**, not the 190 first written here.
+  And an exact count is only stable if the squad stands **inside the hut's
+  260px range but outside a rifleman's 182px notice radius** -- tile 19 on the
+  test map. Closer than that and the men who come out get shot, which frees
+  their slot (`b.spawned` is decremented on death in `combat.ts`) and lets
+  another out, so the number measures the firefight rather than the hut and
+  comes back 1, 2, 3 or 4 depending on the dice. At tile 19 it is Rookie 2,
+  Veteran 4 -- exactly `maxSpawned` -- on every run. Elite is left unpinned
+  because it hunts hard enough to find a lone man even there.
 - **Wave schedule.** `test/waves.test.mjs` already covers this; check it still
   passes rather than duplicating it.
 
@@ -685,18 +711,37 @@ Three additions fix it, and none is expensive.
 ### 011 -- Territory drives reinforcement (**the important one**)
 
 The influence map from item 006 already computes which side holds which ground.
-Feed it back into the spawn rate: **a side's `spawnInterval` scales with the
-fraction of cells it holds.**
+Feed it back into the spawn rate.
 
-A side that wins a push holds more ground, reinforces faster, and pushes
-further -- until it is over-extended and far from its huts, at which point the
-other side's shorter lines tell and the tide turns. That is a *tide* rather than
-a stalemate, it costs about ten lines on top of a grid that already exists, and
-it is the single thing that makes this worth watching for more than a minute.
+**Built, and pointed the other way round.** The argument here was that a side
+which wins ground should reinforce faster, push further, over-extend, and be
+rolled back -- a tide. It does not do that, because it is positive feedback and
+positive feedback runs away. Measured over five minutes: the winning side
+reached the loser's huts, killed every man at the door, held all the ground,
+reinforced faster *for* holding it, and stayed there. Losses came out 182
+against 186 -- almost exactly even -- while one side had nineteen men standing
+and the other had none. The combat was fair; the battle was over in ninety
+seconds.
 
-Clamp it hard, both ends. A positive feedback loop with no ceiling ends with one
-side wiped in ninety seconds, which is the opposite failure and just as boring.
-Something like 0.7x to 1.4x of the base interval.
+**A side that holds *less* reinforces faster.** That is negative feedback and it
+behaves the way the paragraph above wanted: pushed back onto its own huts, a
+side replaces men faster, the front comes back toward the middle, overshoots,
+and goes again. It is a rubber band, unashamedly -- the goal is a battle worth
+watching for ten minutes, not a fair simulation of one. Mean losses across
+twelve seeded battles are 137 to 136.
+
+Clamp it hard at both ends either way. `CONFIG.arena.paceRange` is 0.72 to 1.35:
+a strong rubber band is as unwatchable as none, because nothing that happens on
+the field is allowed to matter.
+
+**And the front has to be defined as *contested* ground, not as busy ground.**
+The obvious reading of the influence map is `green + blue` -- how much is
+happening in a cell. It is wrong, and it produced the mode's worst failure: a
+side's own muster point holds eighteen men and is therefore the hottest cell on
+the map, so every squad was sent to reinforce the ground it was already standing
+on. Both sides did it. Thirty-six men, five minutes, not a shot fired, about one
+battle in five. The front is `2 * min(green, blue)`: zero wherever only one side
+is present, largest where the two are mixed together.
 
 ### 012 -- The two sides should not fight the same way
 

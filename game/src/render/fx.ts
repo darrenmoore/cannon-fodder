@@ -3,9 +3,14 @@ import type { Particle, Vec2 } from '../types.js';
 
 /**
  * Short-lived visual noise: muzzle flashes, blood, explosions and tracers.
- * Blood and corpses are handed to a persistent decal layer instead of being
- * simulated forever -- the original left the battlefield marked, and it costs
- * nothing once burnt in.
+ *
+ * Blood and corpses are handed to the decal layer instead of being simulated
+ * forever -- the original left the battlefield marked, and a mark costs nothing
+ * once it is burnt in. They are **not** permanent any more, which this comment
+ * used to say they were: `render.ts` clears them after
+ * `CONFIG.fx.decalLife` seconds, thinning them out along a dither first. A mode
+ * with no end silts up completely otherwise, and the owner did not want a
+ * mission keeping them either.
  */
 
 export interface Flash {
@@ -17,7 +22,8 @@ export interface Flash {
 /** Who a corpse decal belonged to, which picks its palette. */
 export type CorpseKind = 'player' | 'enemy' | 'hostage';
 
-/** A request to stamp something permanent onto the decal canvas. */
+/** A request to stamp something onto the decal canvas. It is not permanent;
+ * `render.ts` ages it out. */
 export interface Decal {
   kind: 'blood' | 'corpse' | 'scorch';
   pos: Vec2;

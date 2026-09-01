@@ -1,15 +1,9 @@
 import { CONFIG } from '../config.js';
 import { sfxDenied, sfxLose, sfxScream, sfxWin } from '../shell/audio.js';
-import { stepBuildings, stepWaves } from './buildings.js';
-import { stepBullets, stepDying, stepGrenades, throwGrenade } from './combat.js';
-import { stepEnemies } from './enemies.js';
-import { stepHostages } from './hostages.js';
-import { stepMines } from './mines.js';
+import { throwGrenade } from './combat.js';
 import { resolvePhase } from './objectives.js';
-import { stepPickups } from './pickups.js';
-import { applyPressure, stepPressure } from './pressure.js';
-import { resolveOverlaps } from './steering.js';
-import { classifyClick, orderAttack, orderDemolish, orderMove, stepSoldiers } from './troops.js';
+import { stepWorld } from './step.js';
+import { classifyClick, orderAttack, orderDemolish, orderMove } from './troops.js';
 import { createWorld, livingSoldiers, squadCentre } from './world.js';
 import { Faction, Phase } from '../types.js';
 import type { Camera } from '../render/camera.js';
@@ -73,8 +67,6 @@ export class Game {
 
   step(dt: number): void {
     const w = this.world;
-    w.time += dt;
-    w.phaseTime += dt;
 
     this.input.syncWorld(this.camera);
     // The reticle is re-resolved against a squad that has moved since the last
@@ -85,58 +77,22 @@ export class Game {
     this.handleCommands();
     this.moveCamera(dt);
 
-    if (w.phase !== Phase.Playing) {
-      // The world keeps ticking so blood settles and the last shots land --
-      // and so the man killed on the winning shot finishes falling rather than
-      // freezing mid-collapse under the results panel.
-      w.fx.step(dt);
-      stepBullets(w, dt);
-      stepGrenades(w, dt);
-      stepDying(w, dt);
-      return;
-    }
-
-    w.orderMarker = Math.max(0, w.orderMarker - dt);
-    w.grenadeCooldown = Math.max(0, w.grenadeCooldown - dt);
-
-    // Both before the AI runs: the pressure decides what this step's levers
-    // are, and every system below reads them rather than the base.
-    stepPressure(w, dt);
-    applyPressure(w);
-
-    // Rebuilt before the AI runs, so separation queries see this step's layout.
-    w.hash.rebuild(w.actors);
-
-    // Aimed with a cursor on a mouse and a thumbstick on a phone; the
-    // simulation only ever sees the resolved point.
-    const manualAim = this.input.firing ? this.input.aim.point : null;
-    // The cursor's world point, for idle soldiers to watch -- gated on the
-    // pointer actually being over the canvas so a parked cursor on another
-    // monitor doesn't pin the whole squad's gaze at one stale spot.
-    const cursor = this.input.inside ? this.input.world : null;
-    stepSoldiers(w, dt, manualAim, cursor);
-    stepEnemies(w, dt);
-
-    // Hard no-overlap pass, after everyone has moved and slid along walls.
-    resolveOverlaps(w.actors, w.hash, w.map, 2);
-
-    // The squad's trail goes cold, which is what lets you break contact.
-    w.lastKnownAge += dt;
-    w.fog.step(w.map, w.soldiers, dt);
-
-    stepHostages(w, dt);
-    stepBuildings(w, dt);
-    // After the buildings, so a hut levelled this step is already missing from
-    // the wave it would otherwise have contributed to.
-    stepWaves(w, dt);
-    stepBullets(w, dt);
-    stepGrenades(w, dt);
-    stepDying(w, dt);
-    stepMines(w, dt);
-    stepPickups(w);
-    w.fx.step(dt);
-
     const before = w.phase;
+
+    stepWorld(w, dt, {
+      // Aimed with a cursor on a mouse and a thumbstick on a phone; the
+      // simulation only ever sees the resolved point.
+      manualAim: this.input.firing ? this.input.aim.point : null,
+      // The cursor's world point, for idle soldiers to watch -- gated on the
+      // pointer actually being over the canvas so a parked cursor on another
+      // monitor doesn't pin the whole squad's gaze at one stale spot.
+      cursor: this.input.inside ? this.input.world : null,
+    });
+
+    // Nothing below this line runs once the mission is decided; `stepWorld`
+    // has already taken the short path that only settles the blood.
+    if (before !== Phase.Playing) return;
+
     resolvePhase(w, dt);
     if (w.phase !== before) {
       if (w.phase === Phase.Won) {

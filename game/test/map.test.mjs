@@ -171,6 +171,9 @@ for (const file of files) {
   maps.push(parsed);
 }
 
+const missions = maps.filter((m) => !m.arena);
+const arenas = maps.filter((m) => m.arena);
+
 // ------------------------------------------------------------ parser basics
 check('parser rejects unknown characters', () => {
   assert.throws(() => parseMap('name: bad\n---\n..Z..\n'), /unknown map character/);
@@ -299,7 +302,7 @@ check('an unknown theme or objective falls back safely', () => {
 });
 
 check('off-map reads are solid, so the world is walled in', () => {
-  const m = maps[0];
+  const m = missions[0];
   assert.ok(isSolidAt(m, -1, 5));
   assert.ok(isSolidAt(m, m.width, 5));
 });
@@ -367,8 +370,20 @@ check('nearestWalkable escapes solid terrain', () => {
   assert.ok(!isSolidAt(m, Math.floor(out.x / m.tile), Math.floor(out.y / m.tile)));
 });
 
+/*
+ * The arena is not a mission and cannot answer a mission's questions.
+ *
+ * `data/arena-forest.map` has no squad, no objective and no end: two AI sides
+ * fight over it forever (see `docs/todo/300-cpu-vs-cpu/`). Every check below
+ * asks something that only makes sense of a mission -- does it field the squad
+ * it declares, can the squad reach the objective, is every sentry far enough
+ * from the drop. Making the arena satisfy them would mean giving it a fake
+ * squad and a fake objective, so it is excluded here and checked on its own
+ * terms instead, at the bottom of this file.
+ */
+
 // ----------------------------------------------------------- every mission
-for (const map of maps) {
+for (const map of missions) {
   check(`${map.id}: parses with a full squad and a stated objective`, () => {
     // Six unless the mission says otherwise. A `squad:` header is how a one-man
     // mission is expressed, so what is worth proving is that a map fields
@@ -562,13 +577,13 @@ check('a no-kill map is rejected when a sentry stands over the objective', () =>
 });
 
 check('the campaign covers a spread of sizes, themes and objectives', () => {
-  const themes = new Set(maps.map((m) => m.theme));
-  const objectives = new Set(maps.map((m) => m.objective));
+  const themes = new Set(missions.map((m) => m.theme));
+  const objectives = new Set(missions.map((m) => m.objective));
   assert.ok(themes.size >= 3, `expected several themes, got ${[...themes].join(', ')}`);
   assert.ok(objectives.size >= 4, `expected several objectives, got ${[...objectives].join(', ')}`);
   // At least one map noticeably wider than it is tall, and one taller than wide.
-  assert.ok(maps.some((m) => m.width / m.height > 1.9), 'no long map');
-  assert.ok(maps.some((m) => m.width / m.height < 0.8), 'no tall map');
+  assert.ok(missions.some((m) => m.width / m.height > 1.9), 'no long map');
+  assert.ok(missions.some((m) => m.width / m.height < 0.8), 'no tall map');
 });
 
 check('every new terrain type appears somewhere in the campaign', () => {
@@ -583,5 +598,47 @@ check('every new terrain type appears somewhere in the campaign', () => {
     assert.ok(seen.has(id), `no mission uses ${label}`);
   }
 });
+
+// -------------------------------------------------------------- the arena
+/*
+ * What an arena has to prove instead.
+ *
+ * A mission is asked "can the squad reach the objective". An arena has no squad
+ * and no objective; the only thing that must be true of it is that **the two
+ * sides can get at each other**. If the treeline down the middle ever closed
+ * up, the mode would still run, still spawn and still look busy, and nothing
+ * would ever happen -- exactly the sort of failure a screenshot does not show.
+ */
+for (const map of arenas) {
+  check(`${map.id}: is an arena, not a mission`, () => {
+    assert.equal(map.playerSpawns.length, 0, 'an arena fields no squad');
+    assert.equal(map.enemySpawns.length, 0, 'an arena places no garrison -- the huts make it');
+    assert.ok(map.brief.length > 0);
+  });
+
+  check(`${map.id}: both sides own huts, and not on the same side of the map`, () => {
+    const green = map.buildings.filter((b) => b.owner === 0);
+    const red = map.buildings.filter((b) => b.owner === 1);
+    assert.ok(green.length >= 2, `green has ${green.length} huts`);
+    assert.ok(red.length >= 2, `red has ${red.length} huts`);
+    const mid = (map.width * map.tile) / 2;
+    assert.ok(green.every((b) => b.centre.x < mid), 'a green hut is on the red side');
+    assert.ok(red.every((b) => b.centre.x > mid), 'a red hut is on the green side');
+  });
+
+  check(`${map.id}: every hut can reach every hut of the other side`, () => {
+    for (const from of map.buildings) {
+      const field = buildFlowField(map, nearestWalkable(map, from.centre), true);
+      for (const to of map.buildings) {
+        if (to === from || to.owner === from.owner) continue;
+        const q = nearestWalkable(map, to.centre);
+        const cost = field.dist[Math.floor(q.y / map.tile) * map.width + Math.floor(q.x / map.tile)];
+        assert.ok(Number.isFinite(cost),
+          `no route between the huts at ${from.centre.x | 0},${from.centre.y | 0}`
+          + ` and ${to.centre.x | 0},${to.centre.y | 0}`);
+      }
+    }
+  });
+}
 
 console.log(`\n  ${passed} map checks passed across ${maps.length} missions\n`);

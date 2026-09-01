@@ -53,7 +53,7 @@ export function materialOf(tile: Tile): Material {
     // A hut's sprite covers its own footprint, so the ground under it is just
     // ground. Painting it as masonry leaves a hard grey square poking out from
     // behind every building on the map.
-    case Tile.Hut: case Tile.Factory: return Material.Ground;
+    case Tile.Hut: case Tile.HutAllied: case Tile.Factory: return Material.Ground;
     case Tile.Ice: return Material.Ice;
     case Tile.Road: return Material.Road;
     default: return Material.Ground;

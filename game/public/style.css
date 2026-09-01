@@ -2626,3 +2626,52 @@ html, body {
 .confirm-card { width: min(740px, 92vw); }
 .confirm-btn { min-width: 130px; }
 .mi-earned { flex-direction: column; gap: 8px; }
+
+/* ---------------------------------------------------------- the arena
+   A screen with nobody playing it: no squad, no orders, no aim. The crosshair
+   is the squad's cursor, so without a squad it is a promise the page cannot
+   keep -- the ordinary pointer goes back. Set from `main.ts` as one data
+   attribute, alongside `input.mode = 'spectator'`. */
+[data-mode="spectator"] #screen { cursor: default; }
+/* The sidebar is a squad roster, a supply count and an orders list, and the
+   action bar is FIRE, GRENADE and RECENTRE. A spectator has no squad, no
+   supplies and no orders, so all of it is furniture describing a game that is
+   not being played. Hidden here rather than by not building it, so the arena
+   and a mission share one HUD. */
+[data-mode="spectator"] #hud,
+[data-mode="spectator"] #controls { display: none; }
+/* ...and the column it occupied has to collapse, or the canvas keeps a
+   sidebar's width of nothing beside it. `#stage` is a grid, so hiding the
+   sidebar is not enough on its own -- the track is still there. */
+[data-mode="spectator"] #stage { grid-template-columns: minmax(0, 1fr); }
+
+/* The spectator readout. Thin on purpose: the mission sidebar is all about a
+   squad you own and a task you were set, and a watcher has neither. */
+.arena-bar {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 5px 14px;
+  background: var(--plate-lo, #1a1c14);
+  border: 2px solid var(--plate-hi, #3d4231);
+  font: 11px/1.2 var(--pixel-font, monospace);
+  letter-spacing: 0.5px;
+  color: var(--ink, #d8e0c0);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+}
+.ab-side { display: inline-flex; align-items: baseline; gap: 6px; }
+.ab-side b { font-weight: normal; }
+.ab-side i { font-style: normal; opacity: 0.55; font-size: 9px; }
+.ab-green b { color: #8ad655; }
+.ab-red b { color: #7f9ad8; }
+.ab-vs { opacity: 0.4; font-size: 9px; }
+/* The bar is the only place the two viewing keys are written down, and it
+   goes away with them when the bar is hidden -- which is correct: somebody
+   who has just pressed H knows what H does. */
+.ab-keys { opacity: 0.4; font-size: 9px; margin-left: 4px; }

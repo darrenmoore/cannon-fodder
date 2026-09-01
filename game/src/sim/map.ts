@@ -1,6 +1,7 @@
 import { CONFIG } from '../config.js';
 import { isDoctrineId } from './difficulty.js';
 import { LEGEND, MARKERS, Tile, TILES, themeColors } from './tiles.js';
+import { Faction } from '../types.js';
 import type { DoctrineId } from './difficulty.js';
 import type { Theme } from './tiles.js';
 import type { Vec2 } from '../types.js';
@@ -76,6 +77,8 @@ export interface BuildingSpec {
   kind: 'hut' | 'factory' | 'outpost' | 'bunker';
   /** Derived from the character: an outpost is the squad's to hold. */
   role: 'spawner' | 'protect' | 'neutral';
+  /** Also derived from the character. See `Building.owner`. */
+  owner: Faction;
   /** Tile coordinates the building occupies. */
   tiles: Array<[number, number]>;
   centre: Vec2;
@@ -191,6 +194,16 @@ export interface GameMap {
    * fails, which is what keeps it from ever happening by accident.
    */
   gated: boolean;
+  /**
+   * This map is a CPU-vs-CPU arena, not a mission.
+   *
+   * It has no squad, no objective and no end, so several rules that are
+   * right for a mission are wrong for it: the huts produce without waiting
+   * for a player to come near, nobody is wounded, the dead are reaped and the
+   * decal layer is capped. Every one of those is guarded on this flag, so a
+   * mission cannot pick any of them up by accident.
+   */
+  arena: boolean;
   /** The garrison's standing orders; bends the difficulty levers. */
   doctrine: DoctrineId;
   /** Seconds to hold out, for `survive`; seconds to stand in the zone, for `hold`. */
@@ -310,6 +323,7 @@ export function parseMap(src: string, id = 'level'): GameMap {
       }
       : null,
     gated: header.gated === 'true',
+    arena: header.arena === 'true',
     doctrine: isDoctrineId(header.doctrine ?? '') ? (header.doctrine as DoctrineId) : 'garrison',
     duration: Number(header.duration) || 90,
     waves: parseWaves(header.waves),
@@ -453,8 +467,8 @@ function findBuildings(map: GameMap): BuildingSpec[] {
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
       const t = tileAt(map, x, y);
-      if ((t !== Tile.Hut && t !== Tile.Factory && t !== Tile.Outpost && t !== Tile.Bunker)
-        || seen[y * map.width + x]) continue;
+      if ((t !== Tile.Hut && t !== Tile.Factory && t !== Tile.Outpost && t !== Tile.Bunker
+        && t !== Tile.HutAllied) || seen[y * map.width + x]) continue;
 
       const tiles: Array<[number, number]> = [];
       const stack: Array<[number, number]> = [[x, y]];
@@ -483,8 +497,15 @@ function findBuildings(map: GameMap): BuildingSpec[] {
         : t === Tile.Outpost ? 'outpost'
         : t === Tile.Bunker ? 'bunker'
         : 'hut';
+      // The character says whose it is as well as what it is. `G` is the green
+      // side's barracks; `O` and `U` were always the squad's, and writing that
+      // down changes nothing about how they behave.
+      const owner = t === Tile.HutAllied || t === Tile.Outpost || t === Tile.Bunker
+        ? Faction.Player
+        : Faction.Enemy;
       out.push({
         kind,
+        owner,
         // The map says what a building is for by which character it is drawn
         // with, so a mission's mechanics live in the mission file.
         // A bunker is a thing to hold, like an outpost; it just cannot be lost.

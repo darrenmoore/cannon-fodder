@@ -20,6 +20,8 @@ import { startLoop } from './loop.js';
 import { parseMap } from './sim/map.js';
 import { fetchLevels, groupByTheatre, loadDifficulty, saveDifficulty } from './ui/menu.js';
 import { showFront } from './ui/front.js';
+import { isArenaChoice } from './ui/menu.js';
+import type { ArenaGame } from './sim/arena-game.js';
 import { Renderer } from './render/render.js';
 import { showBootHill } from './ui/boothill.js';
 import { deploy, loadCampaign, recordMission } from './sim/campaign.js';
@@ -219,6 +221,8 @@ async function boot(): Promise<void> {
   const visitBootHill = (): Promise<void> => showBootHill(campaign, missionNames, DEFAULT_SQUAD);
 
   let game: Game | null = null;
+  /** Non-null only while the arena is up. Mutually exclusive with `game`. */
+  let arena: ArenaGame | null = null;
   /** Drops the mission's own listeners when it ends. */
   let pauseTeardown: (() => void) | null = null;
 
@@ -226,6 +230,11 @@ async function boot(): Promise<void> {
   let lastDraw = performance.now();
   startLoop(
     (dt) => {
+      if (arena) {
+        arena.step(dt);
+        if (settings().arenaShowScore) hud.showArena(arena.readout(), settings().arenaLockCamera);
+        return;
+      }
       controls.update(game?.world ?? null, camera.isManual);
       // A sheet is a modal: the world behind it holds still rather than being
       // fought blind through a panel. The briefing is the same promise made at
@@ -247,7 +256,13 @@ async function boot(): Promise<void> {
       const now = performance.now();
       const frameDt = Math.min(0.1, (now - lastDraw) / 1000);
       lastDraw = now;
-      if (game) {
+      if (arena) {
+        // No `aim` argument, so no reticle and no crosshair are drawn over a
+        // battle nobody is aiming at. The parameter is optional precisely so
+        // this can be said by leaving it out.
+        renderer.draw(arena.world, camera, alpha, frameDt);
+        updateAmbience(camera, renderer.windTime, frameDt, true);
+      } else if (game) {
         renderer.draw(game.world, camera, alpha, frameDt, input.aim);
         // The bed rides the draw, not the step: it needs the camera as drawn
         // and the renderer's wind clock, and it should keep breathing while
@@ -598,6 +613,124 @@ async function boot(): Promise<void> {
     });
   };
 
+  /**
+   * The CPU-vs-CPU arena: a world with nobody playing it.
+   *
+   * A sibling of `play`, and much shorter, because almost everything `play`
+   * does is about a *player* -- the briefing, the pause sheet, the results, the
+   * campaign write, the wake lock. None of that has any meaning here.
+   *
+   * The promise this screen makes is that you cannot touch it, and it is made
+   * in one line: `input.mode = 'spectator'`. That drops orders, grenades and
+   * the aim at source (see `shell/input.ts`), and the two things it does *not*
+   * drop are the reason it is not `sealed` -- the camera is yours, because
+   * looking around is the whole activity. `sealed` is what the intro backdrop
+   * will use.
+   */
+  const playArena = async (): Promise<void> => {
+    /*
+     * Imported here rather than at the top, so that a production build does not
+     * carry it.
+     *
+     * `__DEV__` folds to a literal `false`, which lets esbuild drop this whole
+     * branch -- and with it `arena-game.ts`, `arena.ts` and everything they
+     * pull in. The same trick the debug panel uses, for the same reason: dev
+     * only should mean *absent*, not merely unreachable. When the arena becomes
+     * the intro backdrop it stops being dev-only and this goes back to being an
+     * ordinary import.
+     */
+    if (!__DEV__) return;
+    const { ArenaGame } = await import('./sim/arena-game.js');
+    /** The one reserved arena map. See `docs/todo/300-cpu-vs-cpu/`. */
+    const ARENA_MAP = 'arena-forest';
+    stopMusic();
+    const res = await fetch(`/api/maps/${ARENA_MAP}`);
+    if (!res.ok) throw new Error(`could not load the arena: ${res.status}`);
+    const map = parseMap(await res.text(), ARENA_MAP);
+
+    renderer.prepare(map, createWorld(map, 'veteran'));
+    input.mode = 'spectator';
+    /*
+     * One attribute, and the stylesheet takes away everything that describes a
+     * game being played: the squad sidebar, the action bar, and the crosshair
+     * cursor. The re-layout is not optional -- the sidebar is a flex column
+     * next to the canvas, so removing it changes how much room the canvas has,
+     * and the backing store is sized by `Layout` rather than by CSS. Without
+     * this the battle is drawn into a strip the width of the old viewport with
+     * black beside it, which is exactly what the first capture showed.
+     */
+    document.body.dataset.mode = 'spectator';
+    layout.apply();
+
+    arena = new ArenaGame(map, camera, input, () => renderer.clearDecals());
+    startAmbience(map);
+    (window as unknown as { arena: ArenaGame | null }).arena = arena;
+
+    /**
+     * The two ways of watching, on two keys.
+     *
+     * `C` locks the camera to the middle of the map instead of letting it chase
+     * the fighting; `H` takes the readout away and leaves nothing but the
+     * battlefield. Both are saved, because they are a *taste in how to watch* --
+     * somebody who wants the battle framed like a painting wants that every
+     * time -- and because the intro backdrop will want both switched on
+     * permanently, which is then a stored preference rather than a second code
+     * path.
+     *
+     * Keys rather than a settings panel: the arena has no pause sheet to hang
+     * one on, and a screen whose whole content is a picture should not grow
+     * chrome to describe the picture. The bar says which keys, until it is the
+     * thing being turned off.
+     */
+    const paintReadout = (): void => {
+      if (!arena) return;
+      if (settings().arenaShowScore) hud.showArena(arena.readout(), settings().arenaLockCamera);
+      else hud.hideArena();
+    };
+    const onArenaKey = (e: KeyboardEvent): void => {
+      if (e.key === 'c' || e.key === 'C') {
+        updateSettings({ arenaLockCamera: !settings().arenaLockCamera });
+        // Hand the camera back, or `lookAt`'s manual hold survives the unlock
+        // and the view sits in the middle refusing to follow anything.
+        if (!settings().arenaLockCamera) camera.release();
+        paintReadout();
+      } else if (e.key === 'h' || e.key === 'H') {
+        updateSettings({ arenaShowScore: !settings().arenaShowScore });
+        paintReadout();
+      }
+    };
+    window.addEventListener('keydown', onArenaKey);
+    paintReadout();
+
+    const leave = (): void => { if (arena) arena.exitRequested = true; };
+    input.onPause = leave;
+
+    setBlackout(1);
+    void fadeIn(CONFIG.banner.fade);
+
+    await new Promise<void>((resolve) => {
+      const check = (): void => {
+        if (arena?.exitRequested) {
+          arena = null;
+          (window as unknown as { arena: ArenaGame | null }).arena = null;
+          input.mode = 'play';
+          delete document.body.dataset.mode;
+          // ...and the sidebar comes back, so the canvas has to be re-sized
+          // around it again.
+          layout.apply();
+          input.onPause = null;
+          window.removeEventListener('keydown', onArenaKey);
+          stopAmbience();
+          hud.hideArena();
+          resolve();
+          return;
+        }
+        window.requestAnimationFrame(check);
+      };
+      check();
+    });
+  };
+
   // Menu, mission, menu, for as long as the page is open -- except that
   // finishing a mission can hand straight on to the next one without passing
   // back through the list.
@@ -627,6 +760,10 @@ async function boot(): Promise<void> {
         difficulty = d;
         saveDifficulty(DIFFICULTY_KEY, d);
       }, campaign, visitBootHill);
+      if (isArenaChoice(chosen)) {
+        await playArena();
+        continue;
+      }
       difficulty = chosen.difficulty;
       info = levels.find((l) => l.id === chosen.id) ?? null;
       if (!info) continue;
@@ -665,3 +802,4 @@ boot().catch((err: unknown) => {
     sub.textContent = err instanceof Error ? err.message : String(err);
   }
 });
+

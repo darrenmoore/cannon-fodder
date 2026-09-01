@@ -1,0 +1,45 @@
+name: The Clearing
+theme: jungle
+objective: eliminate
+doctrine: arena-red
+arena: true
+brief: Two garrisons, one clearing, and nobody in command but the machine.
+mechanic: cpu vs cpu
+order: 999
+dev: true
+tile: 16
+---
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+T..TTT.T.TTT.TT..T.T.TT.TTT...TT.TT.TTT.T.TTTT.T
+T.TT.......TTTT.TT.TT.TTTTTT.TT.T.T...TTT.T.TT.T
+T.....................TTT.....T..............T.T
+TT..............."""""........TT.............T.T
+TTT.......TT.TT.""""""".o."""""TT............T.T
+T.T......TTTTTT..."."...o."""""T.............T.T
+T.T..GG...TTT................."..............T.T
+TTT..GG.....T..........TTTT........T.........TTT
+TT...............T...TTTTTT.......TTTT.......T.T
+TT..............TTT..TTTT.......TT.TTT...hh...TT
+TTT............TTTTT..TTT........TTTTT...hh...TT
+TT..............TT....TTTTT........T...........T
+T.T..................T.TTTT...................TT
+TTT...........T.............."................TT
+TTT...........TT.."".........""................T
+T.T...........TT..."...o....."...............T.T
+T.............TT."".o.......o""..T.............T
+T.T..........TTT...""....o..""..T.T..........TTT
+TT...........TTT..".".......".".TTT............T
+T.T...........T.......TTTTT.....TTT............T
+T....................T.TTT......TTT............T
+TTT..................TTTTT......T.T...........TT
+TT...GG.......TTTTT..TTTTTT...................TT
+TTT..GG......TTTTTTT..TTTTT...................TT
+TTT........T..TT.TT...TTTT...........T........TT
+T.T......TTTTT..T.."......"."""....TTTTT.hh..TTT
+T.T.....TTTT.T..."""""..o"".""....TTTTTT.hh....T
+TT.......TT.TT..."""."".o."""""T...T.TT......TTT
+TT.........T....."""""......".TTT............T.T
+TTT..................TTT.TT..TTTTT............TT
+TTTT..TTTTT.TT..T..TTTTTTTTT...TTT.T.T.TTT..TTTT
+TTTT.TTT.TT.T..TTTTTTTTT.TT..T.T..TT.T.TT.....TT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT

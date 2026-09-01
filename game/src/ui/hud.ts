@@ -94,6 +94,8 @@ export class Hud {
    */
   missionNumber = 0;
   theatreName = '';
+  /** The spectator readout, mounted only while the arena is up. */
+  private arenaBar: HTMLDivElement | null = null;
 
   constructor() {
     this.mission.className = 'hud-mission';
@@ -631,6 +633,39 @@ export class Hud {
 
     fill(this.overlayCard, card);
     this.overlay.hidden = false;
+  }
+
+  /**
+   * The spectator's readout: two sides, what each has standing, what each has
+   * spent.
+   *
+   * Deliberately thin. The mission sidebar is a column of portraits, a roster,
+   * an objective and a par -- every one of which is about a squad the viewer
+   * owns and a task they have been set, and none of which mean anything here.
+   * What a spectator needs is the score, and the answer to "is one of them
+   * winning".
+   */
+  showArena(r: { green: number; red: number; greenLost: number; redLost: number },
+    locked = false): void {
+    if (!this.arenaBar) {
+      this.arenaBar = document.createElement('div');
+      this.arenaBar.className = 'arena-bar';
+      document.getElementById('viewport')?.appendChild(this.arenaBar);
+    }
+    const side = (name: string, cls: string, up: number, lost: number): string =>
+      `<span class="ab-side ${cls}"><b>${name}</b> ${up}<i>${lost} lost</i></span>`;
+    this.arenaBar.innerHTML =
+      side('GREEN', 'ab-green', r.green, r.greenLost)
+      + '<span class="ab-vs">vs</span>'
+      + side('BLUE', 'ab-red', r.red, r.redLost)
+      // Says how to turn itself off, and how to pin the camera. It is the only
+      // place those two keys are written down, and it disappears with the bar.
+      + `<span class="ab-keys">C ${locked ? 'free' : 'lock'} · H hide</span>`;
+  }
+
+  hideArena(): void {
+    this.arenaBar?.remove();
+    this.arenaBar = null;
   }
 
   hideOverlay(): void {

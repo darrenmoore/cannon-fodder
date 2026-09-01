@@ -130,6 +130,16 @@ export enum EnemyState {
   Engage = 3,
   /** Heard something and is walking to it. The state that makes them hunt. */
   Investigate = 4,
+  /**
+   * Marching to where a commander sent him, along a flow field his whole squad
+   * shares. Only the arena ever sets this -- a mission's garrison is placed, not
+   * ordered -- and it is gated on `squad >= 0` everywhere it is read.
+   *
+   * Deliberately not `Investigate`: that state walks one man to one point with
+   * its own A*, forgets it after a search, and reverts. An advance is a group
+   * following one field until somebody shoots at them.
+   */
+  Advance = 5,
 }
 
 /**
@@ -172,7 +182,16 @@ export interface EnemyStats {
 }
 
 export interface Enemy extends Actor {
-  faction: Faction.Enemy;
+  /**
+   * Which side he is on.
+   *
+   * Widened from `Faction.Enemy` so that one AI can drive both sides of a
+   * CPU-vs-CPU battle: a green-team unit is an ordinary `Enemy` that happens to
+   * carry `Faction.Player`, which is all `combat.ts` needs to make him a target
+   * and all the renderer needs to draw him green. **Every mission still only
+   * ever builds `Faction.Enemy` ones**, so nothing about a mission changes.
+   */
+  faction: Faction;
   kind: EnemyKind;
   stats: EnemyStats;
   state: EnemyState;
@@ -217,6 +236,14 @@ export interface Enemy extends Actor {
   grenadeCooldown: number;
   /** The building that produced it, so reinforcements stay capped. */
   spawnedBy: number;
+  /**
+   * Which arena squad he belongs to, or -1 for nobody's.
+   *
+   * -1 in every mission, and the gate on every line of commander behaviour --
+   * so a garrison sentry cannot accidentally be marched anywhere by code that
+   * was written for the arena.
+   */
+  squad: number;
 }
 
 export interface Bullet {
@@ -311,6 +338,16 @@ export interface Building {
    * loses the mission; `neutral` is scenery with hit points.
    */
   role: 'spawner' | 'protect' | 'neutral';
+  /**
+   * Whose men come out of it.
+   *
+   * `role` says what a building is *for*; this says whose it is, and the two
+   * are different questions -- an arena hut and an enemy hut have the same
+   * role and opposite owners. Every mission building is `Faction.Enemy` except
+   * the outpost and bunker, which were always the squad's; naming it changes
+   * nothing about them and lets `stepBuildings` produce a man for either side.
+   */
+  owner: Faction;
   /** Takes fire, shows it, and never falls. See `createWorld`. */
   indestructible: boolean;
   tiles: Array<[number, number]>;

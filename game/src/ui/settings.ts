@@ -35,6 +35,18 @@ export interface Settings {
   reducedMotion: boolean | null;
   /** `modern` unlocks mechanics the 1993 original did not have. */
   rules: Rules;
+  /**
+   * Hold the arena's camera still in the middle of the map instead of letting
+   * it follow the fighting.
+   *
+   * Persisted rather than being a flag on the screen, because it is a way of
+   * *watching* -- somebody who wants the battle framed like a painting wants it
+   * framed that way every time -- and because it is what the intro backdrop
+   * will want as its permanent setting.
+   */
+  arenaLockCamera: boolean;
+  /** Show the arena's two-side readout. Off makes the screen pure battlefield. */
+  arenaShowScore: boolean;
 }
 
 const KEY = 'cf.settings';
@@ -56,6 +68,8 @@ const DEFAULTS: Settings = {
   crisp: false,
   reducedMotion: null,
   rules: 'classic',
+  arenaLockCamera: false,
+  arenaShowScore: true,
 };
 
 let current: Settings = { ...DEFAULTS };

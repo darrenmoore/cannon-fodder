@@ -27,6 +27,18 @@ export enum Tile {
   /** A building the squad has to keep standing. See `Building.role`. */
   Outpost = 16,
   Bunker = 17,
+  /**
+   * A hut that belongs to the green side, and produces its men.
+   *
+   * Identical to `Hut` in every way that movement, sight and shots care about;
+   * the difference is entirely `Building.owner`, and a roof tinted so the two
+   * can be told apart. It exists for the arena
+   * (`docs/todo/300-cpu-vs-cpu/`), where both sides need barracks, and it is
+   * a tile rather than a rule about which half of the map a building sits in
+   * because "who owns this" is a property of the building, not of its
+   * coordinates.
+   */
+  HutAllied = 18,
 }
 
 export interface TileDef {
@@ -87,6 +99,7 @@ export const TILES: Record<Tile, TileDef> = {
   [Tile.Tree]:      def(Tile.Tree, 'tree', '#3d6624', '#345a1e', { solid: true, blocksSight: true, blocksShots: true, canopy: true, sway: true }),
   [Tile.Rock]:      def(Tile.Rock, 'rock', '#6b6f66', '#7b8076', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
   [Tile.Hut]:       def(Tile.Hut, 'hut', '#8d5a2b', '#7c4e24', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
+  [Tile.HutAllied]: def(Tile.HutAllied, 'allied hut', '#4a6a24', '#3f5c1e', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
   [Tile.Outpost]:   def(Tile.Outpost, 'outpost', '#6a6a5e', '#7a7a6c', { solid: true, blocksSight: true, blocksShots: true }),
   [Tile.Bunker]:    def(Tile.Bunker, 'bunker', '#5c5f55', '#6b6e63', { solid: true, blocksSight: true, blocksShots: true }),
   [Tile.Factory]:   def(Tile.Factory, 'factory', '#6d6f74', '#5e6065', { solid: true, blocksSight: true, blocksShots: true, canopy: true }),
@@ -139,6 +152,7 @@ export const LEGEND: Record<string, Tile> = {
   'A': Tile.Tent,
   'O': Tile.Outpost,
   'U': Tile.Bunker,
+  'G': Tile.HutAllied,
 };
 
 /** Markers that spawn something and leave the named terrain behind. */

@@ -246,6 +246,18 @@ export function stepDying(world: World, dt: number): void {
  * Returns true if the man was wounded rather than killed.
  */
 function wound(world: World, actor: Actor): boolean {
+  /*
+   * Never in an arena, and this is fairness rather than tidiness.
+   *
+   * The rule below is "the garrison can be wounded, the squad cannot", which is
+   * the right asymmetry in a mission -- the squad's one-hit bargain is what
+   * makes the roster mean anything. Carried into a fight between two AI sides
+   * it becomes *blue men lie screaming and green men do not*, and a wounded man
+   * is not merely a decoration: he blocks, he draws fire, and he shouts for
+   * help. One side getting that and the other not is a visible unfairness in a
+   * mode whose whole content is watching the two of them.
+   */
+  if (world.map.arena) return false;
   if (actor.faction !== Faction.Enemy || actor.wounded) return false;
   if (Math.random() >= CONFIG.enemy.woundChance) return false;
 
@@ -279,15 +291,29 @@ export function damage(world: World, actor: Actor, amount = 1): void {
   raiseAlarm(world, actor.pos, world.levers.hearing * CONFIG.enemy.deathAlarm);
 
   if (actor.faction === Faction.Enemy) {
+    // The mission's kill count means "enemies the player killed", so it stays
+    // exactly that. The arena keeps its own, per side, in `sim/arena.ts`.
     world.kills++;
     // Counted against the spot it was made from, not against the mission.
     creditKill(world);
-    // Free up a reinforcement slot on whichever building produced it.
-    const from = (actor as { spawnedBy?: number }).spawnedBy ?? -1;
-    if (from >= 0) {
-      const building = world.buildings.find((b) => b.id === from);
-      if (building) building.spawned = Math.max(0, building.spawned - 1);
-    }
+  }
+
+  /*
+   * Free up a reinforcement slot on whichever building produced this man --
+   * whoever he belonged to.
+   *
+   * This used to sit inside the branch above, which was invisible while every
+   * building in the game produced for the same side. Give the other side huts
+   * and it becomes a one-way ratchet: green men die without ever releasing
+   * their slot, so green's huts fill their `maxSpawned` quota once and stop for
+   * ever. Measured, green fielded exactly twenty-one men per battle and was
+   * then wiped out at the same minute every time, which read as a balance
+   * problem and was arithmetic.
+   */
+  const from = (actor as { spawnedBy?: number }).spawnedBy ?? -1;
+  if (from >= 0) {
+    const building = world.buildings.find((b) => b.id === from);
+    if (building) building.spawned = Math.max(0, building.spawned - 1);
   }
 
   // Anyone aiming at the dead man forgets about them straight away.

@@ -16,6 +16,7 @@ import { rankTier } from '../sim/campaign.js';
 import { squadCentre } from '../sim/world.js';
 import { hiddenFromSquad } from '../sim/vision.js';
 import type { Aim } from '../shell/aim.js';
+import type { CorpseKind, Decal } from './fx.js';
 import type { Camera } from './camera.js';
 import type { GameMap } from '../sim/map.js';
 import type { Atlas, Foliage, Sprite } from './sprites/index.js';
@@ -170,6 +171,28 @@ const seededRnd = (seed: number): (() => number) => {
   };
 };
 
+/**
+ * How many steps a decal thins out over before it is gone, and how often the
+ * layer is checked.
+ *
+ * Four steps rather than a smooth ramp because every change means re-stamping
+ * the whole layer -- see `flushDecals`. Half a second between sweeps is far
+ * finer than the eye needs for something that takes thirty seconds.
+ */
+const FADE_STEPS = 4;
+const DECAL_SWEEP = 0.5;
+
+/** An ordered 4x4 Bayer matrix: the dither a body wears away along. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** Which of `FADE_STEPS` a decal of this age is on. `FADE_STEPS` means gone. */
+function fadeLevel(age: number, life: number, fade: number): number {
+  if (age >= life) return FADE_STEPS;
+  const into = age - (life - fade);
+  if (into <= 0) return 0;
+  return Math.min(FADE_STEPS - 1, 1 + Math.floor((into / fade) * (FADE_STEPS - 1)));
+}
+
 export class Renderer {
   private readonly atlas: Atlas = buildAtlas();
   private terrain!: HTMLCanvasElement;
@@ -242,7 +265,21 @@ export class Renderer {
     this.fogCtx = this.fogMask.getContext('2d')!;
   }
 
+  /**
+   * Everything currently painted on the decal layer, with when it landed and
+   * how worn it is.
+   *
+   * Kept because the layer is a single canvas: an individual mark cannot be
+   * lifted off it, so ageing one means clearing the whole thing and putting the
+   * survivors back.
+   */
+  private decalHistory: Array<Decal & { born: number; level: number }> = [];
+  private decalSweep = DECAL_SWEEP;
+  /** Worn corpse sprites, cached by palette and step. */
+  private readonly wornCorpses = new Map<string, Sprite>();
+
   clearDecals(): void {
+    this.decalHistory = [];
     this.decalCtx.clearRect(0, 0, this.decals.width, this.decals.height);
   }
 
@@ -334,7 +371,7 @@ export class Renderer {
     const huts = map.theme === 'arctic' ? this.atlas.cabin : this.atlas.hut;
     this.huts = huts;
     for (const b of world.buildings) {
-      const sprite = this.buildingSet(b.kind, huts)[0];
+      const sprite = this.buildingSet(b, huts)[0];
       const blockCx = (b.x0 + b.w / 2) * t;
       const blockBottom = (b.y0 + b.h) * t;
       // Offset well clear of the sprite's own footprint, or the building
@@ -352,40 +389,129 @@ export class Renderer {
     return items;
   }
 
-  /** Burns any queued blood, corpses and scorch marks into the decal layer. */
-  private flushDecals(world: World): void {
-    if (world.fx.pendingDecals.length === 0) return;
-    const g = this.decalCtx;
+  /**
+   * Blood, bodies and scorch: burnt into the decal layer, and taken off it
+   * again half a minute later.
+   *
+   * They used to be permanent, and permanence was the design: the original
+   * leaves the battlefield marked, and by the end of a hard mission the ground
+   * reads as somewhere a fight went through. What that did not survive is a
+   * mode with no end -- the arena carpets a chokepoint until everything is red
+   * and therefore nothing reads as anything -- and, on the owner's decision,
+   * a mission does not want it either. Thirty seconds is long enough to see
+   * where the fighting was and short enough that the field never silts up.
+   *
+   * The layer is one map-sized canvas, so a decal cannot be erased on its own:
+   * the whole thing is cleared and re-stamped from `decalHistory`. That is why
+   * it happens on a timer and only when something has actually changed, and why
+   * the fade is quantised into a few steps rather than being continuous -- four
+   * rebuilds per body instead of sixty a second.
+   *
+   * **The fade is a dither, not an alpha ramp.** There is no alpha anywhere in
+   * this renderer and a soft-edged corpse would read as a different game pasted
+   * in; a body thins out by losing pixels in a fixed pattern instead, which is
+   * how the hardware being imitated would have done it. See the visual laws in
+   * CLAUDE.md.
+   */
+  private flushDecals(world: World, dt: number): void {
+    if (world.fx.pendingDecals.length > 0) {
+      for (const d of world.fx.pendingDecals) {
+        this.decalHistory.push({ ...d, born: world.time, level: 0 });
+        this.stampDecal(d, 0);
+      }
+      world.fx.pendingDecals.length = 0;
+    }
 
-    for (const d of world.fx.pendingDecals) {
-      const rnd = seededRnd(d.seed);
-      if (d.kind === 'blood') {
-        g.globalAlpha = 0.85;
-        for (let i = 0; i < 10; i++) {
-          const a = rnd() * Math.PI * 2;
-          const r = rnd() * 7;
-          g.fillStyle = rnd() < 0.4 ? '#6d1109' : '#96190f';
-          const size = 1 + ((rnd() * 2) | 0);
-          g.fillRect(Math.round(d.pos.x + Math.cos(a) * r), Math.round(d.pos.y + Math.sin(a) * r), size, size);
-        }
-      } else if (d.kind === 'corpse') {
-        g.globalAlpha = 1;
-        const sprite = d.who === 'enemy' ? this.atlas.corpseEnemy
-          : d.who === 'hostage' ? this.atlas.corpseHostage
-            : this.atlas.corpsePlayer;
-        g.drawImage(sprite, Math.round(d.pos.x - sprite.width / 2), Math.round(d.pos.y - sprite.height + 4));
-      } else {
-        g.globalAlpha = 0.6;
-        for (let i = 0; i < 26; i++) {
-          const a = rnd() * Math.PI * 2;
-          const r = rnd() * 16;
-          g.fillStyle = rnd() < 0.5 ? '#241a10' : '#3a2c1c';
-          g.fillRect(Math.round(d.pos.x + Math.cos(a) * r), Math.round(d.pos.y + Math.sin(a) * r), 2, 2);
-        }
+    this.decalSweep -= dt;
+    if (this.decalSweep > 0) return;
+    this.decalSweep = DECAL_SWEEP;
+
+    // Nothing has reached the point of thinning out, so nothing needs redoing.
+    const { decalLife, decalFade } = CONFIG.fx;
+    let dirty = false;
+    for (const d of this.decalHistory) {
+      const level = fadeLevel(world.time - d.born, decalLife, decalFade);
+      if (level !== d.level) { d.level = level; dirty = true; }
+    }
+    if (!dirty) return;
+
+    this.decalHistory = this.decalHistory.filter((d) => d.level < FADE_STEPS);
+    this.decalCtx.clearRect(0, 0, this.decals.width, this.decals.height);
+    // Oldest first, so a fresh body still lands on top of an old stain.
+    for (const d of this.decalHistory) this.stampDecal(d, d.level);
+  }
+
+  /** One decal, thinned by `level` steps of dither. */
+  private stampDecal(d: Decal, level: number): void {
+    const g = this.decalCtx;
+    const rnd = seededRnd(d.seed);
+    // A fixed fraction of the pixels survive each step, drawn from the decal's
+    // own seed so the pattern is stable: a stain must thin out, never crawl.
+    const keep = 1 - level / FADE_STEPS;
+
+    if (d.kind === 'blood') {
+      g.globalAlpha = 0.85;
+      for (let i = 0; i < 10; i++) {
+        const a = rnd() * Math.PI * 2;
+        const r = rnd() * 7;
+        const colour = rnd() < 0.4 ? '#6d1109' : '#96190f';
+        const size = 1 + ((rnd() * 2) | 0);
+        if (rnd() > keep) continue;
+        g.fillStyle = colour;
+        g.fillRect(Math.round(d.pos.x + Math.cos(a) * r), Math.round(d.pos.y + Math.sin(a) * r), size, size);
+      }
+    } else if (d.kind === 'corpse') {
+      g.globalAlpha = 1;
+      const sprite = d.who === 'enemy' ? this.atlas.corpseEnemy
+        : d.who === 'hostage' ? this.atlas.corpseHostage
+          : this.atlas.corpsePlayer;
+      const worn = level === 0 ? sprite : this.wornCorpse(sprite, d.who ?? 'player', level);
+      g.drawImage(worn, Math.round(d.pos.x - sprite.width / 2), Math.round(d.pos.y - sprite.height + 4));
+    } else {
+      g.globalAlpha = 0.6;
+      for (let i = 0; i < 26; i++) {
+        const a = rnd() * Math.PI * 2;
+        const r = rnd() * 16;
+        const colour = rnd() < 0.5 ? '#241a10' : '#3a2c1c';
+        if (rnd() > keep) continue;
+        g.fillStyle = colour;
+        g.fillRect(Math.round(d.pos.x + Math.cos(a) * r), Math.round(d.pos.y + Math.sin(a) * r), 2, 2);
       }
     }
     g.globalAlpha = 1;
-    world.fx.pendingDecals.length = 0;
+  }
+
+  /**
+   * A corpse sprite with some of its pixels taken out, cached per level.
+   *
+   * Done to a *copy of the sprite* rather than by clearing the decal layer
+   * after drawing, because the layer is shared: punching a dither through it
+   * would take chunks out of whatever else had already been stamped underneath.
+   * There are three worn levels and three corpse palettes, so this is nine
+   * canvases for the life of the page.
+   */
+  private wornCorpse(sprite: Sprite, who: CorpseKind, level: number): Sprite {
+    const key = `${who}.${level}`;
+    const had = this.wornCorpses.get(key);
+    if (had) return had;
+
+    const c = document.createElement('canvas');
+    c.width = sprite.width;
+    c.height = sprite.height;
+    const g = c.getContext('2d')!;
+    g.imageSmoothingEnabled = false;
+    g.drawImage(sprite, 0, 0);
+    // An ordered 4x4 Bayer threshold: the same pattern every time, so a body
+    // wears away evenly instead of dissolving into noise.
+    const keep = 1 - level / FADE_STEPS;
+    for (let y = 0; y < c.height; y++) {
+      for (let x = 0; x < c.width; x++) {
+        if (BAYER[(y & 3) * 4 + (x & 3)] / 16 < keep) continue;
+        g.clearRect(x, y, 1, 1);
+      }
+    }
+    this.wornCorpses.set(key, c);
+    return c;
   }
 
   /**
@@ -409,7 +535,7 @@ export class Renderer {
 
   draw(world: World, camera: Camera, alpha: number, dtSinceLastFrame: number, aim?: Aim): void {
     this.time += dtSinceLastFrame;
-    this.flushDecals(world);
+    this.flushDecals(world, dtSinceLastFrame);
 
     // Won, and still on the field: the survivors turn out of the screen and
     // celebrate until the results arrive. Negative means nobody is cheering.
@@ -829,6 +955,18 @@ export class Renderer {
 
     const outside = (p: Vec2): boolean => p.x < l || p.x > r || p.y < t || p.y > b;
 
+    /*
+     * Not in an arena, and both halves of this are the reason.
+     *
+     * A threat arrow warns *you* that somebody offscreen can see you; a guide
+     * arrow tells *you* where to go. Neither has an addressee here -- nobody is
+     * being shot at and nobody is going anywhere -- so on a battle of forty men
+     * they become a ring of arrows round the edge of the screen pointing at
+     * whoever happens to be outside the view. Seen in the first capture, and it
+     * is the loudest thing in the frame.
+     */
+    if (world.map.arena) return;
+
     // Threats: only the ones that can actually see a soldier, and only where
     // the fog would have let you see them anyway. An arrow for an enemy you
     // have no business knowing about would be a cheat, not an accommodation.
@@ -871,13 +1009,22 @@ export class Renderer {
   }
 
   /** Which baked set a building draws from. Huts follow the mission's theme. */
-  private buildingSet(kind: Building['kind'], huts: Sprite[]): Sprite[] {
+  private buildingSet(b: Pick<Building, 'kind' | 'owner'>, huts: Sprite[]): Sprite[] {
     // A bunker has no damage stages, so its one sprite answers for all four --
     // including the wreck slot, which it can never reach.
-    return kind === 'factory' ? this.atlas.factory
-      : kind === 'outpost' ? this.atlas.outpost
-        : kind === 'bunker' ? this.bunkerSet
-          : huts;
+    if (b.kind === 'factory') return this.atlas.factory;
+    if (b.kind === 'outpost') return this.atlas.outpost;
+    if (b.kind === 'bunker') return this.bunkerSet;
+    /*
+     * A hut the green side owns wears the green roof.
+     *
+     * Only ever true in the arena -- a mission's huts all belong to the
+     * garrison -- and only for the jungle set, because the arctic cabin has no
+     * tinted variant and the arena is a forest. `huts` is already the theme's
+     * choice, so falling through to it is the right answer for anything else.
+     */
+    if (b.owner === Faction.Player && huts === this.atlas.hut) return this.atlas.hutAllied;
+    return huts;
   }
 
   /** One sprite in all four slots -- a bunker has no damage stages. */
@@ -890,7 +1037,7 @@ export class Renderer {
     // from live state rather than baked into the terrain like everything else.
     if (live) {
       const b = live;
-      const set = this.buildingSet(b.kind, this.huts);
+      const set = this.buildingSet(b, this.huts);
       // Wrecked is stage 3; a standing building shows how close it is to it.
       const sprite = set[b.standing ? Math.min(2, b.damageStage) : 3];
       ctx.drawImage(sprite, Math.round(item.x), Math.round(item.y));

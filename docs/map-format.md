@@ -50,6 +50,7 @@ perfectly valid — it is simply ignored by the other.
 | `nokill` | `true` loses the mission at the first body. See [Modifiers](#modifiers) | `false` | both |
 | `timelimit` | Seconds before the mission is lost. See [Modifiers](#modifiers) | none | both |
 | `gated` | `true` when the only route runs through a building you must level. See [Modifiers](#modifiers) | `false` | mission |
+| `arena` | `true` makes this a CPU-vs-CPU arena rather than a mission. See [Arenas](#arenas) | `false` | mission |
 | `grenades` | Grenades the squad starts with, overriding the difficulty's number. `0` is a real answer; omit it to take the difficulty's | difficulty's | mission |
 | `advice` | What the comms panel says on this mission. `{FIRE}` and `{GRENADE}` are replaced with the controls for whichever machine is reading. Omit it and the mission is silent | none | mission |
 | `advisor` | Which speaker says it. See [docs/characters.md](characters.md) | `trumper` | mission |
@@ -102,6 +103,7 @@ come from.
 | `F` | Factory | yes | yes | yes | As above, much tougher. 3x3+ |
 | `O` | **Outpost** | yes | yes | yes | **Yours.** Spawns nobody; the mission is lost if it falls |
 | `U` | **Bunker** | yes | yes | yes | **Yours, and permanent.** Nothing in the game can level it — what a `hold` zone stands on |
+| `G` | **Allied hut** | yes | yes | yes | A hut that produces men for the *green* side. Arena maps only — see [Arenas](#arenas). 2x2, green roof |
 | `+` | Fence | yes | | yes | Waist-high: stops movement and bullets, **not sight** |
 | `~` | Water | | | | **Wade**: 45% speed, and you cannot fire |
 | `W` | Deep water | walkers | | | **Swim**: 34% speed, cannot fire, and shots cross it freely |
@@ -253,6 +255,8 @@ differently under each.
 | `hunters` | Abandon their posts to find you. Standing still is not an option |
 | `ambush` | Stay quiet until you are close, then fast and accurate |
 | `swarm` | Come in numbers, close and careless, and trade lives to reach you |
+| `arena-red` | Numbers and speed. The red side of an arena; not for a mission |
+| `arena-green` | Wider, slower, and around the side of you. The green side of an arena |
 
 Doctrine is the cheapest way to make two maps of the same shape feel unrelated.
 Reach for it before you reach for more enemies.
@@ -431,6 +435,39 @@ them have shipped as bad missions in some game or other.
 3. Play it to the end. Completable and winnable are different claims — the first
    is about topology and the second is about whether six men with one hit point
    each can actually do it.
+
+
+## Arenas
+
+`arena: true` says this file is **not a mission**. There is no squad, no
+objective and no end: two AI sides spawn out of their own huts and fight over
+the ground between them, and somebody watches. See
+[docs/todo/300-cpu-vs-cpu/](todo/300-cpu-vs-cpu/) for why it exists and how the
+commanders work.
+
+An arena file is different in four ways, and each of them is a rule some part of
+the engine reads off the flag:
+
+- **No `P` markers, and no unit markers at all.** Every man comes out of a hut.
+  A placed `E` or `S` would arm one side only, which is not a fight -- the two
+  snipers are posted symmetrically in code instead.
+- **Huts belong to somebody.** `h` is the red side's, `G` is the green side's.
+  Both produce, both take fire, and **neither can be levelled** -- a hut is the
+  only source of men, so a hut that can be destroyed is a side that can be
+  switched off. Measured, with grenadiers on both sides that is not a remote
+  possibility but the normal outcome inside a minute.
+- **The garrison does not wait to be provoked.** A mission's huts only reinforce
+  while the squad is near enough to be threatened by them; there is no squad
+  here, so the tap simply runs.
+- **The dead are cleared away and the blood is capped.** Both are wrong for a
+  mission -- a battlefield is supposed to keep what happened on it -- and both
+  are necessary for something with no end. See `sim/step.ts` and `flushDecals`.
+
+`npm run check` excludes arenas from every mission check (they cannot answer
+"can the squad reach the objective" without a squad or an objective) and asks
+them one of its own instead: **every hut can reach every hut of the other side.**
+If the treeline down the middle ever closed up, the mode would still run, still
+spawn and still look busy, and nothing would ever happen.
 
 ## Generating levels
 

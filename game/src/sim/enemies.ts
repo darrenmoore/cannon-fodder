@@ -3,7 +3,7 @@ import { fire, throwGrenade } from './combat.js';
 import { hasLineOfFire, nearestWalkable, tileAt } from './map.js';
 import { hunts } from './pressure.js';
 import { canNotice } from './vision.js';
-import { circleBlocked, findPath, hasWalkableLine } from './pathfind.js';
+import { circleBlocked, findPath, flowTarget, hasWalkableLine } from './pathfind.js';
 import { bankFrom, moveWithCollision, steer, stumble, unstick } from './steering.js';
 import { EnemyState, Faction } from '../types.js';
 import { Tile } from './tiles.js';
@@ -196,6 +196,9 @@ export function stepEnemies(world: World, dt: number): void {
       case EnemyState.Engage:
         moveTarget = engage(world, e);
         break;
+      case EnemyState.Advance:
+        moveTarget = advance(world, e);
+        break;
     }
 
     // Nobody treads water on purpose: a man who decided to hold position while
@@ -234,11 +237,38 @@ export function stepEnemies(world: World, dt: number): void {
   }
 }
 
+/**
+ * Marching where a commander sent this man, along a field his squad shares.
+ *
+ * The one piece of arena behaviour that has to live in here rather than in
+ * `arena.ts`, because it is a *movement state* and this is where movement
+ * states are answered. Everything above it in `stepEnemies` still runs first --
+ * `acquire` in particular -- so contact interrupts a march without the
+ * commander being asked, which is the whole division of labour: the commander
+ * decides where a squad walks, and stops having an opinion the moment somebody
+ * has something to shoot at.
+ *
+ * A shared flow field rather than a path each: eighteen men per side all
+ * running `findPath` to the same cell every few seconds is the thing that would
+ * make this stutter, and one field answers all of them for the cost of one.
+ *
+ * Returns null -- which becomes "hold still" -- when the squad has no field,
+ * which is what a mustering unit does while it waits for the rest.
+ */
+function advance(world: World, e: Enemy): Vec2 | null {
+  const field = e.squad >= 0 ? world.squadFields[e.squad] : null;
+  if (!field) return null;
+  const goal = field.goal;
+  // Close enough to be there: stand, and let `acquire` find somebody.
+  if (Math.hypot(goal.x - e.pos.x, goal.y - e.pos.y) < ARRIVED * 2) return null;
+  return flowTarget(field, world.map, e.pos, e.radius) ?? goal;
+}
+
 /** Picks up, keeps or forgets a target, and reports sightings to everyone else. */
 function acquire(world: World, e: Enemy, dt: number): void {
   if (e.target && !e.target.alive) e.target = null;
 
-  const seen = nearestVisibleSoldier(world, e);
+  const seen = nearestVisibleFoe(world, e);
   if (seen) {
     // Everyone shares what anyone sees: this is the squad's last known position.
     world.lastKnown = { x: seen.pos.x, y: seen.pos.y };
@@ -274,21 +304,31 @@ function acquire(world: World, e: Enemy, dt: number): void {
   }
 }
 
-function nearestVisibleSoldier(world: World, e: Enemy): Actor | null {
+/**
+ * The nearest living actor on another side that this one can actually notice.
+ *
+ * It scanned `world.soldiers` until the arena needed one AI to drive both sides
+ * of a fight. **In a mission the two lists are the same** -- `world.actors` is
+ * the soldiers plus the enemies, and every enemy in a mission carries
+ * `Faction.Enemy`, so "not mine" leaves exactly the squad. That equivalence is
+ * the whole safety argument for widening it, and it is asserted in
+ * `test/sim.test.mjs` rather than merely claimed here.
+ */
+function nearestVisibleFoe(world: World, e: Enemy): Actor | null {
   let best: Actor | null = null;
   let bestD = Infinity;
-  for (const s of world.soldiers) {
-    if (!s.alive) continue;
-    const d = Math.hypot(s.pos.x - e.pos.x, s.pos.y - e.pos.y);
+  for (const a of world.actors) {
+    if (!a.alive || a.faction === e.faction) continue;
+    const d = Math.hypot(a.pos.x - e.pos.x, a.pos.y - e.pos.y);
     if (d >= bestD) continue;
     /*
-     * Per soldier, not once for the loop: two men can be six pixels apart with
+     * Per target, not once for the loop: two men can be six pixels apart with
      * one in the reeds and one on the bank, and the whole mechanic is that
      * those are different men to be looking for (201-qa 010).
      */
-    if (!canNotice(world.map, e.pos, s.pos, e.stats.aggroRadius, world.levers.concealment)) continue;
+    if (!canNotice(world.map, e.pos, a.pos, e.stats.aggroRadius, world.levers.concealment)) continue;
     bestD = d;
-    best = s;
+    best = a;
   }
   return best;
 }
@@ -559,16 +599,17 @@ function tryGrenade(world: World, e: Enemy, dist: number): void {
   if (e.wading) return;
   if (dist > CONFIG.enemy.grenadeRange || dist < CONFIG.enemy.grenadeMinRange) return;
 
-  // Find the tightest knot of soldiers worth spending a grenade on.
+  // Find the tightest knot of the *other side* worth spending a grenade on.
+  // Widened from `world.soldiers` alongside `nearestVisibleFoe`, and identical
+  // in a mission for the same reason.
+  const foes = world.actors.filter((a) => a.alive && a.faction !== e.faction);
   let bestPos: Vec2 | null = null;
   let bestCount = 0;
-  for (const s of world.soldiers) {
-    if (!s.alive) continue;
+  for (const s of foes) {
     let count = 0;
     let cx = 0;
     let cy = 0;
-    for (const other of world.soldiers) {
-      if (!other.alive) continue;
+    for (const other of foes) {
       if (Math.hypot(other.pos.x - s.pos.x, other.pos.y - s.pos.y) > CONFIG.grenade.blastRadius) continue;
       count++;
       cx += other.pos.x;

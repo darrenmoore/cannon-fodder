@@ -539,6 +539,50 @@ export const CONFIG = {
     hideRadius: 190,
   },
 
+  /**
+   * The CPU-vs-CPU arena. Every number the mode's pacing depends on, so it can
+   * be tuned without opening `sim/arena.ts`. See `docs/todo/300-cpu-vs-cpu/`.
+   */
+  arena: {
+    /** Men who must have gathered at the rally point before a squad commits. */
+    squadSize: 4,
+    /**
+     * Commit anyway after this long.
+     *
+     * Without it a side that is losing badly never attacks: its men die on the
+     * way to the muster point, the count never reaches `squadSize`, and the
+     * mode quietly turns into one side walking into an empty half of the map.
+     */
+    musterTimeout: 12,
+    /** Live men per side. Above this a hut stops producing. */
+    maxAlive: 18,
+    /** How often a committed squad looks at where the front is now. */
+    retargetInterval: 4,
+    /** Influence grid: tiles per cell, and how far one man's presence reaches. */
+    influenceCell: 4,
+    influenceRadius: 6,
+    /** Seconds between rebuilds. Four a second is far more than enough. */
+    influenceInterval: 0.25,
+    /**
+     * How much tension a cell needs before a squad will march at it rather
+     * than going hunting for a hut. Low, because two men shooting at each other
+     * in a gap *is* the front and is worth reinforcing.
+     */
+    tensionThreshold: 0.6,
+    /**
+     * Spawn-interval multiplier for a side holding everything, and for one
+     * holding nothing.
+     *
+     * The feedback loop that gives the battle a tide. Clamped tight
+     * deliberately: at wider settings the leading side snowballs and the mode
+     * is over in two minutes, which is a worse thing to watch than a stalemate.
+     */
+    paceRange: [0.72, 1.35] as [number, number],
+    /** Seconds of no panning before the camera goes back to following the fight. */
+    driftAfter: 3,
+    /** Zoom the arena opens at, before the viewer touches anything. */
+    zoomBias: 0,
+  },
   banner: {
     /**
      * The end-of-phase banner, drawn over the battlefield rather than over a
@@ -618,8 +662,22 @@ export const CONFIG = {
     /** How long a man takes to fall before he becomes a decal. */
     deathTime: 0.34,
     explosionParticles: 26,
-    /** Blood and corpses are burnt into a persistent decal layer. */
+    /** Blood and corpses are burnt into the decal layer. */
     decals: true,
+    /**
+     * Seconds a body, a bloodstain or a scorch mark stays on the ground, and
+     * how long it spends thinning out at the end of that.
+     *
+     * They were permanent, which is what the original does and what a mission
+     * wants: by the end of a hard one the ground reads as somewhere a fight
+     * went through. Two things took that away. A mode with no end silts up
+     * completely -- the arena turns a chokepoint solid red, and once everything
+     * is red nothing reads as anything. And the owner did not want it in a
+     * mission either. Thirty seconds is long enough to show where the fighting
+     * was and short enough that the field never fills.
+     */
+    decalLife: 30,
+    decalFade: 8,
     screenShake: 5,
     /** Seconds a "+3 GRENADES" label stays up after a pickup. */
     popupLife: 1.6,

@@ -3,7 +3,7 @@ import { sfxCollapse, sfxExplosion, sfxKlaxon } from '../shell/audio.js';
 import { hasLineOfSight, setTile } from './map.js';
 import { circleBlocked } from './pathfind.js';
 import { Tile } from './tiles.js';
-import { EnemyKind, EnemyState } from '../types.js';
+import { EnemyKind, EnemyState, Faction } from '../types.js';
 import { makeEnemy, squadCentre } from './world.js';
 import type { Building, Vec2 } from '../types.js';
 import type { World } from './world.js';
@@ -26,6 +26,19 @@ import type { World } from './world.js';
  * than spawning at the map edge. Levelling the huts is how you turn the tap
  * off, and a mission with no huts left cannot send another wave.
  */
+
+/**
+ * Seconds between troopers, for one building.
+ *
+ * A hook rather than a constant because the arena varies it: a side that holds
+ * more ground reinforces faster, which is the whole difference between a battle
+ * with a tide in it and two lines grinding on the same hedge forever. See
+ * `sim/arena.ts`. A mission has no `arenaPace` and gets the lever alone.
+ */
+function spawnPace(world: World, b: Building): number {
+  const base = (world.sideLevers?.[b.owner] ?? world.levers).spawnInterval;
+  return world.arenaPace ? base * world.arenaPace(b.owner) : base;
+}
 
 /** Ticks reinforcement spawning and the smoke coming off the ruins. */
 export function stepBuildings(world: World, dt: number): void {
@@ -61,30 +74,62 @@ export function stepBuildings(world: World, dt: number): void {
     // underneath it would fill the gaps that make waves legible as waves.
     if (world.map.waves) continue;
 
-    // Only reinforce while the squad is near enough to be threatened by it.
-    const near = world.soldiers.some(
-      (s) => s.alive && Math.hypot(s.pos.x - b.centre.x, s.pos.y - b.centre.y) < CONFIG.building.spawnAggroRange,
-    );
-    if (!near) continue;
+    /*
+     * Only reinforce while the squad is near enough to be threatened by it --
+     * except in the arena, which has no squad to be near anything.
+     *
+     * The gate exists so that a village on the far side of a mission does not
+     * quietly fill the map with men the player never provoked. That is a
+     * player-facing concern and there is no player here, so the arena is
+     * exempted on `map.arena` rather than on the building's owner: the reason
+     * it is skipped should read as "this is not a mission", not as "this hut is
+     * green".
+     */
+    if (!world.map.arena) {
+      const near = world.soldiers.some(
+        (s) => s.alive && Math.hypot(s.pos.x - b.centre.x, s.pos.y - b.centre.y) < CONFIG.building.spawnAggroRange,
+      );
+      if (!near) continue;
+    }
+
+    // Whose doctrine this building's men are rolled from. One garrison in a
+    // mission, one profile per side in an arena.
+    const levers = world.sideLevers?.[b.owner] ?? world.levers;
 
     b.spawnTimer -= dt;
     if (b.spawnTimer > 0) continue;
-    b.spawnTimer = CONFIG.building.spawnInterval * world.levers.spawnInterval;
-    if (b.spawned >= world.levers.maxSpawned) continue;
+    b.spawnTimer = CONFIG.building.spawnInterval * spawnPace(world, b);
+    if (b.spawned >= levers.maxSpawned) continue;
 
-    const door = findDoorway(world, b);
+    /*
+      * In an arena, come out of a door the other side cannot see.
+      *
+      * Both sides push to the enemy's huts and shoot whatever walks out, and a
+      * man who spawns in somebody's sights is a man who never gets to be part
+      * of the battle -- the losing side stops being able to field anybody at
+      * all. Waves already solved this for the squad (`hidden`), and it is the
+      * same problem seen from the other end.
+      */
+    const door = findDoorway(world, b, world.map.arena) ?? findDoorway(world, b);
     if (!door) continue;
 
     const counter = { nextId: world.nextId };
-    const enemy = makeEnemy(counter, door, EnemyKind.Rifle, null, world.levers, b.id);
-    // A trooper that just watched you attack its hut knows exactly where to go.
-    enemy.state = EnemyState.Investigate;
-    enemy.investigate = world.lastKnown ? { ...world.lastKnown } : { ...door };
-    enemy.memory = CONFIG.enemy.alertMemory;
+    const enemy = makeEnemy(counter, door, EnemyKind.Rifle, null, levers, b.id, b.owner);
+    if (world.map.arena) {
+      // The arena's commanders own him from here: he musters, and marches when
+      // his squad is committed. Nothing else may point him anywhere.
+      enemy.state = EnemyState.Idle;
+    } else {
+      // A trooper that just watched you attack its hut knows exactly where to go.
+      enemy.state = EnemyState.Investigate;
+      enemy.investigate = world.lastKnown ? { ...world.lastKnown } : { ...door };
+      enemy.memory = CONFIG.enemy.alertMemory;
+    }
     world.nextId = counter.nextId;
     world.enemies.push(enemy);
     world.actors.push(enemy);
-    world.enemyTotal++;
+    // The objective counts enemies, and a green trooper is not one.
+    if (enemy.faction === Faction.Enemy) world.enemyTotal++;
     b.spawned++;
   }
 }
@@ -163,7 +208,7 @@ export function stepWaves(world: World, dt: number): void {
     if (!door) continue;
 
     const counter = { nextId: world.nextId };
-    const enemy = makeEnemy(counter, door, EnemyKind.Rifle, null, world.levers, b.id);
+    const enemy = makeEnemy(counter, door, EnemyKind.Rifle, null, world.levers, b.id, b.owner);
     if (keep) {
       // `siege` owns him from here: walk at the keep, stop at firing range,
       // shoot it. He is not investigating anything -- he was told where to go.
@@ -207,7 +252,7 @@ function findDoorway(world: World, b: Building, hidden = false): Vec2 | null {
       if (inside) continue;
       const p = { x: (x + 0.5) * t, y: (y + 0.5) * t };
       if (circleBlocked(world.map, p.x, p.y, CONFIG.enemy.radius)) continue;
-      if (hidden && seenBySquad(world, p)) continue;
+      if (hidden && seenByFoe(world, p, b.owner)) continue;
       candidates.push(p);
     }
   }
@@ -215,12 +260,19 @@ function findDoorway(world: World, b: Building, hidden = false): Vec2 | null {
   return candidates[(Math.random() * candidates.length) | 0];
 }
 
-/** Near enough to a living soldier, and in his line of sight. */
-function seenBySquad(world: World, p: Vec2): boolean {
-  for (const s of world.soldiers) {
-    if (!s.alive) continue;
-    if (Math.hypot(s.pos.x - p.x, s.pos.y - p.y) > CONFIG.wave.hideRadius) continue;
-    if (hasLineOfSight(world.map, s.pos, p)) return true;
+/**
+ * Near enough to somebody hostile, and in their line of sight.
+ *
+ * Written against `world.soldiers` when the squad was the only thing a doorway
+ * needed hiding from. An arena has no squad and two sides that both want to
+ * come out unseen, so it asks about actors of another faction instead -- which
+ * in a mission is exactly the squad, and the same question it always asked.
+ */
+function seenByFoe(world: World, p: Vec2, owner: Faction): boolean {
+  for (const a of world.actors) {
+    if (!a.alive || a.faction === owner) continue;
+    if (Math.hypot(a.pos.x - p.x, a.pos.y - p.y) > CONFIG.wave.hideRadius) continue;
+    if (hasLineOfSight(world.map, a.pos, p)) return true;
   }
   return false;
 }

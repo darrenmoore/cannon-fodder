@@ -161,7 +161,8 @@ export const isDifficultyId = (v: string): v is DifficultyId =>
  * and lets you come, hunters abandon their posts to find you, ambushers sit
  * quietly until you are close and then hit hard.
  */
-export type DoctrineId = 'garrison' | 'patrol' | 'hunters' | 'ambush' | 'swarm';
+export type DoctrineId = 'garrison' | 'patrol' | 'hunters' | 'ambush' | 'swarm'
+  | 'arena-red' | 'arena-green';
 
 export interface Doctrine {
   id: DoctrineId;
@@ -195,6 +196,49 @@ export const DOCTRINES: Record<DoctrineId, Doctrine> = {
     name: 'Ambush',
     blurb: 'Quiet until you are close, then fast and accurate.',
     mod: { aggro: 0.62, reaction: 0.55, spread: 0.7, hearing: 0.6, rushers: 1.5, hunters: 0.5, vision: 0.8 },
+  },
+  /*
+   * The two arena doctrines.
+   *
+   * They exist as a *pair* rather than as one shared "arena" setting, and that
+   * is the point of them. Two sides running identical numbers on a near-
+   * symmetric map produce a stalemate on the centre line: every firefight looks
+   * right and the battle never goes anywhere. Given different weightings you can
+   * tell the sides apart by how they move rather than only by colour, and there
+   * is somewhere for the tuning to go when one of them always wins.
+   *
+   * Both share the parts that make an arena an arena: `hunters` far above 1 so
+   * that everybody, always, goes looking (`resolveLevers` clamps it back to a
+   * hard 1.0); `hearing` wide so contact spreads and the fight concentrates;
+   * `camo` and `vision` at zero, which is legibility rather than difficulty --
+   * a camouflaged trooper is built to be hard to see, and this mode exists to
+   * be watched. `grenadiers` is raised well past any mission's because
+   * explosions are the most watchable thing in the game and there is no reason
+   * to ration them here.
+   */
+  'arena-red': {
+    id: 'arena-red',
+    name: 'Red Assault',
+    blurb: 'Numbers and speed. They close, and they keep closing.',
+    mod: {
+      hunters: 4, hearing: 2.2, aggro: 1.34, rushers: 2.2, flank: 0.5, grenadiers: 4,
+      speed: 1.06, spread: 0.98, fireRange: 1.04, camo: 0, vision: 0, extraEnemies: 0, concealment: 1,
+      // The huts are the only source of men here, and a mission's cap of four
+      // per building is what a *garrison* is worth. An arena wants a field with
+      // people on it: the real ceiling is `CONFIG.arena.maxAlive`, and this is
+      // what lets it be reached.
+      maxSpawned: 2.6, spawnInterval: 0.5,
+    },
+  },
+  'arena-green': {
+    id: 'arena-green',
+    name: 'Green Manoeuvre',
+    blurb: 'Wider, slower, and around the side of you.',
+    mod: {
+      hunters: 4, hearing: 2.2, aggro: 1.34, rushers: 0.7, flank: 1.8, grenadiers: 4,
+      speed: 1.0, spread: 0.94, fireRange: 1.06, camo: 0, vision: 0, extraEnemies: 0,
+      concealment: 1, maxSpawned: 2.6, spawnInterval: 0.5,
+    },
   },
   swarm: {
     id: 'swarm',

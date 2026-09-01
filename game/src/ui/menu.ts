@@ -79,6 +79,15 @@ export interface MenuChoice {
 }
 
 /**
+ * What the front screen can hand back: a mission to play, or the arena to
+ * watch. A union rather than a nullable id, so the shell has to say which.
+ */
+export type FrontChoice = MenuChoice | { arena: true };
+
+/** Narrows a front-screen result. */
+export const isArenaChoice = (c: FrontChoice): c is { arena: true } => 'arena' in c;
+
+/**
  * Theatres. Missions are grouped by the ground they are fought over rather
  * than listed flat, because eight identical rows tell you nothing about the
  * shape of the campaign. The order here is the order they appear in; anything

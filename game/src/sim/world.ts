@@ -120,6 +120,44 @@ export interface World {
   status: string;
 
   nextId: number;
+
+  /**
+   * How fast each side's huts produce, as a multiplier on the interval. Null in
+   * every mission.
+   *
+   * The arena's commanders install this, and it is the one line of feedback
+   * that turns two symmetric sides into a battle with a tide: hold more ground,
+   * reinforce faster, push further, over-extend. It lives on the world rather
+   * than being read from `arena.ts` by `buildings.ts` because `sim/buildings`
+   * must not know the arena exists -- it asks the world how fast to spawn, and
+   * a mission answers "at the usual rate" by leaving this null.
+   */
+  arenaPace: ((side: Faction) => number) | null;
+  /**
+   * One flow field per arena squad, indexed by `Enemy.squad`. Empty in every
+   * mission.
+   *
+   * Held on the world rather than on each man so that a squad of six shares one
+   * field object, and so that `enemies.ts` can answer `EnemyState.Advance`
+   * without importing anything from `arena.ts` -- the dependency only ever
+   * points one way, into the simulation.
+   */
+  squadFields: Array<FlowField | null>;
+  /**
+   * A lever profile per side, or null in every mission.
+   *
+   * A mission has one garrison and therefore one doctrine; an arena has two
+   * sides that must be able to fight *differently*, or the battle is two
+   * identical machines meeting on the centre line and staying there. Held on
+   * the world because `buildings.ts` is what makes a man and has to know which
+   * profile to roll him from, and it must not import the arena to find out.
+   *
+   * `world.levers` stays what it always was -- the mission's own, and what the
+   * shared systems (hearing, alerts) read.
+   */
+  sideLevers: Partial<Record<Faction, Levers>> | null;
+  /** Counts down to the next sweep of the dead. Arena only; see `step.ts`. */
+  reapTimer: number;
 }
 
 const BASE_STATS: Record<EnemyKind, EnemyStats> = {
@@ -215,7 +253,13 @@ const spawnActor = (counter: { nextId: number }, pos: Vec2, faction: Faction, ra
   deathTime: -1,
 });
 
-/** Builds an enemy of the given kind. Also used for building reinforcements. */
+/**
+ * Builds an enemy of the given kind. Also used for building reinforcements, and
+ * -- with `faction` -- for the arena's green side.
+ *
+ * `faction` defaults to `Faction.Enemy` so that every existing call site is
+ * unchanged and a mission cannot grow a second side by accident.
+ */
 export function makeEnemy(
   counter: { nextId: number },
   pos: Vec2,
@@ -223,11 +267,12 @@ export function makeEnemy(
   home: Vec2 | null,
   levers: Levers,
   spawnedBy = -1,
+  faction: Faction = Faction.Enemy,
 ): Enemy {
   const traits = rollTraits(levers, kind);
   return {
-    ...spawnActor(counter, pos, Faction.Enemy, CONFIG.enemy.radius),
-    faction: Faction.Enemy,
+    ...spawnActor(counter, pos, faction, CONFIG.enemy.radius),
+    faction,
     kind,
     stats: scaledStats(kind, levers),
     state: home ? EnemyState.Patrol : EnemyState.Idle,
@@ -253,6 +298,7 @@ export function makeEnemy(
     grenades: traits.grenadier ? CONFIG.enemy.grenadeCount : 0,
     grenadeCooldown: CONFIG.enemy.grenadeCooldown * Math.random(),
     spawnedBy,
+    squad: -1,
   };
 }
 
@@ -411,7 +457,18 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
      * fire, still flash, still show a bar; the bar simply never empties, which
      * is the honest signal that this is not the way through.
      */
-    const indestructible = b.kind === 'bunker' || (map.waves !== null && b.role === 'spawner');
+    /*
+      * ...and a third: **every building in an arena**.
+      *
+      * The arena has no winner and is meant to run for as long as anybody
+      * watches. A hut is the only source of men on it, so a hut that can be
+      * levelled is a side that can be switched off -- and with grenadiers on
+      * both sides that is not a remote possibility but the normal outcome:
+      * measured, green was flattened at fifty seconds and the remaining
+      * twenty men wandered an empty map for as long as the page was open.
+      */
+    const indestructible = b.kind === 'bunker' || map.arena
+      || (map.waves !== null && b.role === 'spawner');
     return {
       indestructible,
       damageStage: 0,
@@ -419,6 +476,7 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
       id: i,
       kind: b.kind,
       role: b.role,
+      owner: b.owner,
       tiles: b.tiles,
       centre: { ...b.centre },
       x0: b.x0, y0: b.y0, w: b.w, h: b.h,
@@ -498,6 +556,10 @@ export function createWorld(map: GameMap, difficulty: DifficultyId, roster?: Dep
     wavesSent: 0,
     waveTimer: map.waves ? CONFIG.wave.lead : 0,
     status: '',
+    arenaPace: null,
+    squadFields: [],
+    sideLevers: null,
+    reapTimer: 2,
     nextId: counter.nextId,
   };
 

@@ -42,6 +42,16 @@ PORT=5200 npm run dev
 One test file at a time: `node test/map.test.mjs`, `node test/campaign.test.mjs`.
 `npm run check` is the gate — run it before saying anything works.
 
+**The simulation runs headlessly, and it is the cheapest tool here.** Nothing
+under `sim/` needs a browser: `test/support/sim.mjs` bundles it with esbuild
+behind two global stubs and steps a real world at roughly two hundred times real
+time — the whole campaign, ten seconds each, in about a second and a half.
+`test/sim.test.mjs` soaks every mission with it and pins the two behaviours most
+easily broken by accident: who an enemy shoots at, and how fast a hut produces
+men. Reach for it before Playwright. Four of the five bugs in the CPU-vs-CPU
+work were invisible for the first thirty seconds of a battle and obvious in a
+five-minute headless run.
+
 ## Architecture
 
 `src/` is grouped `sim/` (the mission), `render/` (reads it, never touches it),
@@ -54,7 +64,9 @@ sequences them in a fixed order each step, `sim/objectives.ts` judges it, and
 `render/` only reads.** Nothing imports `game.ts` except `main.ts`. `game.ts`
 names `Camera`, `Renderer` and `Input`, but only as types — they erase at
 compile time, and a real runtime import there would break the boundary.
-`docs/design.md` has the full module map.
+`docs/design.md` has the full module map, and [docs/arena.md](docs/arena.md)
+covers the CPU-vs-CPU mode, which runs the same world through the same systems
+with no player attached to it.
 
 - **`loop.ts`** runs a fixed 1/60s simulation with an interpolated draw, so
   steering, collision and fire rates are identical on any monitor. Never scale
@@ -159,6 +171,7 @@ All checked in under `.claude/skills/`, so they work for anyone who clones this.
 | `/pixelate` | Measures a reference image and reads its shape off as a plottable mask. Use it before drawing anything matched to `docs/original-images/` -- it has settled two arguments that looked like taste and were facts. |
 | `/map` | Writes one mission by hand from an idea rather than a seed — reads `docs/map-format.md`, checks the idea is coherent before drawing, and proves the result can be won. |
 | `/speakers` | The voice of whoever is on the comms panel. Reads [docs/characters.md](docs/characters.md) -- Major Trumper's register, what a speaker may never say (a hint the player has not earned; a control name, which is platform-branched), and the three edits that add a second character. |
+| `/arena` | The CPU-vs-CPU battle mode, and the machinery the intro backdrop runs on. Loads the constraints that are not guessable from the code — six of them each cost a real failure, and four of those were invisible for the first thirty seconds of a battle. |
 | `/commit` | Reviews the tree and stages by name — more than one session edits this tree at once. Never pushes. |
 | `/release` | Refuses a dirty tree, runs check and build, pushes `main`, then polls `GET /api/version` until the deployed URL serves that exact commit. |
 

@@ -5,6 +5,7 @@
  */
 
 import { TENT_RAMP, addOutline, hashRnd, makeCanvas, px, rect } from './paint.js';
+import { RAMPS } from './tint.js';
 import type { Sprite } from './paint.js';
 
 /**
@@ -22,6 +23,14 @@ import type { Sprite } from './paint.js';
  * southern rim. A pitched roof and a gable end is the wrong building entirely,
  * and reads as a European farmhouse dropped into a jungle.
  */
+/**
+ * The hut's thatch, named once so the tint interface and the baker cannot
+ * disagree about what colour a roof is. These are the literals this file used
+ * to repeat; `RAMPS.thatch` is where they live now, and `RAMPS.moss` is the
+ * same ramp in the green side's colours. See `tint.ts`.
+ */
+const THATCH = RAMPS.thatch;
+
 export function bakeHut(stage: number): Sprite {
   const { c, g } = makeCanvas(36, 36);
   const rnd = hashRnd(97 + stage * 31);
@@ -119,12 +128,12 @@ export function bakeHut(stage: number): Sprite {
       const shade2 = lit + (course - 0.5) * 0.22 + (rnd() - 0.5) * 0.1;
 
       let colour: string;
-      if (shade2 > 0.62) colour = '#ffbd5a';
-      else if (shade2 > 0.42) colour = '#e79034';
-      else if (shade2 > 0.24) colour = '#c4631f';
-      else if (shade2 > 0.06) colour = '#a03d12';
-      else if (shade2 > -0.12) colour = '#7b1c07';
-      else colour = '#511003';
+      if (shade2 > 0.62) colour = THATCH[0];
+      else if (shade2 > 0.42) colour = THATCH[1];
+      else if (shade2 > 0.24) colour = THATCH[2];
+      else if (shade2 > 0.06) colour = THATCH[3];
+      else if (shade2 > -0.12) colour = THATCH[4];
+      else colour = THATCH[5];
       px(g, CX + x, CY + y, colour);
     }
   }
@@ -135,8 +144,8 @@ export function bakeHut(stage: number): Sprite {
       px(g, CX + x - 2, CY + y - 4, '#1a0d03');
     }
   }
-  px(g, CX - 4, CY - 6, '#ffbd5a');
-  px(g, CX - 3, CY - 6, '#ffbd5a');
+  px(g, CX - 4, CY - 6, THATCH[0]);
+  px(g, CX - 3, CY - 6, THATCH[0]);
 
   // The thatch fringe: 1-3px teeth of straw overhanging the wall, with leaf
   // specks caught in it. This is the edge that stops the roof reading as a
@@ -148,7 +157,7 @@ export function bakeHut(stage: number): Sprite {
     const teeth = 1 + ((rnd() * 3) | 0);
     for (let s = 0; s < teeth; s++) {
       const y = CY + drop + s;
-      px(g, CX + x, y, s === teeth - 1 ? '#3a0c02' : rnd() < 0.4 ? '#7b1c07' : '#511003');
+      px(g, CX + x, y, s === teeth - 1 ? THATCH[6] : rnd() < 0.4 ? THATCH[4] : THATCH[5]);
     }
     if (rnd() < 0.14) px(g, CX + x, CY + drop + teeth, '#404000');
   }
@@ -172,11 +181,11 @@ export function bakeHut(stage: number): Sprite {
     const arch = y < 3 ? 2 + y : 4;
     for (let x = -arch; x <= arch; x++) px(g, CX - 1 + x, 21 + y, '#0b0803');
   }
-  for (let x = -3; x <= 3; x++) px(g, CX - 1 + x, 20, '#ffbd5a');
-  px(g, CX - 5, 21, '#e79034');
-  px(g, CX + 3, 21, '#a03d12');
+  for (let x = -3; x <= 3; x++) px(g, CX - 1 + x, 20, THATCH[0]);
+  px(g, CX - 5, 21, THATCH[1]);
+  px(g, CX + 3, 21, THATCH[3]);
   // A few straw ends drooping over the opening, so the cut stays thatch.
-  for (const x of [-3, 0, 2]) px(g, CX - 1 + x, 21, '#7b1c07');
+  for (const x of [-3, 0, 2]) px(g, CX - 1 + x, 21, THATCH[4]);
 
   if (stage >= 1) {
     // Scarred: the thatch torn open in patches, and pocks in the wall.

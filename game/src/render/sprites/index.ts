@@ -14,6 +14,7 @@
  */
 
 import { PALETTES } from './paint.js';
+import { variant } from './tint.js';
 import { bakeBunker, bakeCabin, bakeFactory, bakeHut, bakeOutpost, bakeTent } from './buildings.js';
 import { bakeBarrel, bakeCrate, bakeGrenadeIcon, bakeHostageIcon, bakeMine, bakeMuzzleFlash, bakeSupply } from './icons.js';
 import { bakeLogo, bakeLogoParts } from './logo.js';
@@ -54,6 +55,14 @@ export interface Atlas {
   rocks: Sprite[];
   /** [intact, scarred, barely standing, wrecked] */
   hut: Sprite[];
+  /**
+   * The same hut with a green roof: the arena's allied barracks.
+   *
+   * Not a second drawing. It is `hut` put through `variant`, which swaps the
+   * thatch ramp for the moss one -- so the two can never drift apart, and a
+   * change to the hut is a change to both. See `tint.ts`.
+   */
+  hutAllied: Sprite[];
   /** The arctic's building. Same four stages. */
   cabin: Sprite[];
   factory: Sprite[];
@@ -92,6 +101,10 @@ export function buildAtlas(): Atlas {
       ),
     );
 
+  // Baked once and then tinted for the arena's allied side, so the two roofs
+  // can never drift apart.
+  const huts = [0, 1, 2, 3].map(bakeHut);
+
   cached = {
     player: bakeUnit(PALETTES.player, 'rifle'),
     enemy: bakeUnit(PALETTES.enemy, 'rifle'),
@@ -118,7 +131,8 @@ export function buildAtlas(): Atlas {
     // A handful of loose stones, for scattering as ground detail. Outcrops
     // proper are baked as a mass in canopy.ts, not stamped per tile.
     rocks: Array.from({ length: 6 }, (_, i) => bakeRock(i + 1, '#8d9384', '#666c5e', '#3c4038')),
-    hut: [0, 1, 2, 3].map(bakeHut),
+    hut: huts,
+    hutAllied: huts.map((h) => variant(h, { thatch: 'moss' })),
     cabin: [0, 1, 2, 3].map(bakeCabin),
     factory: [0, 1, 2, 3].map(bakeFactory),
     outpost: [0, 1, 2, 3].map(bakeOutpost),

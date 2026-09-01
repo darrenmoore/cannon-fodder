@@ -56,6 +56,30 @@ export class Input {
   /** Where the squad is pointing. Read by the simulation and the renderer. */
   readonly aim = new Aim();
 
+  /**
+   * How much of this screen the viewer is allowed to touch.
+   *
+   *   `play`       a mission. Everything.
+   *   `spectator`  the arena. The camera is yours -- pan, drag, edge-scroll,
+   *                zoom -- and nothing at all reaches the simulation.
+   *   `sealed`     a backdrop. Nothing, including the camera: the world runs
+   *                behind whatever is in front of it, and every gesture
+   *                belongs to that instead.
+   *
+   * One ordered setting rather than two booleans, because they *are* ordered
+   * and a `spectator && !sealed` pair would let a caller ask for a state that
+   * has no meaning.
+   *
+   * It is gated here, at the one place every gesture in the game already
+   * passes through, rather than by the arena declining to act on commands.
+   * A screen that merely never *reads* the orders it is generating still draws
+   * a reticle, still shows a crosshair cursor, and still grows a command queue
+   * nobody drains -- and the next screen that wants the same promise has to
+   * remember the same five omissions. `sealed` is written now, unused, for
+   * exactly that reason: the intro backdrop is the caller it is for.
+   */
+  mode: 'play' | 'spectator' | 'sealed' = 'play';
+
   /** Raised by Esc and the PAUSE button; owned by the shell, not the mission. */
   onPause: (() => void) | null = null;
   /** Raised by pinch and the +/- keys. The shell re-derives the layout from it. */
@@ -208,7 +232,7 @@ export class Input {
     // Releasing over the map is the throw. A tap produces this too, so a quick
     // dab and a considered drag both end the same way.
     if (this.aim.arming && this.aim.placed) {
-      this.queue.push({ type: 'grenade' });
+      this.emit({ type: 'grenade' });
       this.aim.idle();
       this.rawAim = null;
       return;
@@ -234,14 +258,14 @@ export class Input {
     if (this.aim.arming) return;
     // The chord landed on the release; this tap must not also order the squad.
     if (kind === 'mouse' && this.rightDown) return;
-    this.queue.push({ type: 'order', world: this.toWorldPoint(at, kind, 0), queue: false });
+    this.emit({ type: 'order', world: this.toWorldPoint(at, kind, 0), queue: false });
   }
 
   private onLongPress(at: Vec2): void {
     // Appending a waypoint instead of replacing the order. Ice missions ask for
     // short moves, and a slippery surface is a bad place to need fast taps.
     if (this.aim.arming || settings().rules !== 'modern') return;
-    this.queue.push({ type: 'order', world: this.toWorldPoint(at, 'touch', 0), queue: true });
+    this.emit({ type: 'order', world: this.toWorldPoint(at, 'touch', 0), queue: true });
   }
 
   private onDrag(at: Vec2, delta: Vec2, kind: 'mouse' | 'touch' | 'pen'): void {
@@ -335,13 +359,13 @@ export class Input {
     this.aim.mode = 'grenade';
     this.aim.placed = true;
     this.chorded = true;
-    this.queue.push({ type: 'grenade' });
+    this.emit({ type: 'grenade' });
   }
 
-  recentre(): void { this.queue.push({ type: 'recentre' }); }
-  select(soldier: number | 'all'): void { this.queue.push({ type: 'select', soldier }); }
-  restart(): void { this.queue.push({ type: 'restart' }); }
-  exit(): void { this.queue.push({ type: 'exit' }); }
+  recentre(): void { this.emit({ type: 'recentre' }); }
+  select(soldier: number | 'all'): void { this.emit({ type: 'select', soldier }); }
+  restart(): void { this.emit({ type: 'restart' }); }
+  exit(): void { this.emit({ type: 'exit' }); }
 
   // ------------------------------------------------------------- keyboard
 
@@ -352,7 +376,7 @@ export class Input {
 
     switch (e.key) {
       case 'r': case 'R':
-        this.queue.push({ type: 'restart' });
+        this.emit({ type: 'restart' });
         return;
       case 'Escape':
         if (this.aim.arming) { this.cancelGrenade(); return; }
@@ -360,7 +384,7 @@ export class Input {
         return;
       case ' ':
         e.preventDefault();
-        this.queue.push({ type: 'recentre' });
+        this.emit({ type: 'recentre' });
         return;
       /*
        * Fire, from the keyboard.
@@ -441,6 +465,12 @@ export class Input {
    * the squad walks stays clamped to a range the thrower can actually manage.
    */
   syncAim(world: World): void {
+    // Nobody is aiming anything. Held down rather than merely not drawn, so
+    // `firing` is false and the reticle cannot be left armed by a mode change.
+    if (this.mode !== 'play') {
+      this.aim.idle();
+      return;
+    }
     if (this.aim.mode === 'grenade') {
       if (this.rawAim) this.aim.resolveGrenade(world, this.rawAim);
       else if (!this.aim.placed) this.aim.armGrenade(world);
@@ -460,6 +490,17 @@ export class Input {
     }
   }
 
+  /**
+   * The one door every command goes through.
+   *
+   * A spectator keeps `exit` and `recentre` -- leaving and framing are not
+   * things done *to* the simulation -- and loses the rest.
+   */
+  private emit(cmd: Command): void {
+    if (this.mode !== 'play' && cmd.type !== 'exit' && cmd.type !== 'recentre') return;
+    this.queue.push(cmd);
+  }
+
   drain(): Command[] {
     const out = this.queue.slice();
     this.queue.length = 0;
@@ -468,6 +509,13 @@ export class Input {
 
   /** Drag pan since the last call, converted to world pixels. */
   consumePan(zoom: number): Vec2 {
+    // A sealed screen is a backdrop: the drag belongs to whatever is drawn in
+    // front of it, and the camera is not the viewer's to move.
+    if (this.mode === 'sealed') {
+      this.panDelta.x = 0;
+      this.panDelta.y = 0;
+      return { x: 0, y: 0 };
+    }
     const out = { x: this.panDelta.x / zoom, y: this.panDelta.y / zoom };
     this.panDelta.x = 0;
     this.panDelta.y = 0;
@@ -481,6 +529,7 @@ export class Input {
    * without pressing, and a finger cannot hover. Touch pans by dragging instead.
    */
   edgeScroll(dt: number): Vec2 {
+    if (this.mode === 'sealed') return { x: 0, y: 0 };
     let x = this.keyPan.x;
     let y = this.keyPan.y;
 
